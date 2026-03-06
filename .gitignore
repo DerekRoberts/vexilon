@@ -1,4 +1,32 @@
-# Logs
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+
+# ─── Jupyter ──────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ─── App runtime data (do NOT commit) ────────────────────────────────────────
+chroma_db/          # Local Chroma vector store (rebuilt from PDFs)
+pdf_cache/          # Cached downloaded PDFs
+gradio_cached_examples/
+flagged/
+
+# ─── Logs
 logs
 *.log
 npm-debug.log*
