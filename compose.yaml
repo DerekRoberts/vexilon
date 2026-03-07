@@ -14,7 +14,7 @@ services:
 
   # ── Ollama LLM server ────────────────────────────────────────────────────────
   ollama:
-    image: ollama/ollama:latest
+    image: docker.io/ollama/ollama:latest
     container_name: ollama
     volumes:
       - ollama_data:/root/.ollama
@@ -31,7 +31,7 @@ services:
   # Pulls required models on first run; exits 0 when done.
   # blabot waits for this to complete successfully before starting.
   model-puller:
-    image: ollama/ollama:latest
+    image: docker.io/ollama/ollama:latest
     container_name: model-puller
     environment:
       <<: *ollama-env
