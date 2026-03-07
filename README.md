@@ -10,37 +10,28 @@ powered by a local LLM via Ollama and a persistent vector index via Chroma DB.
 | LLM | Ollama `llama3.1:8b` (local) |
 | Embeddings | Ollama `nomic-embed-text` (local) |
 | RAG Framework | LlamaIndex v0.10+ |
-| Vector Store | Chroma DB — persisted in `./chroma_db/` |
+| Vector Store | Chroma DB — persisted in `chroma_db` volume |
 | Web UI | Gradio — `http://localhost:7860` |
 | PDF Source | [www2.gov.bc.ca](https://www2.gov.bc.ca) / bundled in `pdf_cache/` |
+| Container | Podman + Podman Compose (`compose.yaml`) |
 
 ## Quick Start
 
-### 1 — Install Ollama and pull the required models
+### Prerequisites
+
+- [Podman](https://podman.io/docs/installation) + [Podman Compose](https://github.com/containers/podman-compose)
+
+### Run
 
 ```bash
-# macOS / Linux
-curl -fsSL https://ollama.ai/install.sh | sh
-
-ollama pull llama3.1:8b        # ~4.7 GB
-ollama pull nomic-embed-text   # ~274 MB
-```
-
-### 2 — Install Python dependencies
-
-```bash
-python -m venv .venv
-source .venv/bin/activate       # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### 3 — Run
-
-```bash
-python app.py
+podman-compose up
 ```
 
 Open <http://localhost:7860> in your browser.
+
+> ⏳ **First run:** `model-puller` will download `llama3.1:8b` (~4.7 GB) and
+> `nomic-embed-text` (~274 MB) into the `ollama_data` volume. This only happens
+> once; subsequent starts are fast.
 
 ## Usage
 
@@ -104,9 +95,11 @@ OLLAMA_BASE_URL=https://your-ollama-server.example.com
 
 ## Configuration
 
-| Variable | Default | Description |
+| Variable | Compose default | Description |
 |---|---|---|
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
+| `OLLAMA_BASE_URL` | `http://ollama:11434` | Ollama server URL (service name in compose) |
+| `OLLAMA_MODEL` | `llama3.1:8b` | Ollama LLM model |
+| `EMBED_MODEL` | `nomic-embed-text` | Ollama embedding model |
 | `PORT` | `7860` | Gradio listen port |
 
 ## Project Structure
@@ -116,6 +109,8 @@ blabot/
 ├── app.py            # Main application (LlamaIndex + Gradio)
 ├── requirements.txt  # Python dependencies
 ├── manifest.json     # PWA manifest
-├── chroma_db/        # Chroma vector store (auto-created, git-ignored)
-└── pdf_cache/        # Bundled + downloaded PDFs (bundled copies committed; runtime cache git-ignored)
+├── Containerfile     # Container image definition
+├── compose.yaml      # Podman Compose — blabot + ollama + model-puller
+├── pdf_cache/        # Bundled PDFs (committed); runtime downloads are git-ignored
+└── chroma_db/        # Chroma vector store (named volume in compose; git-ignored)
 ```

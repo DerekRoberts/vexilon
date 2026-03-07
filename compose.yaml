@@ -1,0 +1,79 @@
+# Reusable vars
+x-var:
+  - &ollama-url http://ollama:11434
+  - &ollama-llm-model llama3.1:8b
+  - &ollama-embed-model nomic-embed-text
+
+# Reusable Ollama environment block
+x-ollama-env: &ollama-env
+  OLLAMA_BASE_URL: *ollama-url
+  OLLAMA_MODEL: *ollama-llm-model
+  EMBED_MODEL: *ollama-embed-model
+
+services:
+
+  # ── Ollama LLM server ────────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  # ── Model puller (one-shot) ──────────────────────────────────────────────────
+  # Pulls required models on first run; exits 0 when done.
+  # blabot waits for this to complete successfully before starting.
+  model-puller:
+    image: ollama/ollama:latest
+    container_name: model-puller
+    environment:
+      <<: *ollama-env
+    entrypoint: >
+      sh -c "
+        ollama pull $${OLLAMA_MODEL} &&
+        ollama pull $${EMBED_MODEL}
+      "
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama_data:/root/.ollama
+
+  # ── blabot app ───────────────────────────────────────────────────────────────
+  blabot:
+    build:
+      context: .
+      dockerfile: Containerfile
+    container_name: blabot
+    environment:
+      <<: *ollama-env
+      PORT: "7860"
+    ports:
+      - "7860:7860"
+    depends_on:
+      model-puller:
+        condition: service_completed_successfully
+    volumes:
+      - chroma_db:/app/chroma_db
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  ollama_data:   # Ollama model storage (~5 GB on first pull)
+  chroma_db:     # Chroma vector index (rebuilt from pdf_cache/ on first query)
