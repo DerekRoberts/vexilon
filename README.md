@@ -12,7 +12,7 @@ powered by a local LLM via Ollama and a persistent vector index via Chroma DB.
 | RAG Framework | LlamaIndex v0.10+ |
 | Vector Store | Chroma DB — persisted in `./chroma_db/` |
 | Web UI | Gradio — `http://localhost:7860` |
-| PDF Source | [agreements.bcgeu.ca](https://agreements.bcgeu.ca/) |
+| PDF Source | [www2.gov.bc.ca](https://www2.gov.bc.ca) / bundled in `pdf_cache/` |
 
 ## Quick Start
 
@@ -45,7 +45,7 @@ Open <http://localhost:7860> in your browser.
 ## Usage
 
 1. Select an agreement from the dropdown
-   (e.g. *"20th Main Public Service Agreement"*)
+   (e.g. *"19th Main Public Service Agreement (Social, Information & Health)"*)
 2. Click **📥 Load Agreement**
    (~10 s on first load; instant on subsequent loads from the Chroma cache)
 3. Ask questions in the chat:
@@ -87,10 +87,7 @@ the PDF directly via the **Upload PDF** file picker in the UI.
 
 | Display Name | Source |
 |---|---|
-| 20th Main Public Service Agreement | agreements.bcgeu.ca |
-| ETO Component Agreement | agreements.bcgeu.ca |
-| Health Services Agreement | agreements.bcgeu.ca |
-| Community Living Services Agreement | agreements.bcgeu.ca |
+| 19th Main Public Service Agreement (Social, Information & Health) | [www2.gov.bc.ca](https://www2.gov.bc.ca/assets/gov/careers/managers-supervisors/managing-employee-labour-relations/bcgeu_19th_main_agreement_38fa.pdf) / bundled in `pdf_cache/` |
 
 ## Hugging Face Spaces Deployment
 
@@ -120,5 +117,5 @@ blabot/
 ├── requirements.txt  # Python dependencies
 ├── manifest.json     # PWA manifest
 ├── chroma_db/        # Chroma vector store (auto-created, git-ignored)
-└── pdf_cache/        # Downloaded PDFs (auto-created, git-ignored)
+└── pdf_cache/        # Bundled + downloaded PDFs (bundled copies committed; runtime cache git-ignored)
 ```
