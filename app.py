@@ -173,7 +173,9 @@ def configure_llm() -> None:
     Settings.llm = Ollama(
         model=OLLAMA_MODEL,
         base_url=OLLAMA_BASE_URL,
-        request_timeout=120.0,
+        # CPU inference: model load (~30 s) + generation (~2 min) for llama3.1:8b.
+        # 600 s gives comfortable headroom; tune down if GPU is added later.
+        request_timeout=600.0,
         # num_ctx caps the KV-cache allocation at model-load time.
         # llama3.1:8b defaults to 131k context → 16 GiB KV cache → OOM.
         # 4096 is sufficient for RAG (5 chunks × 512 tokens = 2560 max input).
