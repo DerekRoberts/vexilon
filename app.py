@@ -4,18 +4,22 @@ app.py — BCGEU Collective Agreement RAG Chatbot
 Tech stack:
   - LlamaIndex  : PDF → chunk → vector index (1 000 char chunks, 200 overlap)
   - Chroma DB   : local persistent vector store  (./chroma_db)
-  - Ollama      : Llama 3.1:8b LLM + nomic-embed-text embeddings (local)
-  - Gradio      : Web UI at http://localhost:7860
+  - Claude      : LLM via Anthropic API (or Ollama for local dev)
+  - Gradio     : Web UI at http://localhost:7860
 
-Quick start:
+Data source:
+  - my.bcgeu.ca API for collective agreements
+
+Quick start (local dev with Ollama):
   1. Install Ollama and pull the required models:
        ollama pull llama3.1:8b
        ollama pull nomic-embed-text
   2. pip install -r requirements.txt
   3. python app.py
 
-Hugging Face Spaces: set OLLAMA_BASE_URL to an external Ollama endpoint or
-swap the LLM / embedding provider for an HF-hosted model.
+Production (recommended):
+  - Swap Ollama for Claude Sonnet via Anthropic API
+  - Deploy to Hugging Face Spaces
 """
 
 # ─── Standard Library ────────────────────────────────────────────────────────
@@ -67,21 +71,9 @@ PDF_CACHE_DIR.mkdir(exist_ok=True)
 # Display names shown in the dropdown → PDF source URL + Chroma collection name.
 # Update URLs if agreements.bcgeu.ca document IDs change.
 AGREEMENTS: dict[str, dict] = {
-    "20th Main Public Service Agreement": {
-        "url": "https://agreements.bcgeu.ca/document/OE9JK2hONExtTFE9",
-        "collection": "main_public_service_20th",
-    },
-    "ETO Component Agreement": {
-        "url": "https://agreements.bcgeu.ca/document/c0R3WVpuOSs4SDQ9",
-        "collection": "eto_component",
-    },
-    "Health Services Agreement": {
-        "url": "https://agreements.bcgeu.ca/document/NFlYalQ1QmlEbWM9",
-        "collection": "health_services",
-    },
-    "Community Living Services Agreement": {
-        "url": "https://agreements.bcgeu.ca/document/Vy9VTUpISGkvQ1k9",
-        "collection": "community_living",
+    "19th Main Public Service Agreement (Social, Information & Health)": {
+        "url": "https://my.bcgeu.ca/api/agreements/ZStJck1GVktRUms9",
+        "collection": "main_public_service_19th",
     },
 }
 
@@ -226,7 +218,10 @@ def lookup_contacts(query: str) -> Optional[str]:
 def download_pdf(url: str, dest_path: Path) -> bool:
     """
     Download a PDF from *url* to *dest_path*.
-    Handles both direct PDF links and HTML pages containing an embedded PDF link.
+    Handles:
+    - Direct PDF links (Content-Type: application/pdf)
+    - JSON API responses with PDF URL
+    - HTML pages with embedded PDF links
     Returns True on success, False on any failure.
     """
     try:
@@ -247,6 +242,25 @@ def download_pdf(url: str, dest_path: Path) -> bool:
                     fh.write(chunk)
             return True
 
+        # JSON API response — extract PDF URL
+        if "application/json" in content_type:
+            try:
+                data = resp.json()
+                # Try common JSON keys for PDF URL
+                pdf_url = (
+                    data.get("url")
+                    or data.get("pdf_url")
+                    or data.get("document_url")
+                    or data.get("download_url")
+                    or (data.get("data", {}).get("url") if isinstance(data.get("data"), dict) else None)
+                )
+                if pdf_url:
+                    if not pdf_url.startswith("http"):
+                        pdf_url = urljoin(url, pdf_url)
+                    return download_pdf(pdf_url, dest_path)
+            except json.JSONDecodeError:
+                pass  # Not valid JSON, continue to HTML parsing
+
         # HTML page — search for an embedded PDF link
         html = resp.text
         patterns = [
@@ -263,7 +277,7 @@ def download_pdf(url: str, dest_path: Path) -> bool:
                 # Recurse once to download the discovered PDF link
                 return download_pdf(pdf_url, dest_path)
 
-        return False  # No PDF found in the page
+        return False  # No PDF found in the response
 
     except Exception as exc:
         print(f"[download_pdf] Error fetching {url}: {exc}")

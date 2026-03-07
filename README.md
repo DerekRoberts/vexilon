@@ -87,10 +87,7 @@ the PDF directly via the **Upload PDF** file picker in the UI.
 
 | Display Name | Source |
 |---|---|
-| 20th Main Public Service Agreement | agreements.bcgeu.ca |
-| ETO Component Agreement | agreements.bcgeu.ca |
-| Health Services Agreement | agreements.bcgeu.ca |
-| Community Living Services Agreement | agreements.bcgeu.ca |
+| 19th Main Public Service Agreement (Social, Information & Health) | my.bcgeu.ca |
 
 ## Hugging Face Spaces Deployment
 
