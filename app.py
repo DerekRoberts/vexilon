@@ -219,7 +219,7 @@ def startup() -> None:
 
 
 # ─── RAG Query ────────────────────────────────────────────────────────────────
-def rag_stream(message: str, history: list[dict]):
+def rag_stream(message: str, history: list[dict]) -> "Iterator[str]":
     """
     Retrieve relevant chunks, build the prompt, and stream a response from Claude.
     *history* is a list of {"role": ..., "content": ...} dicts (Gradio messages format).
@@ -438,7 +438,7 @@ def build_ui() -> gr.Blocks:
         )
 
         # ── Submit handlers ───────────────────────────────────────────────────
-        def submit(message: str, history: list[dict]):
+        def submit(message: str, history: list[dict]) -> "Iterator[tuple[list[dict], str]]":
             if not message.strip():
                 yield history, ""
                 return
@@ -453,7 +453,7 @@ def build_ui() -> gr.Blocks:
             accumulated = ""
             for chunk in rag_stream(message, prior_history):
                 accumulated += chunk
-                history[-1] = {"role": "assistant", "content": accumulated}
+                history[-1]["content"] = accumulated
                 yield history, ""
 
         send_btn.click(
