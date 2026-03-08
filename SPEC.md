@@ -241,7 +241,6 @@ Each response must follow this structure:
 - Colour palette: BCGEU brand colours — Primary Blue `#005691`, Green `#008542`, Dark Navy `#003366`, white, light grey
 - Clear, professional appearance — not a developer demo aesthetic
 - Application title: **Vexilon — BCGEU Agreement Assistant**
-- Internal repo/package name remains `blabot` (repo rename is a separate decision)
 
 ### Accessibility
 
@@ -433,7 +432,3 @@ These have been discussed and resolved:
 | Mobile required? | Yes — first-class, not an afterthought |
 | Phone number lookup? | Removed entirely |
 | Hosting? | Hugging Face Spaces |
-
-These remain open and should be resolved before the relevant implementation work begins:
-
-- [ ] Should the GitHub repo be renamed from `blabot` to `vexilon` to match the product brand?
