@@ -1,18 +1,19 @@
-# Vexilon — BCGEU Collective Agreement RAG Chatbot
+# Vexilon — BCGEU Agreement Assistant
 
-AI chatbot for answering questions about BC Government / BCGEU collective agreements,
-powered by a local LLM via Ollama and a persistent vector index via Chroma DB.
+AI chatbot for BCGEU union stewards to look up the 19th Main Public Service Agreement
+(Social, Information & Health). Ask questions in plain language; get verbatim quotes with
+article and page citations.
 
 ## Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| LLM | Ollama `llama3.2:3b` (local) |
-| Embeddings | Ollama `nomic-embed-text` (local) |
-| RAG Framework | LlamaIndex v0.10+ |
-| Vector Store | Chroma DB — persisted in `chroma_db` volume |
-| Web UI | Gradio — `http://localhost:7860` |
-| PDF Source | [www2.gov.bc.ca](https://www2.gov.bc.ca) / bundled in `pdf_cache/` |
+| LLM | Anthropic Claude (`claude-3-5-haiku-20241022`) |
+| Embeddings | OpenAI `text-embedding-3-small` |
+| Vector Store | FAISS (in-memory, rebuilt at startup) |
+| PDF Parsing | pypdf — preserves page numbers |
+| Web UI | Gradio 5 — `http://localhost:7860` |
+| PDF Source | Bundled in `pdf_cache/` |
 | Container | Podman + Podman Compose (`compose.yml`) |
 
 ## Quick Start
@@ -20,105 +21,78 @@ powered by a local LLM via Ollama and a persistent vector index via Chroma DB.
 ### Prerequisites
 
 - [Podman](https://podman.io/docs/installation) + [Podman Compose](https://github.com/containers/podman-compose)
+- An [Anthropic API key](https://console.anthropic.com/) (`ANTHROPIC_API_KEY`)
+- An [OpenAI API key](https://platform.openai.com/account/api-keys) (`OPENAI_API_KEY`)
+  — used only for embeddings (`text-embedding-3-small`)
 
 ### Run
 
 ```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+export OPENAI_API_KEY=sk-...
+
 podman-compose up
 ```
 
 Open <http://localhost:7860> in your browser.
 
-> ⏳ **First run:** `model-puller` will download `llama3.2:3b` (~2 GB) and
-> `nomic-embed-text` (~274 MB) into the `ollama_data` volume. This only happens
-> once; subsequent starts are fast.
+> ⏳ **First run:** the app embeds the entire agreement PDF via the OpenAI API (~30–60 s).
+> Subsequent starts take the same amount of time — the FAISS index is rebuilt in memory
+> each time (no persistence required at this scale).
 
 ### Troubleshooting
 
-**Port 11434 already in use** — a previous failed start left stale containers. Clean up and retry:
+**`openai.AuthenticationError: 401`** — `OPENAI_API_KEY` is not set or not exported.
+Check with `echo $OPENAI_API_KEY` and re-export before running `podman-compose up`:
+
 ```bash
-podman-compose down && podman rm -f ollama model-puller vexilon
+export OPENAI_API_KEY=sk-...
 podman-compose up
 ```
 
+**`anthropic.AuthenticationError`** — same issue with `ANTHROPIC_API_KEY`.
+
 ## Usage
 
-1. Select an agreement from the dropdown
-   (e.g. *"19th Main Public Service Agreement (Social, Information & Health)"*)
-2. Click **📥 Load Agreement**
-   (~10 s on first load; instant on subsequent loads from the Chroma cache)
-3. Ask questions in the chat:
+The app is ready immediately on page load — no dropdown, no Load button.
 
-| Example question | What you get |
-|------------------|--------------|
-| `Article 12 overtime rules?` | Article text + page citation |
-| `What is the probationary period?` | Relevant clause + page |
-| `health victoria` | Island Health HR: 250-519-3500 |
-| `health northern` | Northern Health HR: 250-565-2000 |
+1. Type a question in the input field and press **Enter** or tap **Send**
+2. Or click one of the suggested question chips on the welcome screen
+3. Responses include a plain-language explanation followed by verbatim quotes with citations
 
-> **Note:** All responses are prefixed with *"From document only—not legal advice."*
-
-## BC Contacts
-
-Type any of the following keywords (case-insensitive) to look up HR contacts
-without querying the document:
-
-| Keyword | Result |
-|---------|--------|
-| `health island` / `health victoria` | Island Health HR — 250-519-3500 |
-| `health northern` | Northern Health HR — 250-565-2000 |
-| `health interior` | Interior Health HR — 1-800-707-8550 |
-| `health fraser` | Fraser Health HR — 604-587-4600 |
-| `health coastal` | Vancouver Coastal Health HR — 604-875-4111 |
-| `health providence` | Providence Health Care HR — 604-682-2344 |
-| `health phsa` | PHSA HR — 604-875-2000 |
-| `health first nations` | FNHA — 604-693-6500 |
-| `bcgeu` | BCGEU Provincial Office — 604-291-9611 |
-| `corrections` | BC Corrections Labour Relations — 250-387-5041 |
-| `cssea` | CSSEA — 604-942-0505 |
-
-## Manual PDF Upload
-
-If the automatic PDF download fails (e.g. the document URL changes), upload
-the PDF directly via the **Upload PDF** file picker in the UI.
-
-## Supported Agreements
-
-| Display Name | Source |
-|---|---|
-| 19th Main Public Service Agreement (Social, Information & Health) | [www2.gov.bc.ca](https://www2.gov.bc.ca/assets/gov/careers/managers-supervisors/managing-employee-labour-relations/bcgeu_19th_main_agreement_38fa.pdf) / bundled in `pdf_cache/` |
-
-## Hugging Face Spaces Deployment
-
-Ollama is not available on HF Spaces out of the box. Options:
-
-- Set `OLLAMA_BASE_URL` to an external Ollama server endpoint
-- Swap the LLM / embedding imports for `llama_index.llms.huggingface`
-  and `llama_index.embeddings.huggingface`
-
-```bash
-# HF Spaces secret / environment variable
-OLLAMA_BASE_URL=https://your-ollama-server.example.com
-```
+> **Note:** Responses cite the agreement text only. This is not legal advice.
+> Consult your BCGEU staff representative for complex matters.
 
 ## Configuration
 
-| Variable | Compose default | Description |
+All settings are optional — defaults match the product specification.
+
+| Variable | Default | Description |
 |---|---|---|
-| `OLLAMA_BASE_URL` | `http://ollama:11434` | Ollama server URL (service name in compose) |
-| `OLLAMA_MODEL` | `llama3.2:3b` | Ollama LLM model |
-| `EMBED_MODEL` | `nomic-embed-text` | Ollama embedding model |
+| `ANTHROPIC_API_KEY` | *(required)* | Anthropic API key |
+| `OPENAI_API_KEY` | *(required)* | OpenAI API key (embeddings only) |
+| `CLAUDE_MODEL` | `claude-3-5-haiku-20241022` | Claude model for responses |
+| `EMBED_MODEL` | `text-embedding-3-small` | OpenAI embedding model |
 | `PORT` | `7860` | Gradio listen port |
+| `SIMILARITY_TOP_K` | `5` | Chunks retrieved per query |
+| `CHUNK_SIZE` | `512` | Tokens per chunk |
+| `CHUNK_OVERLAP` | `100` | Token overlap between chunks |
+
+## Hugging Face Spaces Deployment
+
+Set `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` as Spaces secrets. The `pdf_cache/`
+directory is committed to the repo and available at runtime. No persistent volume
+is required — the FAISS index is rebuilt on each cold start.
 
 ## Project Structure
 
 ```
 vexilon/
-├── app.py            # Main application (LlamaIndex + Gradio)
+├── app.py            # Main application (RAG pipeline + Gradio UI)
 ├── requirements.txt  # Python dependencies
 ├── manifest.json     # PWA manifest
 ├── Containerfile     # Container image definition
-├── compose.yml       # Podman Compose — vexilon + ollama + model-puller
-├── pdf_cache/        # Bundled PDFs (committed); runtime downloads are git-ignored
-└── chroma_db/        # Chroma vector store (named volume in compose; git-ignored)
+├── compose.yml       # Podman Compose — single vexilon service
+├── SPEC.md           # Product specification
+└── pdf_cache/        # Bundled PDFs (committed to repo)
 ```
