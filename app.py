@@ -379,16 +379,24 @@ BCGEU_CSS = """
     background-color: white;
 }
 
+/* Ensure all message content has readable text color */
+#chatbot .message-wrap {
+    color: var(--text-primary);
+}
+
+#chatbot .message-item {
+    color: var(--text-primary);
+}
+
 /* Blockquote rendering in chat messages */
-.message-bubble-border blockquote,
-.message blockquote {
+blockquote {
     border-left: 4px solid var(--primary);
-    background-color: #eef4fb;
+    background-color: #003366;
+    color: white;
     padding: 8px 12px;
     margin: 8px 0;
     border-radius: 0 4px 4px 0;
     font-style: italic;
-    color: #1a2a3a;
     /* prevent blockquotes from causing horizontal scroll on mobile */
     max-width: 100%;
     overflow-x: auto;
@@ -396,22 +404,27 @@ BCGEU_CSS = """
     overflow-wrap: break-word;
 }
 
+/* Ensure all text inside blockquotes is visible (white on dark background) */
+blockquote p {
+    color: white;
+}
+
 /* Empty-state onboarding panel */
-#onboarding {
+.gradio-container #onboarding {
     background-color: white;
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 20px 24px;
     margin-bottom: 8px;
 }
-#onboarding p {
-    color: var(--text-primary, #333);
+.gradio-container #onboarding p {
+    color: #333;
     font-size: 0.95rem;
     margin: 0 0 16px;
 }
-#onboarding .chip-label {
+.gradio-container #onboarding .chip-label {
     font-size: 0.8rem;
-    color: var(--text-secondary, #666);
+    color: #666;
     margin-bottom: 8px;
 }
 
@@ -487,11 +500,13 @@ def build_ui() -> gr.Blocks:
         onboarding = gr.Group(elem_id="onboarding", visible=True)
         with onboarding:
             gr.HTML(
-                "<p>I help BCGEU union stewards look up the 19th Main Public Service Agreement "
+                '<p style="color:#333;font-size:0.95rem;margin:0 0 16px;">'
+                "I help BCGEU union stewards look up the 19th Main Public Service Agreement "
                 "(Social, Information &amp; Health). Ask a question and I'll give you a "
                 "plain-language explanation with verbatim quotes and citations. "
                 "I cannot give legal advice or predict how a grievance will be decided.</p>"
-                '<p class="chip-label">Try one of these questions:</p>'
+                '<p class="chip-label" style="color:#666;font-size:0.8rem;margin-bottom:8px;">'
+                "Try one of these questions:</p>"
             )
             with gr.Row(elem_classes="chip-row"):
                 chip_btns = [
