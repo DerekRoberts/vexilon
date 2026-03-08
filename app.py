@@ -60,14 +60,16 @@ _anthropic_client: anthropic.Anthropic | None = None
 def get_openai() -> OpenAI:
     global _openai_client
     if _openai_client is None:
-        _openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+        # Reads OPENAI_API_KEY from environment automatically; raises AuthenticationError if missing
+        _openai_client = OpenAI()
     return _openai_client
 
 
 def get_anthropic() -> anthropic.Anthropic:
     global _anthropic_client
     if _anthropic_client is None:
-        _anthropic_client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        # Reads ANTHROPIC_API_KEY from environment automatically; raises AuthenticationError if missing
+        _anthropic_client = anthropic.Anthropic()
     return _anthropic_client
 
 
@@ -98,9 +100,8 @@ Response format:
 """
 
 # ─── Chunking ─────────────────────────────────────────────────────────────────
-def _get_encoder() -> tiktoken.Encoding:
-    # cl100k_base is used by text-embedding-3-small
-    return tiktoken.get_encoding("cl100k_base")
+# cl100k_base is used by text-embedding-3-small; initialised once at module load
+_ENCODER = tiktoken.get_encoding("cl100k_base")
 
 
 def chunk_text(text: str, page_num: int) -> list[dict]:
@@ -108,8 +109,7 @@ def chunk_text(text: str, page_num: int) -> list[dict]:
     Split *text* into overlapping token-based chunks.
     Returns list of dicts: {text, page, chunk_index}.
     """
-    enc = _get_encoder()
-    tokens = enc.encode(text)
+    tokens = _ENCODER.encode(text)
     chunks = []
     start = 0
     idx = 0
