@@ -18,6 +18,7 @@ Quick start:
 
 # ─── Standard Library ────────────────────────────────────────────────────────
 import os
+from collections.abc import Iterator
 from pathlib import Path
 
 # ─── Third-party: PDF ────────────────────────────────────────────────────────
@@ -219,14 +220,15 @@ def startup() -> None:
 
 
 # ─── RAG Query ────────────────────────────────────────────────────────────────
-def rag_query(message: str, history: list[dict]) -> str:
+def rag_stream(message: str, history: list[dict]) -> Iterator[str]:
     """
     Retrieve relevant chunks, build the prompt, and stream a response from Claude.
     *history* is a list of {"role": ..., "content": ...} dicts (Gradio messages format).
-    Returns the complete assistant response as a string.
+    Yields text chunks as they arrive from the Anthropic streaming API.
     """
     if _index is None:
-        return "⚠️ The index is not ready yet. Please wait for startup to complete."
+        yield "⚠️ The index is not ready yet. Please wait for startup to complete."
+        return
 
     relevant_chunks = search_index(_index, _chunks, message)
 
@@ -253,13 +255,17 @@ def rag_query(message: str, history: list[dict]) -> str:
     messages.append({"role": "user", "content": message})
 
     client = get_anthropic()
-    response = client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=1024,
-        system=full_system,
-        messages=messages,
-    )
-    return response.content[0].text
+    try:
+        with client.messages.stream(
+            model=CLAUDE_MODEL,
+            max_tokens=1024,
+            system=full_system,
+            messages=messages,
+        ) as stream:
+            for text_chunk in stream.text_stream:
+                yield text_chunk
+    except anthropic.APIError as exc:
+        yield f"\n\n⚠️ API error: {exc}"
 
 
 # ─── Gradio UI ────────────────────────────────────────────────────────────────
@@ -436,15 +442,23 @@ def build_ui() -> gr.Blocks:
         )
 
         # ── Submit handlers ───────────────────────────────────────────────────
-        def submit(message: str, history: list[dict]) -> tuple[list[dict], str]:
+        def submit(message: str, history: list[dict]) -> Iterator[tuple[list[dict], str]]:
             if not message.strip():
-                return history, ""
-            # Append user turn to history
-            history = list(history) + [{"role": "user", "content": message}]
-            # Query RAG (pass history without the current user message as "prior context")
-            response = rag_query(message, history[:-1])
-            history = history + [{"role": "assistant", "content": response}]
-            return history, ""
+                yield history, ""
+                return
+            prior_history = list(history)
+            # Append user turn; seed an empty assistant bubble for streaming
+            history = prior_history + [
+                {"role": "user", "content": message},
+                {"role": "assistant", "content": ""},
+            ]
+            yield history, ""
+            # Stream tokens from RAG; accumulate into the assistant bubble
+            accumulated = ""
+            for chunk in rag_stream(message, prior_history):
+                accumulated += chunk
+                history[-1]["content"] = accumulated
+                yield history, ""
 
         send_btn.click(
             fn=submit,
