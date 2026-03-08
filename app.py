@@ -20,7 +20,9 @@ Index pre-computation (run once after updating the PDF):
 """
 
 # ─── Standard Library ────────────────────────────────────────────────────────
+import json
 import os
+import time
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -174,7 +176,6 @@ def build_index(chunks: list[dict]) -> faiss.IndexFlatIP:
     Embed all chunks and build a FAISS inner-product index.
     Vectors are L2-normalised so inner product == cosine similarity.
     """
-    import time
     texts = [c["text"] for c in chunks]
     print(f"[index] Embedding {len(texts)} chunks locally (may take 30–90 s on CPU)…")
     t0 = time.time()
@@ -209,7 +210,6 @@ _startup_error: str | None = None   # set if startup fails; surfaced in chat UI
 
 def save_index(index: faiss.IndexFlatIP, chunks: list[dict]) -> None:
     """Persist the FAISS index and chunk metadata to pdf_cache/ for fast cold starts."""
-    import json
     faiss.write_index(index, str(INDEX_PATH))
     with open(CHUNKS_PATH, "w", encoding="utf-8") as f:
         json.dump(chunks, f, ensure_ascii=False)
@@ -221,7 +221,6 @@ def load_precomputed_index() -> tuple[faiss.IndexFlatIP, list[dict]] | tuple[Non
     Load a pre-computed FAISS index and chunks from disk if both exist.
     Returns (index, chunks) on success, (None, None) if files are missing.
     """
-    import json
     if not INDEX_PATH.exists() or not CHUNKS_PATH.exists():
         return None, None
     print(f"[startup] Loading pre-computed index from {INDEX_PATH}…")
@@ -249,10 +248,7 @@ def startup(force_rebuild: bool = False) -> None:
             if index is not None and chunks is not None:
                 _index = index
                 _chunks = chunks
-                # Still need the encoder warm for query-time token counting
-                print("[startup] Initialising tokeniser…")
-                _get_encoder()
-                # Warm the embedding model so first query isn't slow
+                # Warm the embedding model so the first query isn't slow
                 get_embed_model()
                 print("[startup] Ready.")
                 return
