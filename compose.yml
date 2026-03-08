@@ -9,8 +9,6 @@ services:
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-3-5-haiku-20241022}
-      EMBED_MODEL: ${EMBED_MODEL:-text-embedding-3-small}
       PORT: "7860"
     ports:
       - "7860:7860"
@@ -24,3 +22,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    # ── Live reload for local development ─────────────────────────────────────
+    # Usage: docker compose watch  (or: podman-compose watch)
+    # Syncs app.py edits instantly; rebuilds the image only when deps change.
+    develop:
+      watch:
+        - action: sync
+          path: ./app.py
+          target: /app/app.py
+        - action: rebuild
+          path: requirements.txt
+        - action: rebuild
+          path: Containerfile
