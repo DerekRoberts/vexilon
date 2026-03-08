@@ -31,22 +31,21 @@ def test_claude_model_default_is_not_known_bad():
     )
 
 
-def test_compose_yml_model_default_is_not_known_bad():
+def test_compose_yml_does_not_hardcode_model_name():
     """
-    The CLAUDE_MODEL fallback in compose.yml must not be a known-broken model name.
-    This is the value that actually reaches the container if no env var is set.
+    compose.yml must not hardcode a CLAUDE_MODEL default.
+    Defaults belong in app.py; putting them in compose.yml creates a second source
+    of truth that can silently override the app default and cause production outages.
     """
     import re
     from pathlib import Path
 
     compose_text = (Path(__file__).parent.parent / "compose.yml").read_text()
-    # Match:  CLAUDE_MODEL: ${CLAUDE_MODEL:-some-model-name}
-    match = re.search(r"CLAUDE_MODEL:\s*\$\{CLAUDE_MODEL:-([^}]+)\}", compose_text)
-    assert match, "Could not find CLAUDE_MODEL default in compose.yml"
-    default_in_compose = match.group(1).strip()
-    assert default_in_compose not in _KNOWN_BAD_MODEL_NAMES, (
-        f"compose.yml CLAUDE_MODEL default='{default_in_compose}' is a known-bad model name. "
-        f"Update compose.yml."
+    match = re.search(r"CLAUDE_MODEL", compose_text)
+    assert not match, (
+        "compose.yml must not set CLAUDE_MODEL. "
+        "Remove it and let app.py own the default — having two places to update "
+        "is exactly what caused the production outage."
     )
 
 
