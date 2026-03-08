@@ -18,6 +18,7 @@ Quick start:
 
 # ─── Standard Library ────────────────────────────────────────────────────────
 import os
+from collections.abc import Iterator
 from pathlib import Path
 
 # ─── Third-party: PDF ────────────────────────────────────────────────────────
@@ -219,7 +220,7 @@ def startup() -> None:
 
 
 # ─── RAG Query ────────────────────────────────────────────────────────────────
-def rag_stream(message: str, history: list[dict]) -> "Iterator[str]":
+def rag_stream(message: str, history: list[dict]) -> Iterator[str]:
     """
     Retrieve relevant chunks, build the prompt, and stream a response from Claude.
     *history* is a list of {"role": ..., "content": ...} dicts (Gradio messages format).
@@ -254,14 +255,17 @@ def rag_stream(message: str, history: list[dict]) -> "Iterator[str]":
     messages.append({"role": "user", "content": message})
 
     client = get_anthropic()
-    with client.messages.stream(
-        model=CLAUDE_MODEL,
-        max_tokens=1024,
-        system=full_system,
-        messages=messages,
-    ) as stream:
-        for text_chunk in stream.text_stream:
-            yield text_chunk
+    try:
+        with client.messages.stream(
+            model=CLAUDE_MODEL,
+            max_tokens=1024,
+            system=full_system,
+            messages=messages,
+        ) as stream:
+            for text_chunk in stream.text_stream:
+                yield text_chunk
+    except anthropic.APIError as exc:
+        yield f"\n\n⚠️ API error: {exc}"
 
 
 # ─── Gradio UI ────────────────────────────────────────────────────────────────
@@ -438,7 +442,7 @@ def build_ui() -> gr.Blocks:
         )
 
         # ── Submit handlers ───────────────────────────────────────────────────
-        def submit(message: str, history: list[dict]) -> "Iterator[tuple[list[dict], str]]":
+        def submit(message: str, history: list[dict]) -> Iterator[tuple[list[dict], str]]:
             if not message.strip():
                 yield history, ""
                 return
