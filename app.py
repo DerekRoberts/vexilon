@@ -204,19 +204,25 @@ def search_index(
 # ─── RAG App State (module-level, built at startup) ──────────────────────────
 _chunks: list[dict] = []
 _index: faiss.IndexFlatIP | None = None
+_startup_error: str | None = None   # set if startup fails; surfaced in chat UI
 
 
 def startup() -> None:
     """Load PDF, chunk, embed, and build FAISS index. Called once before Gradio starts."""
-    global _chunks, _index
-    print("[startup] Initialising tokeniser (downloads BPE vocab on first run)…")
-    _get_encoder()
-    print("[startup] Tokeniser ready.")
-    print(f"[startup] Loading PDF from {PDF_PATH}…")
-    _chunks = load_pdf_chunks(PDF_PATH)
-    print(f"[startup] {len(_chunks)} chunks loaded from {PDF_PATH.name}")
-    _index = build_index(_chunks)
-    print("[startup] Ready.")
+    global _chunks, _index, _startup_error
+    try:
+        print("[startup] Initialising tokeniser (downloads BPE vocab on first run)…")
+        _get_encoder()
+        print("[startup] Tokeniser ready.")
+        print(f"[startup] Loading PDF from {PDF_PATH}…")
+        _chunks = load_pdf_chunks(PDF_PATH)
+        print(f"[startup] {len(_chunks)} chunks loaded from {PDF_PATH.name}")
+        _index = build_index(_chunks)
+        print("[startup] Ready.")
+    except Exception as exc:  # noqa: BLE001
+        _startup_error = str(exc)
+        print(f"[startup] ⚠️  Startup failed — app will run but queries will fail: {exc}")
+        print("[startup] Set OPENAI_API_KEY and ANTHROPIC_API_KEY, then restart.")
 
 
 # ─── RAG Query ────────────────────────────────────────────────────────────────
@@ -226,8 +232,19 @@ def rag_stream(message: str, history: list[dict]) -> Iterator[str]:
     *history* is a list of {"role": ..., "content": ...} dicts (Gradio messages format).
     Yields text chunks as they arrive from the Anthropic streaming API.
     """
+    if _startup_error is not None:
+        yield (
+            "⚠️ **The app failed to start.**\n\n"
+            f"```\n{_startup_error}\n```\n\n"
+            "Make sure `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are set in your "
+            "environment, then restart the container:\n\n"
+            "```bash\nexport OPENAI_API_KEY=sk-...\n"
+            "export ANTHROPIC_API_KEY=sk-ant-...\n"
+            "podman-compose up\n```"
+        )
+        return
     if _index is None:
-        yield "⚠️ The index is not ready yet. Please wait for startup to complete."
+        yield "⚠️ The index is not ready yet. Please wait a moment and try again."
         return
 
     relevant_chunks = search_index(_index, _chunks, message)
@@ -273,14 +290,25 @@ EXAMPLE_QUESTIONS = [
     "What are my overtime rights?",
     "What is the probationary period?",
     "Can my employer change my schedule without notice?",
-    "What is my vacation entitlement as a new employee?",
-    "What does the agreement say about sick leave?",
+    "What happens if I am disciplined?",
+    "Am I entitled to union representation?",
 ]
 
-DISCLAIMER = (
-    "⚠️ **This tool references the collective agreement text only. "
+# Disclaimer rendered entirely with inline styles so Gradio theme cannot override text colour.
+DISCLAIMER_HTML = (
+    '<div style="'
+    "background-color:#fff8e1;"
+    "border-left:4px solid #f59e0b;"
+    "color:#7c4a00;"
+    "padding:10px 14px;"
+    "border-radius:4px;"
+    "font-size:0.85rem;"
+    "margin-bottom:8px;"
+    '">'
+    "⚠️ <strong style=\"color:#7c4a00;\">This tool references the collective agreement text only. "
     "It is not legal advice. "
-    "Consult your BCGEU staff representative for complex matters.**"
+    "Consult your BCGEU staff representative for complex matters.</strong>"
+    "</div>"
 )
 
 WELCOME_MESSAGE = """**Welcome to Vexilon — BCGEU Agreement Assistant**
@@ -299,6 +327,8 @@ BCGEU_CSS = """
     --accent: #008542;
     --bg: #f5f7fa;
     --border: #cdd5e0;
+    --text-primary: #333;
+    --text-secondary: #666;
 }
 
 /* App background */
@@ -306,6 +336,7 @@ BCGEU_CSS = """
     background-color: var(--bg) !important;
     max-width: 900px !important;
     margin: 0 auto !important;
+    overflow-x: hidden !important;
 }
 
 /* Header */
@@ -329,12 +360,16 @@ BCGEU_CSS = """
 
 /* Disclaimer bar */
 #disclaimer {
-    background-color: #fff8e1;
-    border-left: 4px solid #f59e0b;
-    padding: 10px 14px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    margin-bottom: 8px;
+    background-color: #fff8e1 !important;
+    border-left: 4px solid #f59e0b !important;
+    color: #7c4a00 !important;
+    padding: 10px 14px !important;
+    border-radius: 4px !important;
+    font-size: 0.85rem !important;
+    margin-bottom: 8px !important;
+}
+#disclaimer strong {
+    color: #7c4a00 !important;
 }
 
 /* Chatbot */
@@ -354,16 +389,48 @@ BCGEU_CSS = """
     border-radius: 0 4px 4px 0;
     font-style: italic;
     color: #1a2a3a;
+    /* prevent blockquotes from causing horizontal scroll on mobile */
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+/* Empty-state onboarding panel */
+#onboarding {
+    background-color: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 8px;
+}
+#onboarding p {
+    color: var(--text-primary, #333);
+    font-size: 0.95rem;
+    margin: 0 0 16px;
+}
+#onboarding .chip-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #666);
+    margin-bottom: 8px;
 }
 
 /* Example question chips */
+.example-chip {
+    display: inline-block;
+    margin: 4px !important;
+}
 .example-chip button {
     background-color: white !important;
     border: 1px solid var(--primary) !important;
     color: var(--primary) !important;
     border-radius: 20px !important;
     font-size: 0.85rem !important;
-    padding: 4px 12px !important;
+    padding: 6px 14px !important;
+    cursor: pointer !important;
+    white-space: normal !important;
+    text-align: left !important;
+    line-height: 1.3 !important;
 }
 .example-chip button:hover {
     background-color: var(--primary) !important;
@@ -378,6 +445,17 @@ BCGEU_CSS = """
 }
 #send-btn:hover {
     background-color: var(--primary-dark) !important;
+}
+
+/* Mobile: ensure input row stacks gracefully on narrow viewports */
+@media (max-width: 480px) {
+    #app-header h1 {
+        font-size: 1.1rem;
+    }
+    .example-chip button {
+        font-size: 0.8rem !important;
+        padding: 5px 10px !important;
+    }
 }
 """
 
@@ -403,10 +481,23 @@ def build_ui() -> gr.Blocks:
         )
 
         # ── Disclaimer (persistent, non-dismissible) ──────────────────────────
-        gr.HTML(f'<div id="disclaimer">{DISCLAIMER}</div>')
+        gr.HTML(DISCLAIMER_HTML)
 
-        # ── Shared state ──────────────────────────────────────────────────────
-        # No engine state needed — index is module-level
+        # ── Empty-state onboarding (visible until first message) ───────────────
+        onboarding = gr.Group(elem_id="onboarding", visible=True)
+        with onboarding:
+            gr.HTML(
+                "<p>I help BCGEU union stewards look up the 19th Main Public Service Agreement "
+                "(Social, Information &amp; Health). Ask a question and I'll give you a "
+                "plain-language explanation with verbatim quotes and citations. "
+                "I cannot give legal advice or predict how a grievance will be decided.</p>"
+                '<p class="chip-label">Try one of these questions:</p>'
+            )
+            with gr.Row(elem_classes="chip-row"):
+                chip_btns = [
+                    gr.Button(q, elem_classes="example-chip", size="sm")
+                    for q in EXAMPLE_QUESTIONS
+                ]
 
         # ── Chat interface ────────────────────────────────────────────────────
         chatbot = gr.Chatbot(
@@ -414,9 +505,7 @@ def build_ui() -> gr.Blocks:
             type="messages",
             height=480,
             show_copy_button=True,
-            bubble_full_width=False,
             render_markdown=True,
-            placeholder=WELCOME_MESSAGE,
         )
 
         # ── Input row ─────────────────────────────────────────────────────────
@@ -432,44 +521,45 @@ def build_ui() -> gr.Blocks:
             )
             send_btn = gr.Button("Send ➤", elem_id="send-btn", scale=1, variant="primary")
 
-        # ── Example questions (auto-submit on click) ──────────────────────────
-        # gr.Examples populates the input; we chain submit on selection.
-        gr.Examples(
-            examples=[[q] for q in EXAMPLE_QUESTIONS],
-            inputs=[msg_input],
-            label="Example questions — click to ask:",
-            examples_per_page=5,
-        )
-
         # ── Submit handlers ───────────────────────────────────────────────────
-        def submit(message: str, history: list[dict]) -> Iterator[tuple[list[dict], str]]:
+        def submit(
+            message: str, history: list[dict]
+        ) -> Iterator[tuple[list[dict], str, dict]]:
             if not message.strip():
-                yield history, ""
+                yield history, "", gr.update(visible=True)
                 return
             prior_history = list(history)
-            # Append user turn; seed an empty assistant bubble for streaming
+            # Append user turn; seed an empty assistant bubble for streaming.
+            # Hide onboarding on first message.
             history = prior_history + [
                 {"role": "user", "content": message},
                 {"role": "assistant", "content": ""},
             ]
-            yield history, ""
+            yield history, "", gr.update(visible=False)
             # Stream tokens from RAG; accumulate into the assistant bubble
             accumulated = ""
             for chunk in rag_stream(message, prior_history):
                 accumulated += chunk
                 history[-1]["content"] = accumulated
-                yield history, ""
+                yield history, "", gr.update(visible=False)
 
-        send_btn.click(
-            fn=submit,
-            inputs=[msg_input, chatbot],
-            outputs=[chatbot, msg_input],
-        )
-        msg_input.submit(
-            fn=submit,
-            inputs=[msg_input, chatbot],
-            outputs=[chatbot, msg_input],
-        )
+        submit_inputs = [msg_input, chatbot]
+        submit_outputs = [chatbot, msg_input, onboarding]
+
+        send_btn.click(fn=submit, inputs=submit_inputs, outputs=submit_outputs)
+        msg_input.submit(fn=submit, inputs=submit_inputs, outputs=submit_outputs)
+
+        # ── Chip click handlers — populate input and auto-submit ──────────────
+        for chip in chip_btns:
+            chip.click(
+                fn=lambda q: q,
+                inputs=[chip],
+                outputs=[msg_input],
+            ).then(
+                fn=submit,
+                inputs=submit_inputs,
+                outputs=submit_outputs,
+            )
 
     return demo
 
