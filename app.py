@@ -204,19 +204,25 @@ def search_index(
 # ─── RAG App State (module-level, built at startup) ──────────────────────────
 _chunks: list[dict] = []
 _index: faiss.IndexFlatIP | None = None
+_startup_error: str | None = None   # set if startup fails; surfaced in chat UI
 
 
 def startup() -> None:
     """Load PDF, chunk, embed, and build FAISS index. Called once before Gradio starts."""
-    global _chunks, _index
-    print("[startup] Initialising tokeniser (downloads BPE vocab on first run)…")
-    _get_encoder()
-    print("[startup] Tokeniser ready.")
-    print(f"[startup] Loading PDF from {PDF_PATH}…")
-    _chunks = load_pdf_chunks(PDF_PATH)
-    print(f"[startup] {len(_chunks)} chunks loaded from {PDF_PATH.name}")
-    _index = build_index(_chunks)
-    print("[startup] Ready.")
+    global _chunks, _index, _startup_error
+    try:
+        print("[startup] Initialising tokeniser (downloads BPE vocab on first run)…")
+        _get_encoder()
+        print("[startup] Tokeniser ready.")
+        print(f"[startup] Loading PDF from {PDF_PATH}…")
+        _chunks = load_pdf_chunks(PDF_PATH)
+        print(f"[startup] {len(_chunks)} chunks loaded from {PDF_PATH.name}")
+        _index = build_index(_chunks)
+        print("[startup] Ready.")
+    except Exception as exc:  # noqa: BLE001
+        _startup_error = str(exc)
+        print(f"[startup] ⚠️  Startup failed — app will run but queries will fail: {exc}")
+        print("[startup] Set OPENAI_API_KEY and ANTHROPIC_API_KEY, then restart.")
 
 
 # ─── RAG Query ────────────────────────────────────────────────────────────────
@@ -226,8 +232,19 @@ def rag_stream(message: str, history: list[dict]) -> Iterator[str]:
     *history* is a list of {"role": ..., "content": ...} dicts (Gradio messages format).
     Yields text chunks as they arrive from the Anthropic streaming API.
     """
+    if _startup_error is not None:
+        yield (
+            "⚠️ **The app failed to start.**\n\n"
+            f"```\n{_startup_error}\n```\n\n"
+            "Make sure `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are set in your "
+            "environment, then restart the container:\n\n"
+            "```bash\nexport OPENAI_API_KEY=sk-...\n"
+            "export ANTHROPIC_API_KEY=sk-ant-...\n"
+            "podman-compose up\n```"
+        )
+        return
     if _index is None:
-        yield "⚠️ The index is not ready yet. Please wait for startup to complete."
+        yield "⚠️ The index is not ready yet. Please wait a moment and try again."
         return
 
     relevant_chunks = search_index(_index, _chunks, message)
@@ -430,15 +447,7 @@ BCGEU_CSS = """
 
 def build_ui() -> gr.Blocks:
     """Assemble and return the Gradio Blocks application."""
-    with gr.Blocks(
-        title="Vexilon — BCGEU Agreement Assistant",
-        css=BCGEU_CSS,
-        head=(
-            '<link rel="manifest" href="/file=manifest.json">'
-            '<meta name="theme-color" content="#005691">'
-            '<meta name="viewport" content="width=device-width, initial-scale=1">'
-        ),
-    ) as demo:
+    with gr.Blocks(title="Vexilon — BCGEU Agreement Assistant") as demo:
 
         # ── Header ────────────────────────────────────────────────────────────
         gr.HTML(
@@ -472,8 +481,7 @@ def build_ui() -> gr.Blocks:
             elem_id="chatbot",
             type="messages",
             height=480,
-            show_copy_button=True,
-            bubble_full_width=False,
+            buttons=["copy"],
             render_markdown=True,
         )
 
@@ -542,4 +550,10 @@ if __name__ == "__main__":
         server_port=int(os.getenv("PORT", 7860)),
         share=False,
         allowed_paths=["./manifest.json"],
+        css=BCGEU_CSS,
+        head=(
+            '<link rel="manifest" href="/file=manifest.json">'
+            '<meta name="theme-color" content="#005691">'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        ),
     )
