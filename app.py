@@ -311,212 +311,36 @@ DISCLAIMER_HTML = (
     "</div>"
 )
 
-WELCOME_MESSAGE = """**Welcome to Vexilon — BCGEU Agreement Assistant**
-
-I help BCGEU union stewards look up the 19th Main Public Service Agreement \
-(Social, Information & Health). Ask me any question about the agreement and I'll \
-give you a plain-language explanation with verbatim quotes and citations.
-
-I can only tell you what the agreement says — I cannot give legal advice or predict \
-how a grievance will be decided."""
-
-BCGEU_CSS = """
-:root {
-    --primary: #005691;
-    --primary-dark: #003366;
-    --accent: #008542;
-    --bg: #f5f7fa;
-    --border: #cdd5e0;
-    --text-primary: #333;
-    --text-secondary: #666;
-}
-
-/* App background */
-.gradio-container {
-    background-color: var(--bg) !important;
-    max-width: 900px !important;
-    margin: 0 auto !important;
-    overflow-x: hidden !important;
-}
-
-/* Header */
-#app-header {
-    background-color: var(--primary-dark);
-    color: white;
-    padding: 16px 20px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-}
-#app-header h1 {
-    color: white !important;
-    font-size: 1.4rem;
-    margin: 0;
-}
-#app-header p {
-    color: #c8d8e8 !important;
-    font-size: 0.85rem;
-    margin: 4px 0 0;
-}
-
-/* Disclaimer bar */
-#disclaimer {
-    background-color: #fff8e1 !important;
-    border-left: 4px solid #f59e0b !important;
-    color: #7c4a00 !important;
-    padding: 10px 14px !important;
-    border-radius: 4px !important;
-    font-size: 0.85rem !important;
-    margin-bottom: 8px !important;
-}
-#disclaimer strong {
-    color: #7c4a00 !important;
-}
-
-/* Chatbot */
-#chatbot {
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background-color: white;
-}
-
-/* Ensure all message content has readable text color */
-#chatbot .message-wrap {
-    color: var(--text-primary);
-}
-
-#chatbot .message-item {
-    color: var(--text-primary);
-}
-
-/* Blockquote rendering in chat messages */
-blockquote {
-    border-left: 4px solid var(--primary);
-    background-color: #003366;
-    color: white;
-    padding: 8px 12px;
-    margin: 8px 0;
-    border-radius: 0 4px 4px 0;
-    font-style: italic;
-    /* prevent blockquotes from causing horizontal scroll on mobile */
-    max-width: 100%;
-    overflow-x: auto;
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
-}
-
-/* Ensure all text inside blockquotes is visible (white on dark background) */
-blockquote p {
-    color: white;
-}
-
-/* Empty-state onboarding panel */
-.gradio-container #onboarding {
-    background-color: white;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 20px 24px;
-    margin-bottom: 8px;
-}
-.gradio-container #onboarding p {
-    color: #333;
-    font-size: 0.95rem;
-    margin: 0 0 16px;
-}
-.gradio-container #onboarding .chip-label {
-    font-size: 0.8rem;
-    color: #666;
-    margin-bottom: 8px;
-}
-
-/* Example question chips */
-.example-chip {
-    display: inline-block;
-    margin: 4px !important;
-}
-.example-chip button {
-    background-color: white !important;
-    border: 1px solid var(--primary) !important;
-    color: var(--primary) !important;
-    border-radius: 20px !important;
-    font-size: 0.85rem !important;
-    padding: 6px 14px !important;
-    cursor: pointer !important;
-    white-space: normal !important;
-    text-align: left !important;
-    line-height: 1.3 !important;
-}
-.example-chip button:hover {
-    background-color: var(--primary) !important;
-    color: white !important;
-}
-
-/* Send button */
-#send-btn {
-    background-color: var(--primary) !important;
-    color: white !important;
-    min-width: 80px;
-}
-#send-btn:hover {
-    background-color: var(--primary-dark) !important;
-}
-
-/* Mobile: ensure input row stacks gracefully on narrow viewports */
-@media (max-width: 480px) {
-    #app-header h1 {
-        font-size: 1.1rem;
-    }
-    .example-chip button {
-        font-size: 0.8rem !important;
-        padding: 5px 10px !important;
-    }
-}
-"""
 
 
 def build_ui() -> gr.Blocks:
     """Assemble and return the Gradio Blocks application."""
-    with gr.Blocks(
-        title="Vexilon — BCGEU Agreement Assistant",
-        css=BCGEU_CSS,
-        head=(
-            '<link rel="manifest" href="/file=manifest.json">'
-            '<meta name="theme-color" content="#005691">'
-            '<meta name="viewport" content="width=device-width, initial-scale=1">'
-        ),
-    ) as demo:
+    with gr.Blocks(title="Vexilon — BCGEU Agreement Assistant") as demo:
 
         # ── Header ────────────────────────────────────────────────────────────
-        gr.HTML(
-            '<div id="app-header">'
-            "<h1>📋 Vexilon — BCGEU Agreement Assistant</h1>"
-            "<p>19th Main Public Service Agreement (Social, Information &amp; Health)</p>"
-            "</div>"
-        )
+        gr.Markdown("## 📋 Vexilon — BCGEU Agreement Assistant\n"
+                    "*19th Main Public Service Agreement (Social, Information & Health)*")
 
         # ── Disclaimer (persistent, non-dismissible) ──────────────────────────
         gr.HTML(DISCLAIMER_HTML)
 
         # ── Empty-state onboarding (visible until first message) ───────────────
-        onboarding = gr.Group(elem_id="onboarding", visible=True)
-        with onboarding:
-            gr.HTML(
-                '<p style="color:#333;font-size:0.95rem;margin:0 0 16px;">'
-                "I help BCGEU union stewards look up the 19th Main Public Service Agreement "
-                "(Social, Information &amp; Health). Ask a question and I'll give you a "
-                "plain-language explanation with verbatim quotes and citations. "
-                "I cannot give legal advice or predict how a grievance will be decided.</p>"
-                '<p class="chip-label" style="color:#666;font-size:0.8rem;margin-bottom:8px;">'
-                "Try one of these questions:</p>"
-            )
-            with gr.Row(elem_classes="chip-row"):
-                chip_btns = [
-                    gr.Button(q, elem_classes="example-chip", size="sm")
-                    for q in EXAMPLE_QUESTIONS
-                ]
+        onboarding_text = gr.HTML(
+            "<p>I help BCGEU union stewards look up the 19th Main Public Service Agreement "
+            "(Social, Information &amp; Health). Ask a question and I'll give you a "
+            "plain-language explanation with verbatim quotes and citations. "
+            "I cannot give legal advice or predict how a grievance will be decided.</p>"
+            "<p><em>Try one of these questions:</em></p>",
+            visible=True,
+        )
+        with gr.Row(visible=True) as chip_row:
+            chip_btns = [
+                gr.Button(q, size="sm")
+                for q in EXAMPLE_QUESTIONS
+            ]
 
         # ── Chat interface ────────────────────────────────────────────────────
         chatbot = gr.Chatbot(
-            elem_id="chatbot",
             type="messages",
             height=480,
             show_copy_button=True,
@@ -534,32 +358,34 @@ def build_ui() -> gr.Blocks:
                 show_label=False,
                 container=False,
             )
-            send_btn = gr.Button("Send ➤", elem_id="send-btn", scale=1, variant="primary")
+            send_btn = gr.Button("Send ➤", scale=1, variant="primary")
 
         # ── Submit handlers ───────────────────────────────────────────────────
         def submit(
             message: str, history: list[dict]
-        ) -> Iterator[tuple[list[dict], str, dict]]:
+        ) -> Iterator[tuple[list[dict], str, dict, dict]]:
+            hide = gr.update(visible=False)
+            show = gr.update(visible=True)
             if not message.strip():
-                yield history, "", gr.update(visible=True)
+                yield history, "", show, show
                 return
             prior_history = list(history)
             # Append user turn; seed an empty assistant bubble for streaming.
-            # Hide onboarding on first message.
+            # Hide both onboarding components on first message.
             history = prior_history + [
                 {"role": "user", "content": message},
                 {"role": "assistant", "content": ""},
             ]
-            yield history, "", gr.update(visible=False)
+            yield history, "", hide, hide
             # Stream tokens from RAG; accumulate into the assistant bubble
             accumulated = ""
             for chunk in rag_stream(message, prior_history):
                 accumulated += chunk
                 history[-1]["content"] = accumulated
-                yield history, "", gr.update(visible=False)
+                yield history, "", hide, hide
 
         submit_inputs = [msg_input, chatbot]
-        submit_outputs = [chatbot, msg_input, onboarding]
+        submit_outputs = [chatbot, msg_input, onboarding_text, chip_row]
 
         send_btn.click(fn=submit, inputs=submit_inputs, outputs=submit_outputs)
         msg_input.submit(fn=submit, inputs=submit_inputs, outputs=submit_outputs)
