@@ -9,8 +9,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Store HuggingFace model cache in /tmp so the non-root user can write to it
-ENV HF_HOME=/tmp/hf_cache
+# Store HuggingFace model cache in /tmp so the non-root user can write to it.
+# TRANSFORMERS_OFFLINE=1 suppresses network checks and cache-miss writes at runtime
+# since the model is baked into the image; HF_DATASETS_OFFLINE silences a related warning.
+ENV HF_HOME=/tmp/hf_cache \
+    TRANSFORMERS_OFFLINE=1 \
+    HF_DATASETS_OFFLINE=1
 
 # Install Python deps in a separate layer so code changes don't bust the cache
 COPY requirements.txt .
@@ -20,6 +24,12 @@ RUN pip install --no-cache-dir \
         torch \
         --index-url https://download.pytorch.org/whl/cpu \
     && pip install --no-cache-dir -r requirements.txt
+
+# ─── Pre-download the embedding model so cold starts don't hit the network ────
+# The model is ~90 MB; baking it into the image eliminates the HF Hub download
+# on every container start. HF_HOME is already set above.
+RUN python3 -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" \
+    && echo "[build] Embedding model cached."
 
 # ─── App layer ────────────────────────────────────────────────────────────────
 COPY app.py manifest.json ./
