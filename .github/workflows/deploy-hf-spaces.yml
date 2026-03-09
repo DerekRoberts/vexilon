@@ -29,12 +29,6 @@ jobs:
           fetch-depth: 0        # full history so git push works correctly
           lfs: false            # no LFS — pdf_cache/ files are regular git objects
 
-      - name: Install git-xet
-        run: |
-          curl -sL "https://github.com/xetdata/xet-tools/releases/download/v0.14.4/xet-linux-x86_64.tar.gz" \
-            | tar xz -C /usr/local/bin git-xet xet
-          git xet install
-
       - name: Push to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}

@@ -3,7 +3,9 @@ title: Vexilon — BCGEU Agreement Assistant
 emoji: 📋
 colorFrom: blue
 colorTo: indigo
-sdk: docker
+sdk: gradio
+sdk_version: "5.50.0"
+app_file: app.py
 pinned: false
 license: mit
 short_description: Look up the BCGEU 19th Main Public Service Agreement
@@ -106,15 +108,16 @@ All settings are optional — defaults match the product specification.
 
 ## Hugging Face Spaces Deployment
 
-The Space runs as a Docker container built from [`Containerfile`](Containerfile).
-The embedding model is baked into the image at build time — no internet access or model
-download at runtime. `pdf_cache/` (PDF, FAISS index, chunks) is committed to the repo and
-served from the container.
+The Space uses the Gradio SDK (`sdk: gradio`). HF installs `requirements.txt`, runs `app.py`,
+and handles `pdf_cache/` files directly. No Docker build required on the HF side.
+
+> **Note:** [`Containerfile`](Containerfile) is still used for local development with
+> `podman-compose watch`. It is ignored by HF Spaces.
 
 ### Automated deploy (GitHub Actions)
 
 Every published GitHub release triggers [`.github/workflows/deploy-hf-spaces.yml`](.github/workflows/deploy-hf-spaces.yml),
-which pushes HEAD to the HF Space repo and triggers a Docker rebuild.
+which pushes HEAD to the HF Space git repo and triggers a redeploy.
 
 **Required GitHub secret:**
 
@@ -131,14 +134,9 @@ which pushes HEAD to the HF Space repo and triggers a Docker rebuild.
 ### Manual deploy (one-time setup or re-deploy)
 
 ````bash
-# Install git-xet (required — HF rejects binary files without it)
-curl -sL "https://github.com/xetdata/xet-tools/releases/download/v0.14.4/xet-linux-x86_64.tar.gz" \
-  | tar xz -C ~/.local/bin git-xet xet
-git xet install   # registers xet as a git filter in ~/.gitconfig
-
-# Add HF Space as remote and push
+# Add HF Space as remote and push (token as password)
 git remote add hf "https://DerekRoberts:YOUR_HF_TOKEN@huggingface.co/spaces/DerekRoberts/vexilon"
-git push hf main:main --force
+git push hf main:main --force --no-verify
 ````
 
 ### Running tests

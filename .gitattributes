@@ -1,6 +1,0 @@
-# ─── Hugging Face Xet storage ────────────────────────────────────────────────
-# Binary files in pdf_cache/ are stored via HF Xet when pushing to HF Spaces.
-# This has no effect when pushing to GitHub (regular git object store is used).
-pdf_cache/*.pdf    filter=xet diff=xet merge=xet -text
-pdf_cache/*.faiss  filter=xet diff=xet merge=xet -text
-pdf_cache/*.json   filter=xet diff=xet merge=xet -text
