@@ -1,3 +1,16 @@
+---
+title: Vexilon — BCGEU Agreement Assistant
+emoji: 📋
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+sdk_version: "5.50.0"
+app_file: app.py
+pinned: false
+license: mit
+short_description: Look up the BCGEU 19th Main Public Service Agreement
+---
+
 # Vexilon — BCGEU Agreement Assistant
 
 AI chatbot for BCGEU union stewards to look up the 19th Main Public Service Agreement
@@ -20,7 +33,7 @@ article and page citations.
 
 ## Hosted
 
-> 🚀 **Coming soon** — Hugging Face Space URL will be linked here once the Space is live.
+🚀 **Live:** https://huggingface.co/spaces/DerekRoberts/vexilon
 
 ## Quick Start
 
@@ -95,9 +108,55 @@ All settings are optional — defaults match the product specification.
 
 ## Hugging Face Spaces Deployment
 
-Set `ANTHROPIC_API_KEY` as a Spaces secret. The `pdf_cache/` directory is committed to the
-repo and available at runtime. The embedding model is baked into the container image — no
-internet access required at runtime. No persistent volume is required.
+The Space uses the Gradio SDK (`sdk: gradio`). HF installs [`requirements.txt`](requirements.txt)
+and runs [`app.py`](app.py) directly. [`Containerfile`](Containerfile) is used for local
+development only and is ignored by HF Spaces.
+
+### Binary files (PDF, FAISS index)
+
+HF Spaces does not accept binary files via git push. Instead, [`app.py`](app.py) downloads
+`pdf_cache/` assets from this public GitHub repo at startup if they are absent:
+
+- `pdf_cache/main_public_service_19th.pdf` — the collective agreement
+- `pdf_cache/index.faiss` — pre-built FAISS index
+- `pdf_cache/chunks.json` — pre-built chunk metadata
+
+This is a no-op when running locally (files are already present).
+
+### Automated deploy (GitHub Actions)
+
+Every published GitHub release triggers [`.github/workflows/deploy-hf-spaces.yml`](.github/workflows/deploy-hf-spaces.yml),
+which strips `pdf_cache/` from the commit and pushes code-only to the HF Space.
+
+**Required GitHub secret:**
+
+| Secret | Value |
+|---|---|
+| `HF_TOKEN` | Hugging Face write-scoped access token ([settings/tokens](https://huggingface.co/settings/tokens)) |
+
+**Required HF Space secret** (set in [Space settings](https://huggingface.co/spaces/DerekRoberts/vexilon/settings)):
+
+| Secret | Value |
+|---|---|
+| `ANTHROPIC_API_KEY` | Anthropic API key |
+
+### Manual deploy (one-time setup or re-deploy)
+
+````bash
+# Create a fresh orphan snapshot with no history (required — HF scans full git history
+# for binary files, so amending is not enough)
+git checkout --orphan hf-snapshot
+git rm --cached -r pdf_cache/
+git commit -m "deploy: manual"
+
+# Push to HF Space (token as password)
+git remote add hf "https://DerekRoberts:YOUR_HF_TOKEN@huggingface.co/spaces/DerekRoberts/vexilon"
+git push hf hf-snapshot:main --force --no-verify
+
+# Return to your working branch
+git switch -
+git branch -D hf-snapshot
+````
 
 ### Running tests
 
