@@ -1817,7 +1817,7 @@ dev = [
 requires-dist = [
     { name = "anthropic", specifier = ">=0.84.0" },
     { name = "faiss-cpu", specifier = ">=1.8.0" },
-    { name = "gradio", specifier = ">=6.7.0,<6.7.1" },
+    { name = "gradio", specifier = ">=6.7.0" },
     { name = "pypdf", specifier = ">=6.0.0" },
     { name = "sentence-transformers", specifier = ">=5.0.0" },
     { name = "tiktoken", specifier = ">=0.7.0" },
