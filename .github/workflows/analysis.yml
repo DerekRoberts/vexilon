@@ -45,6 +45,11 @@ jobs:
           # Bust the cache when dependencies change (new model version, etc.)
           key: hf-${{ runner.os }}-${{ hashFiles('uv.lock') }}
 
+      - name: Validate requirements.txt resolves against public indexes
+        # Proves every pinned version in requirements.txt actually exists on PyPI
+        # and the PyTorch CPU wheel index. --dry-run resolves without downloading.
+        run: pip install --dry-run -r requirements.txt
+
       - name: Install dependencies
         run: uv sync
 
