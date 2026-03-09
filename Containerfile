@@ -7,8 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Install uv — pin version for reproducible builds; Renovate will keep this current
+COPY --from=ghcr.io/astral-sh/uv:0.10.9 /uv /usr/local/bin/uv
 
 WORKDIR /app
 
