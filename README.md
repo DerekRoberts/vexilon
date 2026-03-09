@@ -106,9 +106,40 @@ All settings are optional — defaults match the product specification.
 
 ## Hugging Face Spaces Deployment
 
-Set `ANTHROPIC_API_KEY` as a Spaces secret. The `pdf_cache/` directory is committed to the
-repo and available at runtime. The embedding model is baked into the container image — no
-internet access required at runtime. No persistent volume is required.
+The Space runs as a Docker container built from [`Containerfile`](Containerfile).
+The embedding model is baked into the image at build time — no internet access or model
+download at runtime. `pdf_cache/` (PDF, FAISS index, chunks) is committed to the repo and
+served from the container.
+
+### Automated deploy (GitHub Actions)
+
+Every published GitHub release triggers [`.github/workflows/deploy-hf-spaces.yml`](.github/workflows/deploy-hf-spaces.yml),
+which pushes HEAD to the HF Space repo and triggers a Docker rebuild.
+
+**Required GitHub secret:**
+
+| Secret | Value |
+|---|---|
+| `HF_TOKEN` | Hugging Face write-scoped access token ([settings/tokens](https://huggingface.co/settings/tokens)) |
+
+**Required HF Space secret** (set in [Space settings](https://huggingface.co/spaces/DerekRoberts/vexilon/settings)):
+
+| Secret | Value |
+|---|---|
+| `ANTHROPIC_API_KEY` | Anthropic API key |
+
+### Manual deploy (one-time setup or re-deploy)
+
+````bash
+# Install git-xet (required — HF rejects binary files without it)
+curl -sL "https://github.com/xetdata/xet-tools/releases/download/v0.14.4/xet-linux-x86_64.tar.gz" \
+  | tar xz -C ~/.local/bin git-xet xet
+git xet install   # registers xet as a git filter in ~/.gitconfig
+
+# Add HF Space as remote and push
+git remote add hf "https://DerekRoberts:YOUR_HF_TOKEN@huggingface.co/spaces/DerekRoberts/vexilon"
+git push hf main:main --force
+````
 
 ### Running tests
 
