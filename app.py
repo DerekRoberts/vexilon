@@ -424,8 +424,9 @@ def build_ui() -> gr.Blocks:
 
         # ── Chat interface ────────────────────────────────────────────────────
         chatbot = gr.Chatbot(
+            type="messages",
             height=480,
-            buttons=["copy"],
+            show_copy_button=True,
             render_markdown=True,
         )
 
