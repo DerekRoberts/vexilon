@@ -15,5 +15,4 @@ jobs:
     with:
       space_name: 'DerekRoberts/landru'
       environment: 'test'
-    secrets:
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    secrets: inherit
