@@ -31,7 +31,8 @@ jobs:
           git config user.email "github-actions@github.com"
           git config user.name "GitHub Actions"
           git remote add hf "https://DerekRoberts:${HF_TOKEN}@huggingface.co/spaces/${{ inputs.space_name }}"
+          COMMIT_MSG=$(git log -1 --format='%s')
           git checkout --orphan hf-snapshot
           git rm --cached -r pdf_cache/
-          git commit -m "deploy: $(git log -1 --format='%s' HEAD@{1})"
+          git commit -m "deploy: $COMMIT_MSG"
           git push hf hf-snapshot:main --force
