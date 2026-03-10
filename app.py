@@ -3,7 +3,6 @@ app.py — Vexilon: BCGEU Agreement Assistant
 --------------------------------------------
 Tech stack:
   - pypdf                : PDF → pages with page number preservation
-  - tiktoken             : Token counting for chunking
   - sentence-transformers: Local CPU embeddings (all-MiniLM-L6-v2, no API key)
   - FAISS                : In-memory vector index (no server process)
   - Anthropic            : Claude (claude-haiku-4-5) for responses
@@ -36,10 +35,6 @@ os.environ.setdefault("HF_HOME", "/tmp/hf_cache")
 # ─── Third-party: PDF ────────────────────────────────────────────────────────
 print("[boot] Importing pypdf...", flush=True)
 from pypdf import PdfReader
-
-# ─── Third-party: Tokenizer ──────────────────────────────────────────────────
-print("[boot] Importing tiktoken...", flush=True)
-import tiktoken
 
 # ─── Third-party: Embeddings (local, no API key) ────────────────────────────
 print("[boot] Importing sentence_transformers (pulls torch)...", flush=True)
@@ -130,33 +125,32 @@ Response format:
 """
 
 # ─── Chunking ─────────────────────────────────────────────────────────────────
-# cl100k_base is used by text-embedding-3-small.
-# Lazy init: tiktoken downloads the BPE vocab (~1 MB) on first call if not cached;
-# we init inside startup() where we already have print() context.
-_ENCODER: tiktoken.Encoding | None = None
-
-
-def _get_encoder() -> tiktoken.Encoding:
-    global _ENCODER
-    if _ENCODER is None:
-        _ENCODER = tiktoken.get_encoding("cl100k_base")
-    return _ENCODER
-
 
 def chunk_text(text: str, page_num: int) -> list[dict]:
     """
-    Split *text* into overlapping token-based chunks.
+    Split *text* into overlapping token-based chunks using the embedding model's tokenizer.
     Returns list of dicts: {text, page, chunk_index}.
     """
-    enc = _get_encoder()
-    tokens = enc.encode(text)
+    tokenizer = get_embed_model().tokenizer
+    encoding = tokenizer(text, add_special_tokens=False, return_offsets_mapping=True)
+    tokens = encoding.input_ids
+    offsets = encoding.offset_mapping
     chunks = []
+    
+    if not tokens:
+        return chunks
+        
     start = 0
     idx = 0
     while start < len(tokens):
         end = min(start + CHUNK_SIZE, len(tokens))
-        chunk_tokens = tokens[start:end]
-        chunk_text_str = enc.decode(chunk_tokens)
+        
+        # We need the original text that spans these tokens to preserve original case
+        chunk_char_start = offsets[start][0]
+        chunk_char_end = offsets[end - 1][1]
+        
+        chunk_text_str = text[chunk_char_start:chunk_char_end]
+        
         chunks.append({
             "text": chunk_text_str,
             "page": page_num,
@@ -291,6 +285,7 @@ def startup(force_rebuild: bool = False) -> None:
     """
     global _chunks, _index, _startup_error
     try:
+        get_anthropic()  # Ping early to catch missing ANTHROPIC_API_KEY
         _fetch_pdf_cache_if_missing()
         if not force_rebuild:
             index, chunks = load_precomputed_index()
@@ -303,9 +298,6 @@ def startup(force_rebuild: bool = False) -> None:
                 return
 
         # ── Slow path: build from scratch ────────────────────────────────────
-        print("[startup] Initialising tokeniser (downloads BPE vocab on first run)…")
-        _get_encoder()
-        print("[startup] Tokeniser ready.")
         print(f"[startup] Loading PDF from {PDF_PATH}…")
         _chunks = load_pdf_chunks(PDF_PATH)
         print(f"[startup] {len(_chunks)} chunks loaded from {PDF_PATH.name}")

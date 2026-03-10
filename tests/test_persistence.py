@@ -173,7 +173,7 @@ def test_startup_slow_path_builds_and_saves(monkeypatch, tmp_path):
     monkeypatch.setattr(app, "load_pdf_chunks", lambda _path: fake_chunks)
     monkeypatch.setattr(app, "build_index", lambda chunks: fake_index)
     monkeypatch.setattr(app, "save_index", lambda idx, cks: save_calls.append((idx, cks)))
-    monkeypatch.setattr(app, "_get_encoder", lambda: None)   # skip tiktoken init print
+
 
     app.startup(force_rebuild=True)
 
@@ -202,7 +202,7 @@ def test_startup_slow_path_skips_precomputed_even_if_present(monkeypatch, tmp_pa
     monkeypatch.setattr(app, "load_pdf_chunks", lambda _: fresh_chunks)
     monkeypatch.setattr(app, "build_index", lambda _: fresh_index)
     monkeypatch.setattr(app, "save_index", lambda idx, cks: None)
-    monkeypatch.setattr(app, "_get_encoder", lambda: None)
+
 
     app.startup(force_rebuild=True)
 

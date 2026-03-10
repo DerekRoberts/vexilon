@@ -294,12 +294,12 @@ App startup
   └── Load PDF from pdf_cache/
   └── Parse pages with pypdf (preserve page numbers)
   └── Chunk text (512 tokens, 100 token overlap)
-  └── Embed all chunks with text-embedding-3-small
+  └── Embed all chunks with all-MiniLM-L6-v2
   └── Build FAISS index in memory
   └── Ready
 
 User sends message
-  └── Embed user query with text-embedding-3-small
+  └── Embed user query with all-MiniLM-L6-v2
   └── FAISS similarity search → top-5 chunks (with page numbers)
   └── Build prompt:
         system: [citation-enforcement rules + agreement context]
@@ -368,7 +368,7 @@ Open `http://localhost:7860`.
 ### Hugging Face Spaces
 
 - App type: Gradio
-- Secrets: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`
+- Secrets: `ANTHROPIC_API_KEY`
 - The `pdf_cache/` directory is committed to the repo and available at runtime
 - No persistent volume required (FAISS index rebuilt on each cold start — acceptable for this scale)
 

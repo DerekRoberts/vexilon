@@ -70,7 +70,7 @@ def test_full_pipeline_returns_semantically_relevant_chunk():
     The top result must be the matching topic — not the unrelated one.
 
     This is the Renovate safety net: it validates that sentence-transformers, faiss-cpu,
-    tiktoken, and numpy all still interoperate after a version bump.
+    and numpy all still interoperate after a version bump.
     """
     vacation_text = (
         "Employees are entitled to annual vacation leave. "
