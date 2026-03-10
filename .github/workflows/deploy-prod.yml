@@ -13,5 +13,6 @@ jobs:
     uses: ./.github/workflows/deploy-hf-spaces-reusable.yml
     with:
       space_name: 'DerekRoberts/vexilon'
+      environment: 'prod'
     secrets:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}

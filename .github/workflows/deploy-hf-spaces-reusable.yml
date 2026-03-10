@@ -7,6 +7,10 @@ on:
         description: 'The target Hugging Face Space (e.g., DerekRoberts/landru)'
         required: true
         type: string
+      environment:
+        description: 'The GitHub environment to deploy to (e.g., test, prod)'
+        required: false
+        type: string
     secrets:
       HF_TOKEN:
         required: true
@@ -15,6 +19,7 @@ jobs:
   deploy:
     name: Push to ${{ inputs.space_name }}
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     permissions:
       contents: read
     steps:
