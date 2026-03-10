@@ -9,6 +9,8 @@ permissions: {}
 
 jobs:
   deploy-test:
+    permissions:
+      contents: read
     uses: ./.github/workflows/deploy-hf-spaces-reusable.yml
     with:
       space_name: 'DerekRoberts/landru'

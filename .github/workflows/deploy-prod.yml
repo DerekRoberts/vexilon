@@ -8,6 +8,8 @@ permissions: {}
 
 jobs:
   deploy-prod:
+    permissions:
+      contents: read
     uses: ./.github/workflows/deploy-hf-spaces-reusable.yml
     with:
       space_name: 'DerekRoberts/vexilon'
