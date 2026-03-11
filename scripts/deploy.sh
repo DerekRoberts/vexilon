@@ -39,7 +39,7 @@ function cleanup() {
     git checkout "$ORIGINAL_REF" 2>/dev/null || true
   fi
   git branch -D hf-snapshot 2>/dev/null || true
-  git config --local --unset http.https://huggingface.co/.extraheader 2>/dev/null || true
+  git config --local --unset credential.https://huggingface.co.helper 2>/dev/null || true
   git remote remove hf 2>/dev/null || true
 }
 trap cleanup EXIT
@@ -47,7 +47,7 @@ trap cleanup EXIT
 # Remove the remote if it already exists
 git remote remove hf 2>/dev/null || true
 git remote add hf "https://huggingface.co/spaces/${SPACE_NAME}"
-git config --local http.https://huggingface.co/.extraheader "Authorization: Bearer ${HF_TOKEN}"
+git config --local credential.https://huggingface.co.helper "!f() { echo \"username=api\"; echo \"password=\${HF_TOKEN}\"; }; f"
 
 COMMIT_MSG=$(git log -1 --format='%s')
 
