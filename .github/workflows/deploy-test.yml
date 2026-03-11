@@ -1,6 +1,7 @@
 name: Deploy TEST
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -8,8 +9,6 @@ on:
       - 'app.py'
       - 'requirements.txt'
       - 'pdf_cache/**'
-      - 'scripts/deploy.sh'
-      - 'Containerfile'
 
 permissions: {}
 
