@@ -8,6 +8,8 @@ on:
     paths:
       - 'app.py'
       - 'requirements.txt'
+      - 'pyproject.toml'
+      - 'uv.lock'
       - 'pdf_cache/**'
 
 permissions: {}
