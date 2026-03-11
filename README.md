@@ -48,11 +48,16 @@ article and page citations.
 
 **Recommended for local development — container with live reload:**
 
-````bash
+podman-compose watch
+```bash
 export ANTHROPIC_API_KEY=sk-ant-...
 
-podman-compose watch
-````
+# For live reload, use Docker:
+docker compose watch
+
+# For Podman, use:
+podman-compose up --build
+```
 
 `app.py` edits are synced instantly into the running container — no rebuild needed.
 `requirements.txt` or `Containerfile` changes trigger a full rebuild automatically.
