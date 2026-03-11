@@ -220,7 +220,6 @@ def search_index(
 # ─── RAG App State (module-level, built at startup) ──────────────────────────
 _chunks: list[dict] = []
 _index: faiss.IndexFlatIP | None = None
-_startup_error: str | None = None   # set if startup fails; surfaced in chat UI
 
 
 def save_index(index: faiss.IndexFlatIP, chunks: list[dict]) -> None:
@@ -283,31 +282,26 @@ def startup(force_rebuild: bool = False) -> None:
     After updating the agreement PDF, run:
         python -c "from app import startup; startup(force_rebuild=True)"
     """
-    global _chunks, _index, _startup_error
-    try:
-        get_anthropic()  # Ping early to catch missing ANTHROPIC_API_KEY
-        _fetch_pdf_cache_if_missing()
-        if not force_rebuild:
-            index, chunks = load_precomputed_index()
-            if index is not None and chunks is not None:
-                _index = index
-                _chunks = chunks
-                # Warm the embedding model so the first query isn't slow
-                get_embed_model()
-                print("[startup] Ready.")
-                return
+    global _chunks, _index
+    get_anthropic()  # Ping early to catch missing ANTHROPIC_API_KEY
+    _fetch_pdf_cache_if_missing()
+    if not force_rebuild:
+        index, chunks = load_precomputed_index()
+        if index is not None and chunks is not None:
+            _index = index
+            _chunks = chunks
+            # Warm the embedding model so the first query isn't slow
+            get_embed_model()
+            print("[startup] Ready.")
+            return
 
-        # ── Slow path: build from scratch ────────────────────────────────────
-        print(f"[startup] Loading PDF from {PDF_PATH}…")
-        _chunks = load_pdf_chunks(PDF_PATH)
-        print(f"[startup] {len(_chunks)} chunks loaded from {PDF_PATH.name}")
-        _index = build_index(_chunks)
-        save_index(_index, _chunks)
-        print("[startup] Ready.")
-    except Exception as exc:  # noqa: BLE001
-        _startup_error = str(exc)
-        print(f"[startup] ⚠️  Startup failed — app will run but queries will fail: {exc}")
-        print("[startup] Set ANTHROPIC_API_KEY, then restart.")
+    # ── Slow path: build from scratch ────────────────────────────────────
+    print(f"[startup] Loading PDF from {PDF_PATH}…")
+    _chunks = load_pdf_chunks(PDF_PATH)
+    print(f"[startup] {len(_chunks)} chunks loaded from {PDF_PATH.name}")
+    _index = build_index(_chunks)
+    save_index(_index, _chunks)
+    print("[startup] Ready.")
 
 
 # ─── RAG Query ────────────────────────────────────────────────────────────────
@@ -317,16 +311,6 @@ def rag_stream(message: str, history: list[dict]) -> Iterator[str]:
     *history* is a list of {"role": ..., "content": ...} dicts (Gradio messages format).
     Yields text chunks as they arrive from the Anthropic streaming API.
     """
-    if _startup_error is not None:
-        yield (
-            "⚠️ **The app failed to start.**\n\n"
-            f"```\n{_startup_error}\n```\n\n"
-            "Make sure `ANTHROPIC_API_KEY` is set in your "
-            "environment, then restart the container:\n\n"
-            "```bash\nexport ANTHROPIC_API_KEY=sk-ant-...\n"
-            "podman-compose up\n```"
-        )
-        return
     if _index is None:
         yield "⚠️ The index is not ready yet. Please wait a moment and try again."
         return

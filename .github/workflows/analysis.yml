@@ -78,14 +78,22 @@ jobs:
           podman run -d --rm -p 7860:7860 --name vexilon-app -e ANTHROPIC_API_KEY=sk-ant-test123 vexilon-test
 
       - name: Wait for Healthcheck
-        # Retry curl against the Gradio UI port. The healthcheck timeout is 30s.
+        # Retry curl against the Gradio UI port. The healthcheck timeout is 60s.
         run: |
           for i in {1..30}; do
             if curl -f http://localhost:7860 > /dev/null 2>&1; then
               echo "Container is healthy!"
               exit 0
             fi
-            echo "Waiting for container..."
+            
+            # Check if container is still running. If it crashed (e.g. missing config), fail now.
+            if ! podman inspect vexilon-app --format '{{.State.Running}}' 2>/dev/null | grep -q 'true'; then
+              echo "Container died unexpectedly! Dumping logs..."
+              podman logs vexilon-app
+              exit 1
+            fi
+
+            echo "Waiting for container ($i/30)..."
             sleep 2
           done
           echo "Healthcheck timed out."
