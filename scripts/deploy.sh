@@ -28,6 +28,9 @@ if [ -n "${GITHUB_ACTIONS:-}" ]; then
     git config user.name "GitHub Actions"
 fi
 
+# Make sure there is no previous branch
+git branch -D hf-snapshot 2>/dev/null || true
+
 # Make sure we are at the root of the repo
 cd "$(dirname "$0")/.."
 
@@ -55,8 +58,8 @@ COMMIT_MSG=$(git log -1 --format='%s')
 git branch -D hf-snapshot 2>/dev/null || true
 git checkout --orphan hf-snapshot
 
-# Remove cache files from index
-git rm --cached -r pdf_cache/ 2>/dev/null || true
+# Remove cache files completely
+rm -rf pdf_cache/ 2>/dev/null || true
 
 # Commit the code-only snapshot
 git commit -m "deploy: $COMMIT_MSG"
