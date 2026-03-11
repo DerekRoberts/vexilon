@@ -19,6 +19,4 @@ jobs:
       - name: Push code-only snapshot to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          chmod +x ./scripts/deploy.sh
-          ./scripts/deploy.sh "DerekRoberts/vexilon"
+        run: ./scripts/deploy.sh "DerekRoberts/vexilon"
