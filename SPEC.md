@@ -299,13 +299,15 @@ App startup
   └── Ready
 
 User sends message
-  └── Embed user query with all-MiniLM-L6-v2
+  └── Condense Query (Claude)
+        └── [conversation history + new message] → standalone search query
+  └── Embed condensed query with all-MiniLM-L6-v2
   └── FAISS similarity search → top-5 chunks (with page numbers)
-  └── Build prompt:
-        system: [citation-enforcement rules + agreement context]
+  └── Build final prompt:
+        system: [citation-rules + agreement context + continuity rule]
         user: [conversation history + new query]
         context: [retrieved chunks with page numbers]
-  └── Send to Claude API (claude-3-5-haiku-20241022)
+  └── Send to Claude API (claude-3-5-haiku-4-5)
   └── Stream response to Gradio chat interface
   └── Append to conversation history
 ```
@@ -336,7 +338,13 @@ The system prompt will enforce:
 | `all-MiniLM-L6-v2` embeddings | $0 — runs locally on CPU | $0 |
 | **Total** | | **~$5–15 CAD/month** |
 
-Single API dependency (Anthropic only). The FAISS index is pre-computed once locally and committed to the repo; embeddings have zero runtime cost. Index must be regenerated when the agreement PDF changes (~every 3–5 years).
+### 8.5 Context Awareness (Query Condensing)
+
+To ensure multi-turn conversations are reliable, the system uses the **Query Condensing** pattern:
+
+1.  **Reasoning**: Vague follow-up questions (e.g., "What about for part-time?") yield poor similarity results if searched directly.
+2.  **Implementation**: A fast LLM pass (Claude) reconstructs the user's intent into a standalone query using the conversation history.
+3.  **Benefit**: Decouples the "conversational brain" from the "retrieval search," ensuring the FAISS index always receives high-fidelity queries even for vague follow-ups.
 
 ---
 

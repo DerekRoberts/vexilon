@@ -113,6 +113,8 @@ markdown blockquote (> "...") followed by its citation: — Article [X], [Title]
 5. Do not predict outcomes, advise on strategy, or offer legal opinions.
 6. Tone: plain language. Your audience is new stewards with no legal background.
 7. If multiple clauses are relevant, quote each one separately with its own citation.
+8. Maintain conversational continuity. If the user asks a follow-up question, use the previous \
+conversation context and the provided excerpts to provide a coherent answer.
 
 Response format:
 
@@ -305,6 +307,49 @@ def startup(force_rebuild: bool = False) -> None:
 
 
 # ─── RAG Query ────────────────────────────────────────────────────────────────
+def condense_query(message: str, history: list[dict]) -> str:
+    """
+    Use Claude to condense conversation history and the latest message into a 
+    standalone, search-friendly query.
+    """
+    if not history:
+        return message
+
+    client = get_anthropic()
+    
+    # Simple history formatting
+    context_lines = []
+    for turn in history[-3:]:  # Last 3 turns for context
+        role = "User" if turn["role"] == "user" else "Assistant"
+        # Truncate content for the condensation prompt
+        content = turn["content"][:200] + ("..." if len(turn["content"]) > 200 else "")
+        context_lines.append(f"{role}: {content}")
+    
+    context_str = "\n".join(context_lines)
+
+    prompt = (
+        "Given the following conversation history and a follow-up question, "
+        "rephrase the question to be a standalone search query that captures "
+        "the full intent. Only provide the rephrased query, nothing else.\n\n"
+        f"History:\n{context_str}\n\n"
+        f"Follow-up question: {message}\n\n"
+        "Standalone query:"
+    )
+
+    try:
+        response = client.messages.create(
+            model=CLAUDE_MODEL,
+            max_tokens=100,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        condensed = response.content[0].text.strip().strip('"')
+        print(f"[rag] Condensed query: '{message}' -> '{condensed}'")
+        return condensed
+    except Exception as exc:
+        print(f"[rag] Query condensation failed: {exc}. Using raw message.")
+        return message
+
+
 def rag_stream(message: str, history: list[dict]) -> Iterator[str]:
     """
     Retrieve relevant chunks, build the prompt, and stream a response from Claude.
@@ -315,7 +360,9 @@ def rag_stream(message: str, history: list[dict]) -> Iterator[str]:
         yield "⚠️ The index is not ready yet. Please wait a moment and try again."
         return
 
-    relevant_chunks = search_index(_index, _chunks, message)
+    # Rewrite query for RAG if there is history
+    query = condense_query(message, history)
+    relevant_chunks = search_index(_index, _chunks, query)
 
     # Build context block from retrieved chunks
     context_parts = []
