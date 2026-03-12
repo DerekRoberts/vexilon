@@ -67,7 +67,7 @@ _GITHUB_RAW_BASE = (
     "https://raw.githubusercontent.com/DerekRoberts/vexilon/main/pdf_cache"
 )
 
-CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5")
+CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-3-5-haiku-20241022")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 512))       # tokens per chunk
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 100)) # token overlap
@@ -465,6 +465,7 @@ def build_ui() -> gr.Blocks:
             height=480,
             buttons=["copy"],
             render_markdown=True,
+            type="messages",
         )
 
         # ── Input row ─────────────────────────────────────────────────────────

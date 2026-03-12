@@ -261,7 +261,7 @@ Each response must follow this structure:
 
 | Component | Choice | Rationale |
 |---|---|---|
-| **LLM** | Anthropic Claude (`claude-haiku-4-5`) | Best-in-class instruction following; reliable citation behaviour; pay-per-use; Haiku sufficient for citation-grounded retrieval |
+| **LLM** | Anthropic Claude (`claude-3-5-haiku-20241022`) | Best-in-class instruction following; reliable citation behaviour; pay-per-use; Haiku sufficient for citation-grounded retrieval |
 | **Embeddings** | `all-MiniLM-L6-v2` via `sentence-transformers` (local CPU) | No API key; no per-query cost; 80 MB model; runs on CPU; index pre-computed and committed to repo for fast cold starts |
 | **Vector Store** | FAISS (in-memory, pre-computed index on disk) | No server process; index loaded from disk at startup (<1s); pre-computed once per agreement update |
 | **PDF Parsing** | `pypdf` | Lightweight, already available; preserves page numbers |
@@ -307,7 +307,7 @@ User sends message
         system: [citation-rules + agreement context + continuity rule]
         user: [conversation history + new query]
         context: [retrieved chunks with page numbers]
-  └── Send to Claude API (claude-3-5-haiku-4-5)
+  └── Send to Claude API (claude-3-5-haiku-20241022)
   └── Stream response to Gradio chat interface
   └── Append to conversation history
 ```
@@ -334,7 +334,7 @@ The system prompt will enforce:
 
 | Component | Rate | Estimated Monthly (moderate use) |
 |---|---|---|
-| `claude-haiku-4-5` | $0.80/M input tokens, $4.00/M output | ~$6–18 CAD |
+| `claude-3-5-haiku-20241022` | $0.80/M input tokens, $4.00/M output | ~$6–18 CAD |
 | `all-MiniLM-L6-v2` embeddings | $0 — runs locally on CPU | $0 |
 | **Total** | | **~$6–18 CAD/month** |
 
@@ -387,7 +387,7 @@ Open `http://localhost:7860`.
 | Variable | Default | Description |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | *(required)* | Anthropic API key |
-| `CLAUDE_MODEL` | `claude-haiku-4-5` | Claude model for responses |
+| `CLAUDE_MODEL` | `claude-3-5-haiku-20241022` | Claude model for responses |
 | `EMBED_MODEL` | `all-MiniLM-L6-v2` | Local sentence-transformers embedding model |
 | `PORT` | `7860` | Gradio listen port |
 | `SIMILARITY_TOP_K` | `5` | Chunks retrieved per query |
