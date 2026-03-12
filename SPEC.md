@@ -391,6 +391,8 @@ Open `http://localhost:7860`.
 | `SIMILARITY_TOP_K` | `5` | Chunks retrieved per query |
 | `CHUNK_SIZE` | `512` | Tokens per chunk |
 | `CHUNK_OVERLAP` | `100` | Token overlap between chunks |
+| `CONDENSE_QUERY_HISTORY_TURNS` | `3` | Number of previous turns used for context condensation |
+| `CONDENSE_QUERY_CONTENT_MAX_LEN` | `200` | Max character length of historical messages in condensation prompt |
 
 ---
 

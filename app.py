@@ -73,6 +73,10 @@ CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 512))       # tokens per chunk
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 100)) # token overlap
 SIMILARITY_TOP_K = int(os.getenv("SIMILARITY_TOP_K", 5))
 
+# Memory / Context Condensation
+CONDENSE_QUERY_HISTORY_TURNS = int(os.getenv("CONDENSE_QUERY_HISTORY_TURNS", 3))
+CONDENSE_QUERY_CONTENT_MAX_LEN = int(os.getenv("CONDENSE_QUERY_CONTENT_MAX_LEN", 200))
+
 # Embedding dimension for all-MiniLM-L6-v2
 EMBED_DIM = 384
 
@@ -319,10 +323,11 @@ def condense_query(message: str, history: list[dict]) -> str:
     
     # Simple history formatting
     context_lines = []
-    for turn in history[-3:]:  # Last 3 turns for context
+    for turn in history[-CONDENSE_QUERY_HISTORY_TURNS:]:  # Uses configured history context
         role = "User" if turn["role"] == "user" else "Assistant"
         # Truncate content for the condensation prompt
-        content = turn["content"][:200] + ("..." if len(turn["content"]) > 200 else "")
+        msg_len = CONDENSE_QUERY_CONTENT_MAX_LEN
+        content = turn["content"][:msg_len] + ("..." if len(turn["content"]) > msg_len else "")
         context_lines.append(f"{role}: {content}")
     
     context_str = "\n".join(context_lines)
@@ -345,8 +350,11 @@ def condense_query(message: str, history: list[dict]) -> str:
         condensed = response.content[0].text.strip().strip('"')
         print(f"[rag] Condensed query: '{message}' -> '{condensed}'")
         return condensed
+    except anthropic.APIError as exc:
+        print(f"[rag] Query condensation failed (API Error): {exc}. Using raw message.")
+        return message
     except Exception as exc:
-        print(f"[rag] Query condensation failed: {exc}. Using raw message.")
+        print(f"[rag] Query condensation failed (Unexpected): {exc}. Using raw message.")
         return message
 
 
