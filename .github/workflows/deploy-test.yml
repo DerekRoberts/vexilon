@@ -1,9 +1,16 @@
 name: Deploy TEST
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
+    paths:
+      - 'app.py'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'pdf_cache/**'
 
 permissions: {}
 
