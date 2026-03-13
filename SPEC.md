@@ -2,7 +2,7 @@
 
 > **Version:** 0.1.0
 > **Status:** Draft — approved by product owner
-> **Last updated:** 2026-03-12
+
 
 ---
 
