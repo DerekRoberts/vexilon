@@ -329,9 +329,19 @@ def condense_query(message: str, history: list[dict]) -> str:
     context_lines = []
     for turn in history[-CONDENSE_QUERY_HISTORY_TURNS:]:  # Uses configured history context
         role = "User" if turn["role"] == "user" else "Assistant"
-        # Truncate content for the condensation prompt
+        # Truncate content for the condensation prompt.
+        # In Gradio 6, content can be a string or a list of blocks.
+        raw_content = turn["content"]
+        if isinstance(raw_content, list):
+            # Extract text from message parts
+            text_parts = [
+                part.get("text", "") if isinstance(part, dict) else str(part)
+                for part in raw_content
+            ]
+            raw_content = "".join(text_parts)
+        
         msg_len = CONDENSE_QUERY_CONTENT_MAX_LEN
-        content = turn["content"][:msg_len] + ("..." if len(turn["content"]) > msg_len else "")
+        content = raw_content[:msg_len] + ("..." if len(raw_content) > msg_len else "")
         context_lines.append(f"{role}: {content}")
     
     context_str = "\n".join(context_lines)
