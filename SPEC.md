@@ -283,7 +283,7 @@ Each response must follow this structure:
 | **Vector Store** | FAISS (in-memory, pre-computed index on disk) | No server process; index loaded from disk at startup (<1s); pre-computed once per agreement update |
 | **PDF Parsing** | `pypdf` | Lightweight, already available; preserves page numbers |
 | **RAG Framework** | Direct implementation (no LlamaIndex) | LlamaIndex added complexity without value for this use case; direct control over chunking, retrieval, and prompting is preferable |
-| **Web UI** | Gradio 5.x | Same framework as current codebase; HF Spaces native; responsive CSS possible |
+| **Web UI** | Gradio 6.x | HF Spaces native; supports asynchronous handlers for high concurrency |
 | **Hosting** | Hugging Face Spaces | Free tier; Gradio-native; public URL with no infrastructure to manage |
 | **Local Dev** | Podman + `compose.yml` | Existing setup retained |
 | **Language** | Python 3.11+ | Existing codebase language |
@@ -310,7 +310,7 @@ Each response must follow this structure:
 App startup
   └── Load PDF from pdf_cache/
   └── Parse pages with pypdf (preserve page numbers)
-  └── Chunk text (512 tokens, 100 token overlap)
+  └── Chunk text (256 tokens, 50 token overlap)
   └── Embed all chunks with all-MiniLM-L6-v2
   └── Build FAISS index in memory
   └── Ready
@@ -324,15 +324,22 @@ User sends message
         system: [citation-rules + agreement context + continuity rule]
         user: [conversation history + new query]
         context: [retrieved chunks with page numbers]
-  └── Send to Claude API (claude-haiku-4-5-20251001)
-  └── Stream response to Gradio chat interface
+  └── Send to Claude API (claude-haiku-4-5-20251001) via AsyncAnthropic
+  └── Stream response to Gradio chat interface (asynchronous generator)
   └── Append to conversation history
 ```
 
+### Concurrency and Asynchrony
+
+To support multiple simultaneous users without thread pool exhaustion, Vexilon uses:
+- **`AsyncAnthropic`**: The asynchronous variant of the Anthropic client.
+- **`async def` handlers**: Gradio handlers are implemented as asynchronous generators.
+- **Deferred Imports**: Heavy libraries (`torch`, `sentence_transformers`, `faiss`, `gradio`) are imported lazily within functions to ensure fast startup and responsive CLI/test environments.
+
 ### Chunking Strategy
 
-- Chunk size: 512 tokens (fits within embedding model context; aligns with typical article length)
-- Overlap: 100 tokens (~20%) to avoid splitting mid-clause
+- Chunk size: 256 tokens (matches embedding model's max sequence length; prevents silent truncation)
+- Overlap: 50 tokens (~20%) to avoid splitting mid-clause
 - Metadata per chunk: source filename, page number, chunk index
 - Page number preserved and passed to the LLM as part of chunk metadata
 
@@ -400,8 +407,8 @@ Open `http://localhost:7860`.
 | `EMBED_MODEL` | `all-MiniLM-L6-v2` | Local sentence-transformers embedding model |
 | `PORT` | `7860` | Gradio listen port |
 | `SIMILARITY_TOP_K` | `5` | Chunks retrieved per query |
-| `CHUNK_SIZE` | `512` | Tokens per chunk |
-| `CHUNK_OVERLAP` | `100` | Token overlap between chunks |
+| `CHUNK_SIZE` | `256` | Tokens per chunk |
+| `CHUNK_OVERLAP` | `50` | Token overlap between chunks |
 | `CONDENSE_QUERY_HISTORY_TURNS` | `3` | Number of previous turns used for context condensation |
 | `CONDENSE_QUERY_CONTENT_MAX_LEN` | `200` | Max character length of historical messages in condensation prompt |
 
