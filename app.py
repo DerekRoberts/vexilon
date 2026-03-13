@@ -5,7 +5,7 @@ Tech stack:
   - pypdf                : PDF → pages with page number preservation
   - sentence-transformers: Local CPU embeddings (all-MiniLM-L6-v2, no API key)
   - FAISS                : In-memory vector index (no server process)
-  - Anthropic            : Claude (claude-haiku-4-5) for responses
+  - Anthropic            : Claude (claude-haiku-4-5-20251001) for responses
   - Gradio 5             : Web UI at http://localhost:7860
 
 Quick start:
@@ -28,9 +28,9 @@ import urllib.request
 from collections.abc import Iterator
 from pathlib import Path
 
-# Ensure the HuggingFace model cache is writable by the non-root container user.
-# The Containerfile sets this too, but HF Spaces and other runtimes may not inherit it.
-os.environ.setdefault("HF_HOME", "/tmp/hf_cache")
+# Ensure the HuggingFace model cache is writable and persistent.
+# Move this out of /tmp to avoid being shadowed by the tmpfs mount in compose.yml.
+os.environ.setdefault("HF_HOME", "/app/hf_cache")
 
 # ─── Third-party: PDF ────────────────────────────────────────────────────────
 print("[boot] Importing pypdf...", flush=True)
@@ -67,7 +67,7 @@ _GITHUB_RAW_BASE = (
     "https://raw.githubusercontent.com/DerekRoberts/vexilon/main/pdf_cache"
 )
 
-CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5")
+CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 512))       # tokens per chunk
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 100)) # token overlap
@@ -76,6 +76,10 @@ SIMILARITY_TOP_K = int(os.getenv("SIMILARITY_TOP_K", 5))
 # Memory / Context Condensation
 CONDENSE_QUERY_HISTORY_TURNS = int(os.getenv("CONDENSE_QUERY_HISTORY_TURNS", 3))
 CONDENSE_QUERY_CONTENT_MAX_LEN = int(os.getenv("CONDENSE_QUERY_CONTENT_MAX_LEN", 200))
+
+# Security / Auth
+VEXILON_USERNAME = os.getenv("VEXILON_USERNAME", "admin")
+VEXILON_PASSWORD = os.getenv("VEXILON_PASSWORD")
 
 # Embedding dimension for all-MiniLM-L6-v2
 EMBED_DIM = 384
@@ -325,9 +329,19 @@ def condense_query(message: str, history: list[dict]) -> str:
     context_lines = []
     for turn in history[-CONDENSE_QUERY_HISTORY_TURNS:]:  # Uses configured history context
         role = "User" if turn["role"] == "user" else "Assistant"
-        # Truncate content for the condensation prompt
+        # Truncate content for the condensation prompt.
+        # In Gradio 6, content can be a string or a list of blocks.
+        raw_content = turn["content"]
+        if isinstance(raw_content, list):
+            # Extract text from message parts
+            text_parts = [
+                part.get("text", "") if isinstance(part, dict) else str(part)
+                for part in raw_content
+            ]
+            raw_content = "".join(text_parts)
+        
         msg_len = CONDENSE_QUERY_CONTENT_MAX_LEN
-        content = turn["content"][:msg_len] + ("..." if len(turn["content"]) > msg_len else "")
+        content = raw_content[:msg_len] + ("..." if len(raw_content) > msg_len else "")
         context_lines.append(f"{role}: {content}")
     
     context_str = "\n".join(context_lines)
@@ -529,9 +543,16 @@ def build_ui() -> gr.Blocks:
 if __name__ == "__main__":
     startup()
     app = build_ui()
+    # Enable authentication if a password is set in the environment.
+    auth_creds = None
+    if VEXILON_PASSWORD:
+        auth_creds = (VEXILON_USERNAME, VEXILON_PASSWORD)
+        print(f"[startup] Authentication enabled for user '{VEXILON_USERNAME}'")
+
     app.launch(
         server_name="0.0.0.0",
         server_port=int(os.getenv("PORT", 7860)),
         share=False,
         allowed_paths=[],
+        auth=auth_creds,
     )

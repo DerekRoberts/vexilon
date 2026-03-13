@@ -12,15 +12,16 @@
 2. [Users](#2-users)
 3. [Goals and Non-Goals](#3-goals-and-non-goals)
 4. [User Stories](#4-user-stories)
-5. [Response Format](#5-response-format)
-6. [UI/UX Requirements](#6-uiux-requirements)
-7. [Tech Stack](#7-tech-stack)
-8. [Architecture](#8-architecture)
-9. [Deployment](#9-deployment)
-10. [Success Criteria](#10-success-criteria)
-11. [Out of Scope (MVP)](#11-out-of-scope-mvp)
-12. [Future Roadmap](#12-future-roadmap)
-13. [Open Questions](#13-open-questions)
+5. [Security](#5-security)
+6. [Response Format](#6-response-format)
+7. [UI/UX Requirements](#7-uiux-requirements)
+8. [Tech Stack](#8-tech-stack)
+9. [Architecture](#9-architecture)
+10. [Deployment](#10-deployment)
+11. [Success Criteria](#11-success-criteria)
+12. [Out of Scope (MVP)](#12-out-of-scope-mvp)
+13. [Future Roadmap](#13-future-roadmap)
+14. [Open Questions](#14-open-questions)
 
 ---
 
@@ -79,6 +80,7 @@ This specification exists to prevent that from happening again.
 - Respond in under 10 seconds on a standard internet connection
 - Be honest when the agreement does not address a question
 - Be deployable to Hugging Face Spaces with a public URL
+- Provide basic authentication to prevent unauthorized public access
 
 ### Non-Goals (MVP)
 
@@ -187,7 +189,22 @@ This specification exists to prevent that from happening again.
 
 ---
 
-## 5. Response Format
+## 5. Security
+
+### Authentication
+
+To prevent unintended public access while running on Hugging Face Spaces or other public platforms, Vexilon implements optional basic authentication.
+
+- **Mechanism:** Gradio's built-in basic authentication (`auth` parameter).
+- **Configuration:** Controlled via environment variables (`VEXILON_USERNAME`, `VEXILON_PASSWORD`).
+- **Behavior:**
+  - If `VEXILON_PASSWORD` is set, users must log in to access the interface.
+  - If unset, the app remains public (intended for local development).
+  - Credentials are checked on every session start.
+
+---
+
+## 6. Response Format
 
 Each response must follow this structure:
 
@@ -214,7 +231,7 @@ Each response must follow this structure:
 
 ---
 
-## 6. UI/UX Requirements
+## 7. UI/UX Requirements
 
 ### Layout
 
@@ -257,11 +274,11 @@ Each response must follow this structure:
 
 ---
 
-## 7. Tech Stack
+## 8. Tech Stack
 
 | Component | Choice | Rationale |
 |---|---|---|
-| **LLM** | Anthropic Claude (`claude-haiku-4-5`) | Best-in-class instruction following; reliable citation behaviour; pay-per-use; Haiku sufficient for citation-grounded retrieval |
+| **LLM** | Anthropic Claude (`claude-haiku-4-5-20251001`) | Best-in-class instruction following; reliable citation behaviour; pay-per-use; Haiku sufficient for citation-grounded retrieval |
 | **Embeddings** | `all-MiniLM-L6-v2` via `sentence-transformers` (local CPU) | No API key; no per-query cost; 80 MB model; runs on CPU; index pre-computed and committed to repo for fast cold starts |
 | **Vector Store** | FAISS (in-memory, pre-computed index on disk) | No server process; index loaded from disk at startup (<1s); pre-computed once per agreement update |
 | **PDF Parsing** | `pypdf` | Lightweight, already available; preserves page numbers |
@@ -285,7 +302,7 @@ Each response must follow this structure:
 
 ---
 
-## 8. Architecture
+## 9. Architecture
 
 ### RAG Pipeline
 
@@ -307,7 +324,7 @@ User sends message
         system: [citation-rules + agreement context + continuity rule]
         user: [conversation history + new query]
         context: [retrieved chunks with page numbers]
-  └── Send to Claude API (claude-3-5-haiku-4-5)
+  └── Send to Claude API (claude-haiku-4-5-20251001)
   └── Stream response to Gradio chat interface
   └── Append to conversation history
 ```
@@ -334,13 +351,13 @@ The system prompt will enforce:
 
 | Component | Rate | Estimated Monthly (moderate use) |
 |---|---|---|
-| `claude-haiku-4-5` | $0.80/M input tokens, $4.00/M output | ~$6–18 CAD |
+| `claude-haiku-4-5-20251001` | $0.80/M input tokens, $4.00/M output | ~$6–18 CAD |
 | `all-MiniLM-L6-v2` embeddings | $0 — runs locally on CPU | $0 |
 | **Total** | | **~$6–18 CAD/month** |
 
 Note: The "Query Condenser" adds one extra fast LLM call per multi-turn message, increasing costs by ~10% compared to single-turn RAG.
 
-### 8.5 Context Awareness (Query Condensing)
+### 9.5 Context Awareness (Query Condensing)
 
 To ensure multi-turn conversations are reliable, the system uses the **Query Condensing** pattern:
 
@@ -350,7 +367,7 @@ To ensure multi-turn conversations are reliable, the system uses the **Query Con
 
 ---
 
-## 9. Deployment
+## 10. Deployment
 
 ### Local Development
 
@@ -386,8 +403,10 @@ Open `http://localhost:7860`.
 
 | Variable | Default | Description |
 |---|---|---|
+| `VEXILON_USERNAME` | `admin` | Username for basic authentication |
+| `VEXILON_PASSWORD` | *(optional)* | Password for basic authentication. If unset, auth is disabled. |
 | `ANTHROPIC_API_KEY` | *(required)* | Anthropic API key |
-| `CLAUDE_MODEL` | `claude-haiku-4-5` | Claude model for responses |
+| `CLAUDE_MODEL` | `claude-haiku-4-5-20251001` | Claude model for responses |
 | `EMBED_MODEL` | `all-MiniLM-L6-v2` | Local sentence-transformers embedding model |
 | `PORT` | `7860` | Gradio listen port |
 | `SIMILARITY_TOP_K` | `5` | Chunks retrieved per query |
@@ -398,7 +417,7 @@ Open `http://localhost:7860`.
 
 ---
 
-## 10. Success Criteria
+## 11. Success Criteria
 
 The MVP is complete and successful when:
 
@@ -411,13 +430,12 @@ The MVP is complete and successful when:
 
 ---
 
-## 11. Out of Scope (MVP)
+## 12. Out of Scope (MVP)
 
 These are explicitly deferred and must NOT be built until the MVP criteria above are met:
 
 - Multiple collective agreements in a single session
 - Conversation history persistence across browser sessions
-- User authentication or login
 - Bookmarking or saving specific clauses
 - Comparing clauses across agreements
 - Admin interface for managing agreements or users
@@ -427,7 +445,7 @@ These are explicitly deferred and must NOT be built until the MVP criteria above
 
 ---
 
-## 12. Future Roadmap
+## 13. Future Roadmap
 
 In rough priority order after MVP:
 
@@ -440,7 +458,7 @@ In rough priority order after MVP:
 
 ---
 
-## 13. Open Questions
+## 14. Open Questions
 
 These have been discussed and resolved:
 
