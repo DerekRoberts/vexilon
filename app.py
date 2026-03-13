@@ -51,6 +51,7 @@ _GITHUB_RAW_BASE = (
 )
 
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
+CONDENSER_MODEL = os.getenv("CONDENSER_MODEL", "claude-3-5-haiku-20241022")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 256))       # tokens per chunk
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 50))  # token overlap
@@ -360,7 +361,7 @@ async def condense_query(message: str, history: list[dict]) -> str:
 
     try:
         response = await client.messages.create(
-            model=CLAUDE_MODEL,
+            model=CONDENSER_MODEL,
             max_tokens=100,
             messages=[{"role": "user", "content": prompt}]
         )
@@ -414,7 +415,11 @@ async def rag_stream(message: str, history: list[dict]) -> AsyncIterator[str]:
         async with client.messages.stream(
             model=CLAUDE_MODEL,
             max_tokens=1024,
-            system=full_system,
+            system=[{
+                "type": "text",
+                "text": full_system,
+                "cache_control": {"type": "ephemeral"}
+            }],
             messages=messages,
         ) as stream:
             async for text_chunk in stream.text_stream:
