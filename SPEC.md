@@ -14,15 +14,14 @@
 4. [User Stories](#4-user-stories)
 5. [Security](#5-security)
 6. [Response Format](#6-response-format)
-6. [UI/UX Requirements](#6-uiux-requirements)
-7. [Tech Stack](#7-tech-stack)
-8. [Architecture](#8-architecture)
-9. [Deployment](#9-deployment)
-10. [Success Criteria](#10-success-criteria)
-11. [Security](#security)
-11. [Out of Scope (MVP)](#11-out-of-scope-mvp)
-12. [Future Roadmap](#12-future-roadmap)
-13. [Open Questions](#13-open-questions)
+7. [UI/UX Requirements](#7-uiux-requirements)
+8. [Tech Stack](#8-tech-stack)
+9. [Architecture](#9-architecture)
+10. [Deployment](#10-deployment)
+11. [Success Criteria](#11-success-criteria)
+12. [Out of Scope (MVP)](#12-out-of-scope-mvp)
+13. [Future Roadmap](#13-future-roadmap)
+14. [Open Questions](#14-open-questions)
 
 ---
 
@@ -232,7 +231,7 @@ Each response must follow this structure:
 
 ---
 
-## 6. UI/UX Requirements
+## 7. UI/UX Requirements
 
 ### Layout
 
@@ -275,7 +274,7 @@ Each response must follow this structure:
 
 ---
 
-## 7. Tech Stack
+## 8. Tech Stack
 
 | Component | Choice | Rationale |
 |---|---|---|
@@ -303,7 +302,7 @@ Each response must follow this structure:
 
 ---
 
-## 8. Architecture
+## 9. Architecture
 
 ### RAG Pipeline
 
@@ -358,7 +357,7 @@ The system prompt will enforce:
 
 Note: The "Query Condenser" adds one extra fast LLM call per multi-turn message, increasing costs by ~10% compared to single-turn RAG.
 
-### 8.5 Context Awareness (Query Condensing)
+### 9.5 Context Awareness (Query Condensing)
 
 To ensure multi-turn conversations are reliable, the system uses the **Query Condensing** pattern:
 
@@ -368,7 +367,7 @@ To ensure multi-turn conversations are reliable, the system uses the **Query Con
 
 ---
 
-## 9. Deployment
+## 10. Deployment
 
 ### Local Development
 
@@ -418,7 +417,7 @@ Open `http://localhost:7860`.
 
 ---
 
-## 10. Success Criteria
+## 11. Success Criteria
 
 The MVP is complete and successful when:
 
@@ -431,7 +430,7 @@ The MVP is complete and successful when:
 
 ---
 
-## 11. Out of Scope (MVP)
+## 12. Out of Scope (MVP)
 
 These are explicitly deferred and must NOT be built until the MVP criteria above are met:
 
@@ -446,7 +445,7 @@ These are explicitly deferred and must NOT be built until the MVP criteria above
 
 ---
 
-## 12. Future Roadmap
+## 13. Future Roadmap
 
 In rough priority order after MVP:
 
@@ -459,7 +458,7 @@ In rough priority order after MVP:
 
 ---
 
-## 13. Open Questions
+## 14. Open Questions
 
 These have been discussed and resolved:
 
