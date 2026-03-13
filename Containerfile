@@ -19,15 +19,15 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 # ─── Pre-download embedding model — must happen before TRANSFORMERS_OFFLINE is set ───
-# Downloads ~90 MB to /tmp/hf_cache so cold starts never hit the network.
-RUN HF_HOME=/tmp/hf_cache \
+# Downloads ~90 MB to /app/hf_cache so cold starts never hit the network.
+RUN HF_HOME=/app/hf_cache \
     uv run python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" \
     && echo "[build] Embedding model cached."
 
 # ─── Runtime env: go offline now that the model is baked in ──────────────────
 # TRANSFORMERS_OFFLINE=1 suppresses HF Hub network checks and cache-miss writes.
 # HF_HOME must match the path used during the download above.
-ENV HF_HOME=/tmp/hf_cache \
+ENV HF_HOME=/app/hf_cache \
     TRANSFORMERS_OFFLINE=1 \
     HF_DATASETS_OFFLINE=1 \
     UV_CACHE_DIR=/tmp/uv-cache

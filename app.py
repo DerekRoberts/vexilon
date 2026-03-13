@@ -28,9 +28,9 @@ import urllib.request
 from collections.abc import Iterator
 from pathlib import Path
 
-# Ensure the HuggingFace model cache is writable by the non-root container user.
-# The Containerfile sets this too, but HF Spaces and other runtimes may not inherit it.
-os.environ.setdefault("HF_HOME", "/tmp/hf_cache")
+# Ensure the HuggingFace model cache is writable and persistent.
+# Move this out of /tmp to avoid being shadowed by the tmpfs mount in compose.yml.
+os.environ.setdefault("HF_HOME", "/app/hf_cache")
 
 # ─── Third-party: PDF ────────────────────────────────────────────────────────
 print("[boot] Importing pypdf...", flush=True)
