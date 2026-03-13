@@ -27,8 +27,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    volumes:
-      - ./app.py:/app/app.py:ro,Z  # Bind-mount app logic with SELinux (Z) and Read-Only (ro) safety
+    # Production-ready: Use the code baked into the image
     
-    # Use Gradio's hot-reloader for instant updates when app.py changes
-    command: ["uv", "run", "gradio", "app.py"]
+    # Production-optimized: Uses the CMD defined in the Containerfile
+    # (No 'uv' or 'gradio' CLI required in the final image)
