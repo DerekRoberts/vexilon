@@ -100,7 +100,7 @@ def get_anthropic() -> "anthropic.AsyncAnthropic":
 
 
 # ─── System Prompt ───────────────────────────────────────────────────────────
-SYSTEM_PROMPT = """You are Vexilon, an assistant for looking up the BCGEU 19th Main Public Service Agreement. \
+SYSTEM_PROMPT = """You are an assistant for looking up the BCGEU 19th Main Public Service Agreement. \
 You help users understand the 19th Main Public Service Agreement (Social, Information & Health).
 
 Rules you must follow without exception:
@@ -448,7 +448,9 @@ DISCLAIMER_HTML = (
     "font-size:0.85rem;"
     "margin-bottom:8px;"
     '">'
-    "⚠️ <strong style=\"color:#7c4a00;\">Informational purposes only. Consult your BCGEU representative or a legal advisor as appropriate.</strong>"
+    "⚠️ <strong style=\"color:#7c4a00;\">Unofficial Explorer: Informational purposes only. </strong> "
+    "All responses are AI-generated. The <a href='https://www.bcgeu.ca/19th_main_agreement' target='_blank' style='color:#7c4a00; font-weight:bold;'>official PDF</a> "
+    "remains the sole authoritative source of truth. Consult your BCGEU representative or a legal advisor as appropriate."
     "</div>"
 )
 
@@ -463,11 +465,17 @@ ATTRIBUTION_HTML = (
 def build_ui() -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
     import gradio as gr
-    with gr.Blocks(title="Vexilon — BCGEU Agreement Assistant") as demo:
+    with gr.Blocks(title="Unofficial BCGEU Agreement Explorer") as demo:
 
         # ── Header ────────────────────────────────────────────────────────────
-        gr.Markdown("## 📋 Vexilon — BCGEU Agreement Assistant\n"
-                    "*19th Main Public Service Agreement (Social, Information & Health)*")
+        gr.Markdown("## 📋 Unofficial 19th Main Agreement Explorer\n"
+                    "*BCGEU Main Public Service Agreement (Social, Information & Health)*")
+
+        # ── Non-affiliation Notice ───────────────────────────────────────────
+        gr.Markdown(
+            "<small>This is an independent community project. It is **not** affiliated with, "
+            "endorsed by, or sponsored by the BCGEU.</small>"
+        )
 
         # ── Disclaimer (persistent, non-dismissible) ──────────────────────────
         gr.HTML(DISCLAIMER_HTML)
