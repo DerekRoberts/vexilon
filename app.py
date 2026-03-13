@@ -452,6 +452,12 @@ DISCLAIMER_HTML = (
     "</div>"
 )
 
+ATTRIBUTION_HTML = (
+    "<div style='text-align: center; color: #6b7280; font-size: 0.85rem; margin-top: 1rem;'>"
+    "Maintained by BCGEU Stewards. <a href='https://github.com/DerekRoberts/vexilon' target='_blank' style='color: #005691; text-decoration: none;'>View code or contribute on GitHub</a>"
+    "</div>"
+)
+
 
 
 def build_ui() -> "gr.Blocks":
@@ -546,11 +552,7 @@ def build_ui() -> "gr.Blocks":
             )
 
         # ── Attribution Footer ────────────────────────────────────────────────
-        gr.HTML(
-            "<div style='text-align: center; color: #6b7280; font-size: 0.85rem; margin-top: 1rem;'>"
-            "Maintained by BCGEU Stewards. <a href='https://github.com/DerekRoberts/vexilon' target='_blank' style='color: #005691; text-decoration: none;'>View code or contribute on GitHub</a>"
-            "</div>"
-        )
+        gr.HTML(ATTRIBUTION_HTML)
 
     return demo
 
