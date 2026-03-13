@@ -12,12 +12,14 @@
 2. [Users](#2-users)
 3. [Goals and Non-Goals](#3-goals-and-non-goals)
 4. [User Stories](#4-user-stories)
-5. [Response Format](#5-response-format)
+5. [Security](#5-security)
+6. [Response Format](#6-response-format)
 6. [UI/UX Requirements](#6-uiux-requirements)
 7. [Tech Stack](#7-tech-stack)
 8. [Architecture](#8-architecture)
 9. [Deployment](#9-deployment)
 10. [Success Criteria](#10-success-criteria)
+11. [Security](#security)
 11. [Out of Scope (MVP)](#11-out-of-scope-mvp)
 12. [Future Roadmap](#12-future-roadmap)
 13. [Open Questions](#13-open-questions)
@@ -79,6 +81,7 @@ This specification exists to prevent that from happening again.
 - Respond in under 10 seconds on a standard internet connection
 - Be honest when the agreement does not address a question
 - Be deployable to Hugging Face Spaces with a public URL
+- Provide basic authentication to prevent unauthorized public access
 
 ### Non-Goals (MVP)
 
@@ -187,7 +190,22 @@ This specification exists to prevent that from happening again.
 
 ---
 
-## 5. Response Format
+## 5. Security
+
+### Authentication
+
+To prevent unintended public access while running on Hugging Face Spaces or other public platforms, Vexilon implements optional basic authentication.
+
+- **Mechanism:** Gradio's built-in basic authentication (`auth` parameter).
+- **Configuration:** Controlled via environment variables (`VEXILON_USERNAME`, `VEXILON_PASSWORD`).
+- **Behavior:**
+  - If `VEXILON_PASSWORD` is set, users must log in to access the interface.
+  - If unset, the app remains public (intended for local development).
+  - Credentials are checked on every session start.
+
+---
+
+## 6. Response Format
 
 Each response must follow this structure:
 
@@ -386,6 +404,8 @@ Open `http://localhost:7860`.
 
 | Variable | Default | Description |
 |---|---|---|
+| `VEXILON_USERNAME` | `admin` | Username for basic authentication |
+| `VEXILON_PASSWORD` | *(optional)* | Password for basic authentication. If unset, auth is disabled. |
 | `ANTHROPIC_API_KEY` | *(required)* | Anthropic API key |
 | `CLAUDE_MODEL` | `claude-3-5-haiku-20241022` | Claude model for responses |
 | `EMBED_MODEL` | `all-MiniLM-L6-v2` | Local sentence-transformers embedding model |
@@ -417,7 +437,6 @@ These are explicitly deferred and must NOT be built until the MVP criteria above
 
 - Multiple collective agreements in a single session
 - Conversation history persistence across browser sessions
-- User authentication or login
 - Bookmarking or saving specific clauses
 - Comparing clauses across agreements
 - Admin interface for managing agreements or users

@@ -7,7 +7,13 @@ services:
       dockerfile: Containerfile
     container_name: vexilon
     environment:
+      # Mandatory: Anthropic API key
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      
+      # Optional: Basic Auth (Login is disabled if VEXILON_PASSWORD is empty)
+      VEXILON_USERNAME: ${VEXILON_USERNAME:-admin}
+      VEXILON_PASSWORD: ${VEXILON_PASSWORD:-}
+      
       PORT: "7860"
     ports:
       - "7860:7860"

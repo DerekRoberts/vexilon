@@ -77,6 +77,10 @@ SIMILARITY_TOP_K = int(os.getenv("SIMILARITY_TOP_K", 5))
 CONDENSE_QUERY_HISTORY_TURNS = int(os.getenv("CONDENSE_QUERY_HISTORY_TURNS", 3))
 CONDENSE_QUERY_CONTENT_MAX_LEN = int(os.getenv("CONDENSE_QUERY_CONTENT_MAX_LEN", 200))
 
+# Security / Auth
+VEXILON_USERNAME = os.getenv("VEXILON_USERNAME", "admin")
+VEXILON_PASSWORD = os.getenv("VEXILON_PASSWORD")
+
 # Embedding dimension for all-MiniLM-L6-v2
 EMBED_DIM = 384
 
@@ -465,7 +469,6 @@ def build_ui() -> gr.Blocks:
             height=480,
             buttons=["copy"],
             render_markdown=True,
-            type="messages",
         )
 
         # ── Input row ─────────────────────────────────────────────────────────
@@ -530,9 +533,16 @@ def build_ui() -> gr.Blocks:
 if __name__ == "__main__":
     startup()
     app = build_ui()
+    # Enable authentication if a password is set in the environment.
+    auth_creds = None
+    if VEXILON_PASSWORD:
+        auth_creds = (VEXILON_USERNAME, VEXILON_PASSWORD)
+        print(f"[startup] Authentication enabled for user '{VEXILON_USERNAME}'")
+
     app.launch(
         server_name="0.0.0.0",
         server_port=int(os.getenv("PORT", 7860)),
         share=False,
         allowed_paths=[],
+        auth=auth_creds,
     )

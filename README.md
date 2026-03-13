@@ -103,6 +103,8 @@ All settings are optional — defaults match the product specification.
 
 | Variable | Default | Description |
 |---|---|---|
+| `VEXILON_USERNAME` | `admin` | Username for basic authentication |
+| `VEXILON_PASSWORD` | *(optional)* | Password for basic authentication. If unset, auth is disabled. |
 | `ANTHROPIC_API_KEY` | *(required)* | Anthropic API key |
 | `CLAUDE_MODEL` | `claude-haiku-4-5` | Claude model for responses |
 | `EMBED_MODEL` | `all-MiniLM-L6-v2` | sentence-transformers embedding model |
