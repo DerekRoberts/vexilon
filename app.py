@@ -86,6 +86,10 @@ def get_embed_model() -> "SentenceTransformer":
         print(f"[embed] Loading local embedding model '{EMBED_MODEL}'…")
         from sentence_transformers import SentenceTransformer
         _embed_model = SentenceTransformer(EMBED_MODEL)
+        # Increase max_seq_length to handle full-page tokenization mapping without warnings.
+        # This silenced the "853 > 256" log noise while our manual chunking still ensures
+        # we stay within the model's effective training window for actual embeddings.
+        _embed_model.max_seq_length = 1024
         print("[embed] Embedding model ready.")
     return _embed_model
 
