@@ -141,7 +141,8 @@ def chunk_text(text: str, page_num: int) -> list[dict]:
     Returns list of dicts: {text, page, chunk_index}.
     """
     tokenizer = get_embed_model().tokenizer
-    encoding = tokenizer(text, add_special_tokens=False, return_offsets_mapping=True)
+    # Ensure the tokenizer doesn't truncate the whole page so we can split it manually
+    encoding = tokenizer(text, add_special_tokens=False, return_offsets_mapping=True, truncation=False)
     tokens = encoding.input_ids
     offsets = encoding.offset_mapping
     chunks = []
