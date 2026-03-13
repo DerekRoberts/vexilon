@@ -27,7 +27,7 @@ article and page citations.
 | Embeddings | `sentence-transformers/all-MiniLM-L6-v2` — local CPU, no API key |
 | Vector Store | FAISS (in-memory, rebuilt at startup) |
 | PDF Parsing | pypdf — preserves page numbers |
-| Web UI | Gradio 5 — `http://localhost:7860` |
+| Web UI | Gradio 6 — `http://localhost:7860` |
 | PDF Source | Bundled in `pdf_cache/` |
 | Container | Podman + Podman Compose (`compose.yml`) |
 
