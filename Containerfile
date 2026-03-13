@@ -1,45 +1,51 @@
-# ─── Build stage ──────────────────────────────────────────────────────────────
-FROM python:3.14-slim AS base
+# ─── Stage 1: Builder ─────────────────────────────────────────────────────────
+FROM python:3.14-slim AS builder
 
-# Install system deps: libgomp1 for FAISS, curl for healthcheck
+COPY --from=ghcr.io/astral-sh/uv:0.10.9 /uv /usr/local/bin/uv
+
+WORKDIR /app
+
+# Install dependencies into a virtualenv
+# This creates a standalone /app/.venv directory
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+# Pre-download the embedding model into a persistent cache
+RUN HF_HOME=/app/hf_cache \
+    uv run python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+
+# ─── Stage 2: Runtime ─────────────────────────────────────────────────────────
+FROM python:3.14-slim AS runner
+
+# Runtime system deps only (libgomp for FAISS, curl for healthcheck)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv — pin version for reproducible builds; Renovate will keep this current
-COPY --from=ghcr.io/astral-sh/uv:0.10.9 /uv /usr/local/bin/uv
-
-# Create non-root user early
+# Create our non-root user
 RUN useradd --uid 1001 --no-create-home --shell /sbin/nologin vexilon
-
 WORKDIR /app
-RUN chown 1001:1001 /app
 
-# Switch to non-root for the rest of the build to avoid cache-busting 'chown -R' at the end
-USER 1001
+# 1. Copy the virtualenv and model cache from the builder
+# We use --chown to ensure the runner user owns these files immediately
+COPY --from=builder --chown=1001:1001 /app/.venv /app/.venv
+COPY --from=builder --chown=1001:1001 /app/hf_cache /app/hf_cache
 
-# ─── Dependencies ─────────────────────────────────────────────────────────────
-COPY --chown=1001:1001 pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
-
-# ─── Model Download (Owned by 1001) ───────────────────────────────────────────
-RUN HF_HOME=/app/hf_cache \
-    uv run python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" \
-    && echo "[build] Embedding model cached."
-
-# ─── Runtime env ──────────────────────────────────────────────────────────────
-ENV HF_HOME=/app/hf_cache \
-    TRANSFORMERS_OFFLINE=1 \
-    HF_DATASETS_OFFLINE=1 \
-    UV_CACHE_DIR=/tmp/uv-cache
-
-# ─── App layer: Volatile files last ───────────────────────────────────────────
+# 2. Copy application code and PDF assets
 COPY --chown=1001:1001 pdf_cache/ ./pdf_cache/
 COPY --chown=1001:1001 app.py ./
 
-# Bake the PDF index into the image so the bot starts instantly at runtime
-RUN uv run python -c "from app import startup; startup(force_rebuild=True)"
+# 3. Bake the index using the copied virtual environment
+# We run this during the build for zero-downtime startups
+RUN /app/.venv/bin/python -c "from app import startup; startup(force_rebuild=True)"
 
+# ─── Final Environment ────────────────────────────────────────────────────────
+ENV HF_HOME=/app/hf_cache \
+    TRANSFORMERS_OFFLINE=1 \
+    PATH="/app/.venv/bin:$PATH"
+
+USER 1001
 EXPOSE 7860
-CMD ["uv", "run", "python", "app.py"]
+
+CMD ["python", "app.py"]
