@@ -3,20 +3,64 @@ name: Deploy PROD
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Version tag to deploy (e.g. v1.2.3)'
+        required: true
+        type: string
 
-permissions: {}
+permissions:
+  packages: write
+  contents: read
 
 jobs:
   deploy-prod:
+    name: Deploy to PROD HF Space
     runs-on: ubuntu-latest
     environment: prod
     permissions:
       contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Push code-only snapshot to Hugging Face Space
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine Target Tag
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+            echo "source=test" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ inputs.version_tag }}" >> $GITHUB_OUTPUT
+            echo "source=${{ inputs.version_tag }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Promote Tag in GHCR
+        # If it's a new release, retag 'test' to 'v1.2.3'.
+        # If it's a manual redeploy, this is a no-op but ensures the tag exists.
+        run: |
+          skopeo copy --all \
+            docker://ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.source }} \
+            docker://ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.tag }}
+
+      - name: Push Stub to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: ./scripts/deploy.sh "DerekRoberts/vexilon"
+        # Deploy the explicit version tag for immutability and rollbacks.
+        run: ./scripts/deploy.sh --stub "ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.tag }}" "DerekRoberts/vexilon"
+
+      - name: Update Audit Tag (prod)
+        # Point 'prod' at the newly deployed version for auditing.
+        run: |
+          skopeo copy --all \
+            docker://ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.tag }} \
+            docker://ghcr.io/${{ github.repository }}:prod

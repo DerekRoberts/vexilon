@@ -2,6 +2,8 @@ name: Deploy TEST
 
 on:
   workflow_dispatch:
+  # Automated triggers are now handled by promote-test.yml
+  # but we keep push to main as a fallback just in case.
   push:
     branches:
       - main
@@ -16,15 +18,18 @@ permissions: {}
 
 jobs:
   deploy-test:
+    name: Deploy to TEST HF Space
     runs-on: ubuntu-latest
     environment: test
     permissions:
       contents: read
+      actions: write # Needed if we want to log dispatch status, but mainly for deploy logic.
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Push code-only snapshot to Hugging Face Space
+      - name: Push Stub to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: ./scripts/deploy.sh "DerekRoberts/landru"
+        # We tell HF to just pull the 'test' tag from GHCR.
+        run: ./scripts/deploy.sh --stub "ghcr.io/${{ github.repository }}:test" "DerekRoberts/landru"

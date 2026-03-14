@@ -1,0 +1,70 @@
+name: Build & Verify PR
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - 'app.py'
+      - 'Containerfile'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'pdf_cache/**'
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  build:
+    name: Build & Smoke Test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    env:
+      IMAGE_NAME: ghcr.io/${{ github.repository }}
+      IMAGE_TAG: pr-${{ github.event.number }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Image
+        # We build locally first to run smoke tests before pushing
+        run: |
+          podman build -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} -f Containerfile .
+
+      - name: Container Smoke Test
+        # Prove the image actually boots and responds
+        run: |
+          podman run -d --rm -p 7860:7860 --name vexilon-app -e ANTHROPIC_API_KEY=sk-ant-test123 ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          
+          echo "Waiting for healthcheck..."
+          for i in {1..30}; do
+            if curl -f http://localhost:7860 > /dev/null 2>&1; then
+              echo "Container is healthy!"
+              podman stop vexilon-app
+              exit 0
+            fi
+            
+            if ! podman inspect vexilon-app --format '{{.State.Running}}' 2>/dev/null | grep -q 'true'; then
+              echo "Container died unexpectedly! Dumping logs..."
+              podman logs vexilon-app
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "Healthcheck timed out."
+          podman stop vexilon-app
+          exit 1
+
+      - name: Push to GHCR
+        run: |
+          podman push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
