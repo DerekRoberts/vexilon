@@ -42,5 +42,9 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:sha-${{ github.event.pull_request.head.sha }}
             ghcr.io/${{ github.repository }}:pr-${{ github.event.number }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.event.pull_request.head.sha }}
+            org.opencontainers.image.description=Vexilon Build for PR #${{ github.event.number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
