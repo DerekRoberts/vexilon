@@ -8,8 +8,28 @@ name: Analysis
 on:
   push:
     branches: [main]
+    paths:
+      - 'app.py'
+      - 'Containerfile'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'tests/**'
+      - 'pdf_cache/**'
+      - 'scripts/**'
+      - '.github/workflows/analysis.yml'
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review, converted_to_draft]
+    paths:
+      - 'app.py'
+      - 'Containerfile'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'tests/**'
+      - 'pdf_cache/**'
+      - 'scripts/**'
+      - '.github/workflows/analysis.yml'
   schedule:
     - cron: "0 11 * * 0" # 3 AM PST = 11 AM UTC, runs Sundays
 

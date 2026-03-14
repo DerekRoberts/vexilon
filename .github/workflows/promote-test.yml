@@ -4,6 +4,16 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+    paths:
+      - 'app.py'
+      - 'Containerfile'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'pdf_cache/**'
+      - 'scripts/**'
+      - '.github/workflows/build-pr.yml'
+      - '.github/workflows/promote-test.yml'
 
 permissions:
   packages: write
