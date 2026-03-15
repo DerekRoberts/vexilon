@@ -145,7 +145,7 @@ jobs:
         run: podman logs vexilon-app
 
   results:
-    name: PR Results
+    name: Results
     needs: [container_build, container_test]
     if: always()
     runs-on: ubuntu-slim
