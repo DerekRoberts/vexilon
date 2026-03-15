@@ -1,4 +1,4 @@
-# Usage: ./scripts/deploy.sh <image_tag> [--prod] [--dry-run]
+# Usage: ./.github/scripts/deploy.sh <image_tag> [--prod] [--dry-run]
 # Default: Targets "DerekRoberts/landru" (TEST).
 # Use --prod as second argument to target "DerekRoberts/vexilon".
 

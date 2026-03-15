@@ -19,4 +19,4 @@ jobs:
       - name: Push image-based stub to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: ./scripts/deploy.sh "sha-${{ github.sha }}" --prod
+        run: ./.github/scripts/deploy.sh "sha-${{ github.sha }}" --prod
