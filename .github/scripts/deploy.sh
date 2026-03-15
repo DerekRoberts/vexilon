@@ -6,12 +6,12 @@
 set -euo pipefail
 set -x
 
-IMAGE="${1:-}"
+IMAGE_TAG="${1:-}"
 MODE="${2:-}"
 DRY_RUN=false
 
-if [ -z "$IMAGE" ]; then
-    echo "Error: Image tag (e.g. 'ghcr.io/derekroberts/vexilon:latest') must be provided."
+if [ -z "$IMAGE_TAG" ]; then
+    echo "Error: Image tag (e.g. 'latest' or 'sha-123') must be provided."
     exit 1
 fi
 
@@ -58,13 +58,13 @@ git reset # Clears the index
 
 # Create the Stub Dockerfile
 cat <<EOF > Dockerfile
-FROM $IMAGE
+FROM ghcr.io/derekroberts/vexilon:$IMAGE_TAG
 EOF
 
 if [ "$DRY_RUN" == "true" ]; then
     echo "--- DRY RUN MODE ---"
     echo "Target: $SPACE_NAME"
-    echo "Image:  IMAGE"
+    echo "Image:  $IMAGE_TAG"
     echo "Dockerfile content:"
     cat Dockerfile
     echo "--- DRY RUN COMPLETE ---"
@@ -80,7 +80,7 @@ fi
 # We also need to fix the README.md metadata on-the-fly to use sdk: docker
 sed -i 's/^sdk: gradio/sdk: docker/' README.md
 git add Dockerfile README.md app.py
-git commit -m "promote: $IMAGE from $ORIGINAL_REF"
+git commit -m "promote: $IMAGE_TAG from $ORIGINAL_REF"
 
 # Auth and Push
 git remote add hf "https://huggingface.co/spaces/${SPACE_NAME}" 2>/dev/null || true
