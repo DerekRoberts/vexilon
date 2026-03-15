@@ -4,7 +4,6 @@
 
 # Strict mode + Trace
 set -euo pipefail
-set -x
 
 IMAGE_TAG="${1:-}"
 MODE="${2:-}"
