@@ -143,3 +143,13 @@ jobs:
       - name: Dump Logs on Failure
         if: failure()
         run: podman logs vexilon-app
+
+  results:
+    name: PR Results
+    needs: [container_build, container_test]
+    if: always()
+    runs-on: ubuntu-slim
+    steps:
+      - if: contains(needs.*.result, 'failure')||contains(needs.*.result, 'canceled')
+        run: echo "At least one job has failed." && exit 1
+      - run: echo "Success!"
