@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Push code-only snapshot to Hugging Face Space
+      - name: Push image-based stub to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: ./scripts/deploy.sh "DerekRoberts/vexilon"
+        run: ./.github/scripts/deploy.sh "sha-${{ github.sha }}" --prod
