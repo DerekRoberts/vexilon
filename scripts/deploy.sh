@@ -2,15 +2,16 @@
 set -euo pipefail
 
 # Deployment script for Hugging Face Spaces
-# Usage: ./scripts/deploy.sh <space_name>
+# Usage: ./scripts/deploy.sh <space_name> [image_tag]
 
 if [ -z "${1:-}" ]; then
     echo "Error: Space name must be provided."
-    echo "Usage: $0 <space_name>"
+    echo "Usage: $0 <space_name> [image_tag]"
     exit 1
 fi
 
 SPACE_NAME=$1
+IMAGE_TAG=${2:-}
 
 if [ -z "${HF_TOKEN:-}" ]; then
     echo "Error: HF_TOKEN environment variable must be set."
@@ -28,16 +29,12 @@ if [ -n "${GITHUB_ACTIONS:-}" ]; then
     git config user.name "GitHub Actions"
 fi
 
-# Make sure there is no previous branch
-git branch -D hf-snapshot 2>/dev/null || true
-
 # Make sure we are at the root of the repo
 cd "$(dirname "$0")/.."
 
-# Store original ref for cleanup, and set up a trap to ensure cleanup happens on exit.
+# Store original ref for cleanup, and set up a trap
 ORIGINAL_REF=$(git symbolic-ref -q --short HEAD || git rev-parse HEAD)
 function cleanup() {
-  # Only checkout if we are on the snapshot branch
   if [[ "$(git branch --show-current)" == "hf-snapshot" ]]; then
     git checkout "$ORIGINAL_REF" 2>/dev/null || true
   fi
@@ -47,24 +44,46 @@ function cleanup() {
 }
 trap cleanup EXIT
 
-# Remove the remote if it already exists
-git remote remove hf 2>/dev/null || true
-git remote add hf "https://huggingface.co/spaces/${SPACE_NAME}"
-git config --local credential.https://huggingface.co.helper '!f() { echo "username=api"; echo "password=${HF_TOKEN}"; }; f'
-
-COMMIT_MSG=$(git log -1 --format='%s')
-
-# Create an orphaned branch for the snapshot (fails if branch already exists, so delete it first)
+# Create an orphaned branch for the snapshot
 git branch -D hf-snapshot 2>/dev/null || true
 git checkout --orphan hf-snapshot
 
-# Remove cache files from index and working tree so they aren't committed to HF
-git rm -rf --ignore-unmatch pdf_cache/ 2>/dev/null || true
+# --- SOURCE SCRUBBING / STUB GENERATION ---
+if [ -n "$IMAGE_TAG" ]; then
+    echo "[promote] Creating stub for image: $IMAGE_TAG"
+    
+    # Identify mandatory HF files (README.md for metadata)
+    # We use a temporary location to save metadata before nuking the repo
+    TMP_META=$(mktemp -d)
+    [ -f README.md ] && cp README.md "$TMP_META/"
+    
+    # Nuke everything
+    git rm -rf . > /dev/null 2>&1 || true
+    
+    # Restore metadata
+    [ -f "$TMP_META/README.md" ] && cp "$TMP_META/README.md" . && git add README.md
+    rm -rf "$TMP_META"
+    
+    # Create the Stub Dockerfile
+    # We use the full GHCR path.
+    cat <<EOF > Dockerfile
+FROM ghcr.io/derekroberts/vexilon:$IMAGE_TAG
+EOF
+    git add Dockerfile
+    COMMIT_MSG="promote: $IMAGE_TAG"
+else
+    echo "[deploy] Code-only deployment (no image tag provided)"
+    # Fallback: existing behavior (just remove cache)
+    git rm -rf --ignore-unmatch pdf_cache/ 2>/dev/null || true
+    COMMIT_MSG="deploy: $(git log -1 --format='%s' hf-snapshot^ 2>/dev/null || echo 'initial snapshot')"
+fi
 
-# Commit the code-only snapshot
-git commit -m "deploy: $COMMIT_MSG"
+# Commit the snapshot
+git commit -m "$COMMIT_MSG"
 
 # Force push to Hugging Face
+git remote add hf "https://huggingface.co/spaces/${SPACE_NAME}" 2>/dev/null || true
+git config --local credential.https://huggingface.co.helper '!f() { echo "username=api"; echo "password=${HF_TOKEN}"; }; f'
 git push hf hf-snapshot:main --force --no-verify
 
 echo "Deployment to ${SPACE_NAME} complete!"
