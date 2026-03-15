@@ -54,28 +54,48 @@ git config --local credential.https://huggingface.co.helper '!f() { echo "userna
 
 COMMIT_MSG=$(git log -1 --format='%s')
 
-# Resolve the Provenance Pointer (The Auditor)
+# Resolve the Provenance Proof (The Cryptographic Auditor)
 CURRENT_SHA=$(git rev-parse HEAD)
-REPO_NAME=$(echo "ghcr.io/${GITHUB_REPOSITORY:-derekroberts/vexilon}" | tr '[:upper:]' '[:lower:]')
-IMAGE_TAG="main-sha-${CURRENT_SHA}"
+REPO_NAME=$(echo "ghcr.io/${GITHUB_REPOSITORY?Error: GITHUB_REPOSITORY not set}" | tr '[:upper:]' '[:lower:]')
 
-echo "Auditing Deployment for commit: ${CURRENT_SHA}"
-echo "Pointer: ${REPO_NAME}:${IMAGE_TAG}"
+echo "Auditing Cryptographic Provenance for commit: ${CURRENT_SHA}"
+
+if [ -n "${GITHUB_ACTIONS:-}" ]; then
+    # 1. Query the System of Record for the Vouched Digest
+    echo "Querying GitHub Attestations..."
+    IMAGE_DIGEST=$(gh api "repos/${GITHUB_REPOSITORY}/attestations/${CURRENT_SHA}" --jq '.attestations[0].bundle.content.subject[0].digest.sha256')
+    
+    if [ -z "$IMAGE_DIGEST" ] || [ "$IMAGE_DIGEST" == "null" ]; then
+        echo "Error: No cryptographic attestation found for commit ${CURRENT_SHA}."
+        echo "This commit has not been vouched by the Fortress (main)."
+        exit 1
+    fi
+
+    # 2. Verify the Proof
+    echo "Verifying Platform Signature for digest: sha256:${IMAGE_DIGEST}..."
+    gh attestation verify "oci://${REPO_NAME}@sha256:${IMAGE_DIGEST}" --owner "${GITHUB_REPOSITORY_OWNER}"
+    
+    IMAGE_POINTER="${REPO_NAME}@sha256:${IMAGE_DIGEST}"
+    echo "Proof Verified: ${IMAGE_POINTER}"
+else
+    # Local fallback for development (unvouched)
+    echo "Warning: Running in local mode. Skipping cryptographic verification."
+    IMAGE_POINTER="${REPO_NAME}:latest"
+fi
 
 # Create an orphaned branch for the snapshot
-git branch -D hf-snapshot 2>/dev/null || true
 git checkout --orphan hf-snapshot
 
-# Implement the "Stub" logic: Replace the Dockerfile with a 1-line pointer
-# This ensures Hugging Face ONLY pulls the binary vouched by our Fortress.
-echo "FROM ${REPO_NAME}:${IMAGE_TAG}" > Dockerfile
+# Implement the "Immutable Stub" logic: Replace the Dockerfile with a Digest pointer
+# This ensures Hugging Face ONLY pulls the exact binary signed by our Fortress.
+echo "FROM ${IMAGE_POINTER}" > Dockerfile
 
 # Remove unneeded files from index to keep the snapshot minimal
 git rm -rf --ignore-unmatch pdf_cache/ .github/ .pytest_cache/ tests/ 2>/dev/null || true
 
 # Commit the stub snapshot
 git add Dockerfile
-git commit -m "deploy: $COMMIT_MSG (vouched: $IMAGE_TAG)"
+git commit -m "deploy: $COMMIT_MSG (vouched: $IMAGE_POINTER)"
 
 # Force push to Hugging Face
 git push hf hf-snapshot:main --force --no-verify
