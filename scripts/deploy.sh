@@ -1,37 +1,29 @@
-# Usage: ./scripts/deploy.sh [image_tag] [--prod] [--dry-run]
+# Usage: ./scripts/deploy.sh <image_tag> [--prod] [--dry-run]
 # Default: Targets "DerekRoberts/landru" (TEST).
-# Use --prod to target "DerekRoberts/vexilon".
+# Use --prod as second argument to target "DerekRoberts/vexilon".
 
-# Strict mode
+# Strict mode + Trace
 set -euo pipefail
 set -x
 
-SPACE_NAME="DerekRoberts/landru"
-IMAGE_TAG=""
+IMAGE_TAG="${1:-}"
+MODE="${2:-}"
 DRY_RUN=false
-TMP_META=""
 
-# Argument Parsing
+if [ -z "$IMAGE_TAG" ]; then
+    echo "Error: Image tag (e.g. 'latest' or 'sha-123') must be provided."
+    exit 1
+fi
+
+SPACE_NAME="DerekRoberts/landru"
+if [[ "$MODE" == "--prod" ]]; then
+    echo "[safety] Production mode enabled."
+    SPACE_NAME="DerekRoberts/vexilon"
+fi
+
+# Detect --dry-run in any position
 for arg in "$@"; do
-  case "$arg" in
-    --prod)
-      echo "[safety] Production mode enabled."
-      SPACE_NAME="DerekRoberts/vexilon"
-      # Prioritize PRODUCTION token if available
-      HF_TOKEN=${HF_TOKEN_PRODUCTION:-$HF_TOKEN}
-      ;;
-    --dry-run)
-      DRY_RUN=true
-      ;;
-    -*)
-      echo "Unknown flag: $arg"
-      exit 1
-      ;;
-    *)
-      # Assume any non-flag argument is the image tag
-      IMAGE_TAG="$arg"
-      ;;
-  esac
+    [[ "$arg" == "--dry-run" ]] && DRY_RUN=true
 done
 
 if [ -z "${HF_TOKEN:-}" ] && [ "$DRY_RUN" == "false" ]; then
@@ -41,8 +33,44 @@ fi
 
 # Ensure working directory is clean before proceeding locally
 if [ -z "${GITHUB_ACTIONS:-}" ] && [ "$DRY_RUN" == "false" ] && ! git diff --quiet; then
-    echo "Error: Working directory must be clean before deploying locally. Please commit or stash your changes."
+    echo "Error: Working directory must be clean before deploying locally."
     exit 1
+fi
+
+# Make sure we are at the root of the repo
+cd "$(dirname "$0")/.."
+ORIGINAL_REF=$(git symbolic-ref -q --short HEAD || git rev-parse HEAD)
+
+function cleanup() {
+  git checkout "$ORIGINAL_REF" 2>/dev/null || true
+  git branch -D hf-snapshot 2>/dev/null || true
+  git remote remove hf 2>/dev/null || true
+}
+trap cleanup EXIT
+
+# Create an orphaned branch and clear it
+git branch -D hf-snapshot 2>/dev/null || true
+git checkout --orphan hf-snapshot
+git reset # Clears the index, but files remain on disk
+
+# We only want README.md and Dockerfile in the commit
+# We use a temp backup to avoid losing README if we were to git checkout elsewhere
+TMP_README=$(mktemp)
+cp README.md "$TMP_README"
+
+# Create the Stub Dockerfile
+cat <<EOF > Dockerfile
+FROM ghcr.io/derekroberts/vexilon:$IMAGE_TAG
+EOF
+
+if [ "$DRY_RUN" == "true" ]; then
+    echo "--- DRY RUN MODE ---"
+    echo "Target: $SPACE_NAME"
+    echo "Image:  $IMAGE_TAG"
+    echo "Dockerfile content:"
+    cat Dockerfile
+    echo "--- DRY RUN COMPLETE ---"
+    exit 0
 fi
 
 if [ -n "${GITHUB_ACTIONS:-}" ]; then
@@ -50,68 +78,14 @@ if [ -n "${GITHUB_ACTIONS:-}" ]; then
     git config user.name "GitHub Actions"
 fi
 
-# Make sure we are at the root of the repo
-cd "$(dirname "$0")/.."
-
-# Store original ref for cleanup, and set up a trap
-ORIGINAL_REF=$(git symbolic-ref -q --short HEAD || git rev-parse HEAD)
-function cleanup() {
-  if [[ "$(git branch --show-current)" == "hf-snapshot" ]]; then
-    git checkout "$ORIGINAL_REF" 2>/dev/null || true
-  fi
-  git branch -D hf-snapshot 2>/dev/null || true
-  git config --local --unset credential.https://huggingface.co.helper 2>/dev/null || true
-  git remote remove hf 2>/dev/null || true
-  [ -n "$TMP_META" ] && rm -rf "$TMP_META"
-}
-trap cleanup EXIT
-
-# Create an orphaned branch for the snapshot
-git branch -D hf-snapshot 2>/dev/null || true
-git checkout --orphan hf-snapshot
-
-if [ -z "$IMAGE_TAG" ]; then
-    echo "Error: Image tag (e.g. 'latest' or 'sha-123') must be provided."
-    echo "Use --dry-run to test the stub generation."
-    exit 1
-fi
-
-# --- SOURCE SCRUBBING / STUB GENERATION ---
-echo "[promote] Creating stub for image: $IMAGE_TAG"
-
-# Identify mandatory HF files (README.md for metadata)
-TMP_META=$(mktemp -d)
-[ -f README.md ] && cp README.md "$TMP_META/"
-
-# Nuke everything
-git rm -rf . > /dev/null 2>&1 || true
-
-# Restore metadata
-[ -f "$TMP_META/README.md" ] && cp "$TMP_META/README.md" . && git add README.md
-
-# Create the Stub Dockerfile
-cat <<EOF > Dockerfile
-FROM ghcr.io/derekroberts/vexilon:$IMAGE_TAG
-EOF
+# Re-add only what we need
 git add Dockerfile
-COMMIT_MSG="promote: $IMAGE_TAG"
+cp "$TMP_README" README.md && git add README.md
+rm "$TMP_README"
 
-if [ "$DRY_RUN" == "true" ]; then
-    echo "--- DRY RUN MODE ---"
-    echo "Target Space: $SPACE_NAME"
-    echo "Commit Message: $COMMIT_MSG"
-    echo "Generated Dockerfile content:"
-    cat Dockerfile 2>/dev/null || echo "(No Dockerfile generated - full source deploy)"
-    echo "Files in snapshot:"
-    ls -A
-    echo "--- DRY RUN COMPLETE ---"
-    exit 0
-fi
+git commit -m "promote: $IMAGE_TAG from $ORIGINAL_REF"
 
-# Commit the snapshot
-git commit -m "$COMMIT_MSG"
-
-# Force push to Hugging Face
+# Auth and Push
 git remote add hf "https://huggingface.co/spaces/${SPACE_NAME}" 2>/dev/null || true
 git config --local credential.https://huggingface.co.helper '!f() { echo "username=api"; echo "password=${HF_TOKEN}"; }; f'
 git push hf hf-snapshot:main --force --no-verify
