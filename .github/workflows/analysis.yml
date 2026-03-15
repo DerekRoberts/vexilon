@@ -144,9 +144,26 @@ jobs:
         if: failure()
         run: podman logs vexilon-app
 
+  promote_test:
+    name: Promote to TEST
+    needs: [container_build, container_test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: test
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Push image-based stub to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: ./.github/scripts/deploy.sh "sha-${{ github.sha }}"
+
   results:
     name: Results
-    needs: [container_build, container_test]
+    needs: [container_build, container_test, promote_test]
     if: always()
     runs-on: ubuntu-slim
     steps:
