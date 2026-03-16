@@ -44,7 +44,7 @@ COPY --chown=1001:1001 pdf_cache/ ./pdf_cache/
 COPY --chown=1001:1001 app.py ./
 
 # Bake the build timestamp into a file after code is copied
-RUN date +%Y%m%d-%H%M%S > /app/build_version.txt
+RUN date -u +"%Y-%m-%d %H:%M UTC" > /app/build_version.txt && chown 1001:1001 /app/build_version.txt
 
 # 3. Bake the index using the copied virtual environment
 # We run this during the build for zero-downtime startups
