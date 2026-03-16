@@ -48,3 +48,26 @@ def test_claude_model_exists_and_responds():
 
     # Any valid response confirms the model is reachable
     assert response.content is not None
+
+
+def test_condense_model_exists_and_responds():
+    """
+    Send a minimal 1-token request to CONDENSE_MODEL.
+    """
+    from app import CONDENSE_MODEL
+
+    client = anthropic.Anthropic()
+    try:
+        response = client.messages.create(
+            model=CONDENSE_MODEL,
+            max_tokens=1,
+            messages=[{"role": "user", "content": "ping"}],
+        )
+    except anthropic.NotFoundError as exc:
+        pytest.fail(
+            f"CONDENSE_MODEL='{CONDENSE_MODEL}' does not exist in the Anthropic API.\n"
+            f"Update the default in app.py or set the CONDENSE_MODEL env var.\n"
+            f"Original error: {exc}"
+        )
+
+    assert response.content is not None
