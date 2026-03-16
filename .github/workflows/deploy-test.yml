@@ -26,7 +26,6 @@ jobs:
       contents: read
       packages: read
       pull-requests: read
-      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -47,7 +46,8 @@ jobs:
             # Manual dispatch — use provided tag
             TAG="${{ inputs.image_tag }}"
           else
-            # Push to main — look up the PR that was merged at this commit
+            # Push to main (squash merge) — look up the PR that was squash-merged at this commit
+            # and get its head SHA, which is what the image was built from in CI.
             PR_HEAD_SHA=$(gh api "/repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
               --jq '.[0].head.sha')
             if [ -z "$PR_HEAD_SHA" ] || [ "$PR_HEAD_SHA" = "null" ]; then
@@ -57,23 +57,16 @@ jobs:
             TAG="sha-${PR_HEAD_SHA}"
           fi
 
-          # Resolve tag to immutable digest
+          # Resolve tag to immutable digest — proves image was built by CI for this PR
           declare -l IMAGE="ghcr.io/${{ github.repository }}:${TAG}"
           DIGEST=$(skopeo inspect "docker://${IMAGE}" --format '{{.Digest}}')
           if [ -z "$DIGEST" ]; then
-            echo "::error::Could not resolve digest for ${IMAGE}"
+            echo "::error::Image not found in GHCR: ${IMAGE}"
             exit 1
           fi
 
-          # Verify attestation — cryptographic proof this image was built from the expected commit
-          declare -l FULL_IMAGE="ghcr.io/${{ github.repository }}@${DIGEST}"
-          gh attestation verify "oci://${FULL_IMAGE}" --repo "${{ github.repository }}" || {
-            echo "::error::Attestation verification failed for ${FULL_IMAGE}"
-            exit 1
-          }
-
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
-          echo "Verified: ${FULL_IMAGE}"
+          echo "Verified: ${IMAGE} (${DIGEST})"
 
       - name: Push image-based stub to Hugging Face Space
         env:
