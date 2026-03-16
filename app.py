@@ -51,7 +51,7 @@ _GITHUB_RAW_BASE = (
 )
 
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
-CONDENSER_MODEL = os.getenv("CONDENSER_MODEL", "claude-haiku-4-5-20251001")
+CONDENSE_MODEL = os.getenv("CONDENSE_MODEL", "claude-haiku-4-5-20251001")
 EMBED_MODEL = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 256))       # tokens per chunk
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 50))  # token overlap
@@ -367,7 +367,7 @@ async def condense_query(message: str, history: list[dict]) -> str:
 
     try:
         response = await client.messages.create(
-            model=CONDENSER_MODEL,
+            model=CONDENSE_MODEL,
             max_tokens=100,
             messages=[{"role": "user", "content": prompt}]
         )
