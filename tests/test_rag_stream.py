@@ -40,6 +40,23 @@ def _fake_chunks() -> list[dict]:
     ]
 
 
+def _mock_final_message(mock_stream: MagicMock):
+    """Attaches a mock get_final_message to a stream mock."""
+    fake_usage = MagicMock(
+        input_tokens=10,
+        output_tokens=5,
+        cache_creation_input_tokens=0,
+        cache_read_input_tokens=0,
+    )
+    fake_message = MagicMock()
+    fake_message.usage = fake_usage
+
+    async def _get_final():
+        return fake_message
+
+    mock_stream.get_final_message = _get_final
+
+
 def _stream_yielding(tokens: list[str]):
     """Return an async context-manager mock whose .text_stream yields *tokens*."""
 
@@ -50,18 +67,7 @@ def _stream_yielding(tokens: list[str]):
             for t in tokens:
                 yield t
         mock_stream.text_stream = _async_gen()
-        # Simulate get_final_message() returning a message with zero cache tokens.
-        fake_usage = MagicMock(
-            input_tokens=10,
-            output_tokens=5,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        )
-        fake_message = MagicMock()
-        fake_message.usage = fake_usage
-        async def _get_final():
-            return fake_message
-        mock_stream.get_final_message = _get_final
+        _mock_final_message(mock_stream)
         yield mock_stream
 
     return _ctx
@@ -122,17 +128,7 @@ async def test_rag_stream_includes_page_context_in_system_prompt(monkeypatch):
         async def _async_gen():
             yield "ok"
         mock_stream.text_stream = _async_gen()
-        fake_usage = MagicMock(
-            input_tokens=10,
-            output_tokens=5,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        )
-        fake_message = MagicMock()
-        fake_message.usage = fake_usage
-        async def _get_final():
-            return fake_message
-        mock_stream.get_final_message = _get_final
+        _mock_final_message(mock_stream)
         yield mock_stream
 
     mock_client = MagicMock()
@@ -182,17 +178,7 @@ async def test_rag_stream_appends_user_message_last(monkeypatch):
         async def _async_gen():
             yield "ok"
         mock_stream.text_stream = _async_gen()
-        fake_usage = MagicMock(
-            input_tokens=10,
-            output_tokens=5,
-            cache_creation_input_tokens=0,
-            cache_read_input_tokens=0,
-        )
-        fake_message = MagicMock()
-        fake_message.usage = fake_usage
-        async def _get_final():
-            return fake_message
-        mock_stream.get_final_message = _get_final
+        _mock_final_message(mock_stream)
         yield mock_stream
 
     mock_client = MagicMock()
