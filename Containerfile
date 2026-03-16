@@ -17,7 +17,18 @@ RUN --mount=type=cache,target=/root/.cache/huggingface \
     HF_HOME=/app/hf_cache \
     uv run python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
-# ─── Stage 2: Runtime ─────────────────────────────────────────────────────────
+# ─── Stage 2: Test ────────────────────────────────────────────────────────────
+# This stage runs the full test suite inside the container environment.
+# Build with: podman build --target test .
+FROM builder AS test
+COPY . .
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen
+# Use the same HF_HOME logic as production
+ENV HF_HOME=/app/hf_cache
+RUN uv run pytest tests/
+
+# ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
 FROM python:3.14.3-slim AS runner
 
 # Build provenance

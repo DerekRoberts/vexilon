@@ -28,6 +28,8 @@ pdf_cache/          # Cached downloaded PDFs — add negation below for bundled 
 !pdf_cache/chunks.json   # Pre-computed chunk metadata (committed alongside index)
 gradio_cached_examples/
 flagged/
+# HuggingFace model weight cache (baked into image, not repo)
+hf_cache/
 
 # ─── Logs
 logs

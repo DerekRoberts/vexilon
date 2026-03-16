@@ -29,14 +29,10 @@ from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 # Ensure the HuggingFace model cache is writable and persistent.
-# In the container, /app/hf_cache is set via ENV. Locally, we default to
-# a sibling of the app code to keep the repo clean but writable.
+# Inside the container (WORKDIR /app), this resolves to /app/hf_cache.
+# Locally, it resolves to ./hf_cache in the repo root.
 if not os.getenv("HF_HOME"):
-    if os.path.exists("/app") and os.access("/app", os.W_OK):
-        os.environ["HF_HOME"] = "/app/hf_cache"
-    else:
-        # Fallback to local ./hf_cache if /app is not writable
-        os.environ["HF_HOME"] = str(Path("./hf_cache").absolute())
+    os.environ["HF_HOME"] = str(Path("./hf_cache").absolute())
 
 # ─── Third-party: Deferred Imports ───────────────────────────────────────────
 # (numpy, pypdf, anthropic, faiss, sentence_transformers, gradio)
