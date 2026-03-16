@@ -113,6 +113,13 @@ jobs:
           build-args: |
             VERSION=sha-${{ steps.sha.outputs.commit }}
 
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/${{ github.repository }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
       - name: Output Status
         run: echo "Build successful for ${{ github.repository }} (Digest ${{ steps.build.outputs.digest }})"
 
