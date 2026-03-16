@@ -441,8 +441,8 @@ async def rag_stream(message: str, history: list[dict]) -> AsyncIterator[str]:
             # Log cache effectiveness so we can verify caching is working.
             final = await stream.get_final_message()
             usage = final.usage
-            cache_created = getattr(usage, "cache_creation_input_tokens", 0) or 0
-            cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
+            cache_created = usage.cache_creation_input_tokens or 0
+            cache_read = usage.cache_read_input_tokens or 0
             print(
                 f"[rag] Tokens — input: {usage.input_tokens}, "
                 f"cache_create: {cache_created}, cache_read: {cache_read}, "
