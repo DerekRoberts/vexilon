@@ -152,8 +152,8 @@ def get_anthropic() -> "anthropic.AsyncAnthropic":
 
 # ─── System Prompt ───────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """You are Vexilon, a professional assistant designed to support BCGEU union stewards. \
-Your knowledge base includes the 19th Main Public Service Agreement, the BC Labour Relations Code, \
-Steward Resource manuals, and Public Service ethics guidelines.
+Your knowledge base includes the 19th Main Public Service Agreement, the BC Employment Standards Act, \
+the BC Labour Relations Code, the BC Human Rights Code, Steward Resource manuals, and Public Service ethics guidelines.
 
 Rules you must follow without exception:
 
@@ -161,12 +161,14 @@ Rules you must follow without exception:
 2. Every claim must be supported by a verbatim quote from the provided excerpts, formatted as a \
 markdown blockquote (> "...") followed by its citation: — [Document Name], Article/Section [X], [Title if available], p. [N]
 3. Plain-language explanation comes BEFORE the verbatim quote, not after.
-4. If the excerpts do not address the question, say so clearly: \
+4. If a question is covered by multiple documents, ALWAYS prioritize and lead with the Collective Agreement (Main Agreement) \
+as stewards can primarily enforce the contract. Cite the Employment Standards Act, Labour Code, or Human Rights Code as additional context.
+5. If the excerpts do not address the question, say so clearly: \
 "The provided documents do not appear to address this question in the excerpts I was given."
-5. Do not predict outcomes, advise on strategy, or offer legal opinions.
-6. Tone: professional but plain language. Your audience consists of union stewards under pressure.
-7. If multiple clauses are relevant, quote each one separately with its own citation.
-8. Maintain conversational continuity. Use the previous conversation context and the provided excerpts.
+6. Do not predict outcomes, advise on strategy, or offer legal opinions.
+7. Tone: professional but plain language. Your audience consists of union stewards under pressure.
+8. If multiple clauses are relevant, quote each one separately with its own citation.
+9. Maintain conversational continuity. Use the previous conversation context and the provided excerpts.
 
 Response format:
 
@@ -324,7 +326,7 @@ def _fetch_pdf_cache_if_missing() -> None:
     """
     files = {
         # Fallback downloads for core agreement if index is missing
-        PDF_CACHE_DIR / "main_public_service_19th.pdf": f"{_GITHUB_RAW_BASE}/main_public_service_19th.pdf",
+        PDF_CACHE_DIR / "bcgeu_19th_main_agreement.pdf": f"{_GITHUB_RAW_BASE}/bcgeu_19th_main_agreement.pdf",
         INDEX_PATH: f"{_GITHUB_RAW_BASE}/index.faiss",
         CHUNKS_PATH: f"{_GITHUB_RAW_BASE}/chunks.json",
     }
@@ -370,9 +372,9 @@ def startup(force_rebuild: bool = False) -> None:
     if not LABOUR_LAW_DIR.exists():
         LABOUR_LAW_DIR.mkdir(parents=True, exist_ok=True)
         # If empty, copy the default agreement from cache if it exists
-        default_pdf = PDF_CACHE_DIR / "main_public_service_19th.pdf"
+        default_pdf = PDF_CACHE_DIR / "bcgeu_19th_main_agreement.pdf"
         if default_pdf.exists():
-            shutil.copy(default_pdf, LABOUR_LAW_DIR / "bcgeu_main_19th.pdf")
+            shutil.copy(default_pdf, LABOUR_LAW_DIR / "bcgeu_19th_main_agreement.pdf")
 
     pdf_files = list(LABOUR_LAW_DIR.glob("*.pdf"))
     if not pdf_files:
@@ -564,7 +566,7 @@ def build_ui() -> "gr.Blocks":
 
         # ── Header ────────────────────────────────────────────────────────────
         gr.Markdown("## BCGEU Steward Assistant (Vexilon)\n"
-                    "*19th Main Agreement • Labour Relations Code • Steward Resources*")
+                    "*Main Agreement • Labour Code • ESA • Human Rights Code*")
 
         # ── Disclaimer (persistent, non-dismissible) ──────────────────────────
         gr.HTML(DISCLAIMER_HTML)

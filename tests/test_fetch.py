@@ -22,8 +22,8 @@ import app
 def _patch_paths(monkeypatch, tmp_path: Path) -> dict:
     """Redirect all three pdf_cache paths into tmp_path and return them."""
     # We no longer have PDF_PATH globally, but _fetch_pdf_cache_if_missing 
-    # uses PDF_CACHE_DIR / "main_public_service_19th.pdf"
-    pdf_path = tmp_path / "main_public_service_19th.pdf"
+    # uses PDF_CACHE_DIR / "bcgeu_19th_main_agreement.pdf"
+    pdf_path = tmp_path / "bcgeu_19th_main_agreement.pdf"
     index_path = tmp_path / "index.faiss"
     chunks_path = tmp_path / "chunks.json"
     
