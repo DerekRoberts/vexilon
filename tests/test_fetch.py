@@ -21,10 +21,12 @@ import app
 
 def _patch_paths(monkeypatch, tmp_path: Path) -> dict:
     """Redirect all three pdf_cache paths into tmp_path and return them."""
+    # We no longer have PDF_PATH globally, but _fetch_pdf_cache_if_missing 
+    # uses PDF_CACHE_DIR / "main_public_service_19th.pdf"
     pdf_path = tmp_path / "main_public_service_19th.pdf"
     index_path = tmp_path / "index.faiss"
     chunks_path = tmp_path / "chunks.json"
-    monkeypatch.setattr(app, "PDF_PATH", pdf_path)
+    
     monkeypatch.setattr(app, "INDEX_PATH", index_path)
     monkeypatch.setattr(app, "CHUNKS_PATH", chunks_path)
     monkeypatch.setattr(app, "PDF_CACHE_DIR", tmp_path)
@@ -108,7 +110,6 @@ def test_creates_cache_dir_when_missing(monkeypatch, tmp_path):
     # Point cache dir to a subdirectory that doesn't exist yet
     missing_dir = tmp_path / "new_cache_dir"
     monkeypatch.setattr(app, "PDF_CACHE_DIR", missing_dir)
-    monkeypatch.setattr(app, "PDF_PATH", missing_dir / "main.pdf")
     monkeypatch.setattr(app, "INDEX_PATH", missing_dir / "index.faiss")
     monkeypatch.setattr(app, "CHUNKS_PATH", missing_dir / "chunks.json")
 
