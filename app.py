@@ -41,7 +41,7 @@ print("[boot] All boilerplate complete.", flush=True)
 
 # ─── Configuration ───────────────────────────────────────────────────────────
 PDF_CACHE_DIR = Path("./pdf_cache")
-PDF_PATH = PDF_CACHE_DIR / "main_public_service_19th.pdf"
+LABOUR_LAW_DIR = Path("./data/labour_law")
 INDEX_PATH = PDF_CACHE_DIR / "index.faiss"
 CHUNKS_PATH = PDF_CACHE_DIR / "chunks.json"
 
@@ -150,39 +150,39 @@ def get_anthropic() -> "anthropic.AsyncAnthropic":
 
 
 # ─── System Prompt ───────────────────────────────────────────────────────────
-SYSTEM_PROMPT = """You are a helpful assistant for looking up the 19th Main Public Service Agreement. \
-You help users navigate the collective agreement for the Social, Information & Health bargaining unit.
+SYSTEM_PROMPT = """You are Vexilon, a professional assistant designed to support BCGEU union stewards. \
+Your knowledge base includes the 19th Main Public Service Agreement, the BC Labour Relations Code, \
+Steward Resource manuals, and Public Service ethics guidelines.
 
 Rules you must follow without exception:
 
 1. You may only answer using the provided agreement excerpts. Do not draw on outside knowledge.
 2. Every claim must be supported by a verbatim quote from the provided excerpts, formatted as a \
-markdown blockquote (> "...") followed by its citation: — Article [X], [Title], p. [N]
+markdown blockquote (> "...") followed by its citation: — [Document Name], Article/Section [X], [Title if available], p. [N]
 3. Plain-language explanation comes BEFORE the verbatim quote, not after.
 4. If the excerpts do not address the question, say so clearly: \
-"The collective agreement does not appear to address this question in the excerpts I was given."
+"The provided documents do not appear to address this question in the excerpts I was given."
 5. Do not predict outcomes, advise on strategy, or offer legal opinions.
-6. Tone: plain language. Your audience has no legal background.
+6. Tone: professional but plain language. Your audience consists of union stewards under pressure.
 7. If multiple clauses are relevant, quote each one separately with its own citation.
-8. Maintain conversational continuity. If the user asks a follow-up question, use the previous \
-conversation context and the provided excerpts to provide a coherent answer.
+8. Maintain conversational continuity. Use the previous conversation context and the provided excerpts.
 
 Response format:
 
 [Plain-language explanation]
 
-> "[Verbatim quote from the agreement]"
-> — Article [X], [Title], p. [N]
+> "[Verbatim quote from the agreement or document]"
+> — [Document Name], Article/Section [X], p. [N]
 
 [Optional: "This may also be relevant:" + follow-up suggestion]
 """
 
 # ─── Chunking ─────────────────────────────────────────────────────────────────
 
-def chunk_text(text: str, page_num: int) -> list[dict]:
+def chunk_text(text: str, page_num: int, metadata: dict) -> list[dict]:
     """
     Split *text* into overlapping token-based chunks using the embedding model's tokenizer.
-    Returns list of dicts: {text, page, chunk_index}.
+    Returns list of dicts: {text, page, source, chunk_index}.
     """
     if not text.strip():
         return []
@@ -210,6 +210,7 @@ def chunk_text(text: str, page_num: int) -> list[dict]:
         chunks.append({
             "text": chunk_text_str,
             "page": page_num,
+            "source": metadata.get("source", "Unknown"),
             "chunk_index": idx,
         })
         idx += 1
@@ -221,16 +222,19 @@ def chunk_text(text: str, page_num: int) -> list[dict]:
 def load_pdf_chunks(pdf_path: Path) -> list[dict]:
     """
     Parse the PDF at *pdf_path* and return all chunks with page metadata.
-    Page numbers are 1-based (matching the printed page numbers in the PDF).
+    Page numbers are 1-based.
     """
     from pypdf import PdfReader
     reader = PdfReader(str(pdf_path))
     all_chunks = []
+    source_name = pdf_path.stem.replace("_", " ").title()
+    print(f"[loader] Parsing '{source_name}' ({len(reader.pages)} pages)…")
+    
     for page_idx, page in enumerate(reader.pages):
         page_num = page_idx + 1  # 1-based
         text = page.extract_text() or ""
         if text.strip():
-            all_chunks.extend(chunk_text(text, page_num))
+            all_chunks.extend(chunk_text(text, page_num, {"source": source_name}))
     return all_chunks
 
 
@@ -316,7 +320,8 @@ def _fetch_pdf_cache_if_missing() -> None:
     to the Space git repo. Files are downloaded from the public GitHub raw URL.
     """
     files = {
-        PDF_PATH: f"{_GITHUB_RAW_BASE}/main_public_service_19th.pdf",
+        # Fallback downloads for core agreement if index is missing
+        PDF_CACHE_DIR / "main_public_service_19th.pdf": f"{_GITHUB_RAW_BASE}/main_public_service_19th.pdf",
         INDEX_PATH: f"{_GITHUB_RAW_BASE}/index.faiss",
         CHUNKS_PATH: f"{_GITHUB_RAW_BASE}/chunks.json",
     }
@@ -358,9 +363,26 @@ def startup(force_rebuild: bool = False) -> None:
             return
 
     # ── Slow path: build from scratch ────────────────────────────────────
-    print(f"[startup] Loading PDF from {PDF_PATH}…")
-    _chunks = load_pdf_chunks(PDF_PATH)
-    print(f"[startup] {len(_chunks)} chunks loaded from {PDF_PATH.name}")
+    print(f"[startup] Scanning for PDFs in {LABOUR_LAW_DIR}…")
+    if not LABOUR_LAW_DIR.exists():
+        LABOUR_LAW_DIR.mkdir(parents=True, exist_ok=True)
+        # If empty, copy the default agreement from cache if it exists
+        default_pdf = PDF_CACHE_DIR / "main_public_service_19th.pdf"
+        if default_pdf.exists():
+            import shutil
+            shutil.copy(default_pdf, LABOUR_LAW_DIR / "bcgeu_main_19th.pdf")
+
+    pdf_files = list(LABOUR_LAW_DIR.glob("*.pdf"))
+    if not pdf_files:
+        print("[startup] No PDF files found to index!")
+        return
+
+    _chunks = []
+    for pdf in pdf_files:
+        _chunks.extend(load_pdf_chunks(pdf))
+    
+    num_chunks = len(_chunks)
+    print(f"[startup] Total {num_chunks} chunks loaded from {len(pdf_files)} files.")
     _index = build_index(_chunks)
     save_index(_index, _chunks)
     print("[startup] Ready.")
@@ -442,7 +464,7 @@ async def rag_stream(message: str, history: list[dict]) -> AsyncIterator[str]:
     context_parts = []
     for chunk in relevant_chunks:
         context_parts.append(
-            f"[Page {chunk['page']}]\n{chunk['text']}"
+            f"[Source: {chunk.get('source', 'Unknown')}, Page: {chunk['page']}]\n{chunk['text']}"
         )
     context = "\n\n---\n\n".join(context_parts)
 
@@ -498,11 +520,11 @@ async def rag_stream(message: str, history: list[dict]) -> AsyncIterator[str]:
 
 # ─── Gradio UI ────────────────────────────────────────────────────────────────
 EXAMPLE_QUESTIONS = [
-    "What are my overtime rights?",
-    "What is the probationary period?",
-    "Can my employer change my schedule without notice?",
-    "What happens if I am disciplined?",
-    "Am I entitled to union representation?",
+    "What are the just cause requirements for discipline?",
+    "What rights do stewards have in investigation meetings?",
+    "What is the nexus test for off-duty conduct?",
+    "Does my employer have a social media policy?",
+    "What happens if I'm disciplined for off-duty behavior?",
 ]
 
 # Disclaimer rendered entirely with inline styles so Gradio theme cannot override text colour.
@@ -539,8 +561,8 @@ def build_ui() -> "gr.Blocks":
     with gr.Blocks(title="Collective Agreement Explorer") as demo:
 
         # ── Header ────────────────────────────────────────────────────────────
-        gr.Markdown("## BCGEU Collective Agreement Explorer\n"
-                    "*19th Main Agreement; Social, Information & Health*")
+        gr.Markdown("## BCGEU Steward Assistant (Vexilon)\n"
+                    "*19th Main Agreement • Labour Relations Code • Steward Resources*")
 
         # ── Disclaimer (persistent, non-dismissible) ──────────────────────────
         gr.HTML(DISCLAIMER_HTML)
