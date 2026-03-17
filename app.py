@@ -23,6 +23,7 @@ import sys
 print("[boot] Python started, importing stdlib...", flush=True)
 import json
 import os
+import shutil
 import time
 import urllib.request
 from collections.abc import AsyncIterator, Iterator
@@ -179,11 +180,13 @@ Response format:
 
 # ─── Chunking ─────────────────────────────────────────────────────────────────
 
-def chunk_text(text: str, page_num: int, metadata: dict) -> list[dict]:
+def chunk_text(text: str, page_num: int, metadata: dict | None = None) -> list[dict]:
     """
     Split *text* into overlapping token-based chunks using the embedding model's tokenizer.
     Returns list of dicts: {text, page, source, chunk_index}.
     """
+    if metadata is None:
+        metadata = {}
     if not text.strip():
         return []
     tokenizer = get_embed_model().tokenizer
@@ -369,7 +372,6 @@ def startup(force_rebuild: bool = False) -> None:
         # If empty, copy the default agreement from cache if it exists
         default_pdf = PDF_CACHE_DIR / "main_public_service_19th.pdf"
         if default_pdf.exists():
-            import shutil
             shutil.copy(default_pdf, LABOUR_LAW_DIR / "bcgeu_main_19th.pdf")
 
     pdf_files = list(LABOUR_LAW_DIR.glob("*.pdf"))
