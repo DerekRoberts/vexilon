@@ -166,19 +166,17 @@ You have access to a comprehensive, full-text library of the following documents
 
 Rules you must follow without exception:
 
-1. You use RAG (Retrieval-Augmented Generation) to search this full-text library. If your current context does not contain a specific article, DO NOT say you "don't have the agreement." Instead, state that the specific article was not retrieved for this query and suggest the user narrow down the article number.
-2. Every claim must be supported by a verbatim quote from the provided excerpts, formatted as a \
-markdown blockquote (> "...") followed by its citation: — [Document Name], Article/Section [X], [Title if available], p. [N]
+1. PRECISION OVER HELPFULNESS: If the search results show only a Table of Contents entry or a reference to a section (e.g., "See Section 10.4") but the actual text of that section is NOT in your retrieved snippets, you MUST state that the specific language is not available in your current view. NEVER assume or guess the content of a missing section.
+2. Every claim must be supported by a verbatim quote from the provided excerpts, formatted as a markdown blockquote (> "...") followed by its citation: — [Document Name], Article/Section [X], [Title if available], p. [N]
 3. Plain-language explanation comes BEFORE the verbatim quote, not after.
 4. ALWAYS prioritize and lead with the Collective Agreement (Main Agreement) as the primary authority.
-5. If the retrieved text is insufficient to answer reliably, explain exactly what part (e.g., "The body of Article 8.1 is missing from these search results") rather than claiming the system is incomplete.
+5. If you detect a "gap" (e.g., you see Section 10.1 and 10.3 but not 10.2), explicitly inform the user: "I see a gap in the retrieved sections. Please allow me to BROADEN my search or check the specific Article yourself."
 6. Do not predict outcomes or give legal opinions.
-7. Tone: professional, plain language, and confident.
+7. Tone: professional, forensic, and confident but cautious about data gaps.
 8. Cite every relevant clause separately.
 9. Maintain conversational continuity. Use the previous conversation context and the provided excerpts.
-10. If the search results show only a Table of Contents entry, do not guess the content. Tell the user you see the reference but need to search deeper for that specific clause number.
-11. Search deeply: Look for the *actual* clauses, not just references.
-12. CONFIDENCE: You are NOT an "excerpt-only" assistant. You have the full library. Act like it.
+10. If the search results are contradictory or unclear, flag this ambiguity to the user immediately.
+11. Search deeply: Every chunk in your library is tagged with its Article or Appendix name to ensure context is never lost.
 
 Response format:
 
@@ -187,7 +185,7 @@ Response format:
 > "[Verbatim quote]"
 — [Document Name], Article/Section [X], p. [N]
 
-[Optional: "This may also be relevant:" + follow-up suggestion]
+[Optional: "Data Gap Warning: Text for Section [X.Y] was not retrieved in this search."]
 """
 
 # ─── Chunking ─────────────────────────────────────────────────────────────────
@@ -195,6 +193,7 @@ Response format:
 def chunk_text(text: str, page_num: int, metadata: dict | None = None) -> list[dict]:
     """
     Split *text* into overlapping token-based chunks using the embedding model's tokenizer.
+    Prepends context (Source + Header) to every chunk to ensure search discoverability.
     Returns list of dicts: {text, page, source, chunk_index}.
     """
     if metadata is None:
@@ -220,12 +219,18 @@ def chunk_text(text: str, page_num: int, metadata: dict | None = None) -> list[d
         chunk_char_start = offsets[start][0]
         chunk_char_end = offsets[end - 1][1]
         
-        chunk_text_str = text[chunk_char_start:chunk_char_end]
+        # Contextual Breadcrumb: Prepend source + header so the search engine
+        # always 'sees' the Article/Appendix title even for middle sections.
+        header = metadata.get("header", "")
+        prefix = f"[{metadata.get('source', 'Unknown')} - {header}] " if header else f"[{metadata.get('source', 'Unknown')}] "
+        
+        chunk_text_str = prefix + text[chunk_char_start:chunk_char_end]
         
         chunks.append({
             "text": chunk_text_str,
             "page": page_num,
             "source": metadata.get("source", "Unknown"),
+            "header": header,
             "chunk_index": idx,
         })
         idx += 1
@@ -237,19 +242,37 @@ def chunk_text(text: str, page_num: int, metadata: dict | None = None) -> list[d
 def load_pdf_chunks(pdf_path: Path) -> list[dict]:
     """
     Parse the PDF at *pdf_path* and return all chunks with page metadata.
-    Page numbers are 1-based.
+    Uses 'breadcrumbing' to track Current Article/Appendix as it scans.
     """
     from pypdf import PdfReader
+    import re
+    
     reader = PdfReader(str(pdf_path))
     all_chunks = []
     source_name = pdf_path.stem.replace("_", " ").title()
     print(f"[loader] Parsing '{source_name}' ({len(reader.pages)} pages)…")
     
+    current_header = ""
+    # Regex to find 'ARTICLE 10' or 'APPENDIX 4' at the start of lines
+    header_pattern = re.compile(r"^\s*(ARTICLE|APPENDIX)\s+(\d+|[A-Z]+)", re.IGNORECASE)
+    
     for page_idx, page in enumerate(reader.pages):
-        page_num = page_idx + 1  # 1-based
+        page_num = page_idx + 1
         text = page.extract_text() or ""
+        
+        # Heuristic: Check the first few lines of the page for a new Article/Appendix header
+        lines = text.split("\n")
+        for line in lines[:5]: # Usually headers are at the top
+            match = header_pattern.search(line)
+            if match:
+                current_header = match.group(0).strip().upper()
+                break # Found a new context for this (and subsequent) pages
+                
         if text.strip():
-            all_chunks.extend(chunk_text(text, page_num, {"source": source_name}))
+            all_chunks.extend(chunk_text(text, page_num, {
+                "source": source_name,
+                "header": current_header
+            }))
     return all_chunks
 
 
