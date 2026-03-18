@@ -50,6 +50,8 @@ services:
       - ./tests:/app/tests:Z
       - ./pyproject.toml:/app/pyproject.toml:Z
       - ./uv.lock:/app/uv.lock:Z
+      - ./conftest.py:/app/conftest.py:Z
+      - ./compose.yml:/app/compose.yml:Z
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       HF_HOME: /app/hf_cache

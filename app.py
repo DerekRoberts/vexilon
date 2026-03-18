@@ -190,46 +190,34 @@ Response format:
 
 # ─── Chunking ─────────────────────────────────────────────────────────────────
 
-def chunk_text(text: str, page_num: int, metadata: dict | None = None) -> list[dict]:
+def chunk_text(full_text: str, token_data: list[tuple[int, int, int, str]], source_name: str) -> list[dict]:
     """
-    Split *text* into overlapping token-based chunks using the embedding model's tokenizer.
-    Prepends context (Source + Header) to every chunk to ensure search discoverability.
-    Returns list of dicts: {text, page, source, chunk_index}.
+    Split *full_text* into overlapping token-based chunks across the whole document.
+    Uses 'token_data' [(char_start, char_end, page_num, header)] to preserve metadata.
+    Returns list of dicts: {text, page, source, header, chunk_index}.
     """
-    if metadata is None:
-        metadata = {}
-    if not text.strip():
-        return []
-    tokenizer = get_embed_model().tokenizer
-    # Ensure the tokenizer doesn't truncate the whole page so we can split it manually
-    encoding = tokenizer(text, add_special_tokens=False, return_offsets_mapping=True, truncation=False)
-    tokens = encoding.input_ids
-    offsets = encoding.offset_mapping
     chunks = []
-    
-    if not tokens:
+    if not token_data:
         return chunks
         
-    start = 0
     idx = 0
-    while start < len(tokens):
-        end = min(start + CHUNK_SIZE, len(tokens))
+    start = 0
+    while start < len(token_data):
+        end = min(start + CHUNK_SIZE, len(token_data))
         
-        # We need the original text that spans these tokens to preserve original case
-        chunk_char_start = offsets[start][0]
-        chunk_char_end = offsets[end - 1][1]
+        # Get metadata from the first token of the chunk
+        char_start, _, page_num, header = token_data[start]
+        # End Char index is from the last token of the chunk
+        _, char_end, _, _ = token_data[end - 1]
         
-        # Contextual Breadcrumb: Prepend source + header so the search engine
-        # always 'sees' the Article/Appendix title even for middle sections.
-        header = metadata.get("header", "")
-        prefix = f"[{metadata.get('source', 'Unknown')} - {header}] " if header else f"[{metadata.get('source', 'Unknown')}] "
-        
-        chunk_text_str = prefix + text[chunk_char_start:chunk_char_end]
+        # Contextual Breadcrumb: Prepend source + header 
+        prefix = f"[{source_name} - {header}] " if header else f"[{source_name}] "
+        chunk_text_str = prefix + full_text[char_start:char_end]
         
         chunks.append({
             "text": chunk_text_str,
             "page": page_num,
-            "source": metadata.get("source", "Unknown"),
+            "source": source_name,
             "header": header,
             "chunk_index": idx,
         })
@@ -241,39 +229,53 @@ def chunk_text(text: str, page_num: int, metadata: dict | None = None) -> list[d
 # ─── PDF Loader ───────────────────────────────────────────────────────────────
 def load_pdf_chunks(pdf_path: Path) -> list[dict]:
     """
-    Parse the PDF at *pdf_path* and return all chunks with page metadata.
-    Uses 'breadcrumbing' to track Current Article/Appendix as it scans.
+    Parse the PDF at *pdf_path* into one continuous stream before chunking.
+    This bridges page boundaries so sentences that span pages aren't decapitated.
     """
     from pypdf import PdfReader
     import re
     
     reader = PdfReader(str(pdf_path))
-    all_chunks = []
     source_name = pdf_path.stem.replace("_", " ").title()
     print(f"[loader] Parsing '{source_name}' ({len(reader.pages)} pages)…")
     
+    tokenizer = get_embed_model().tokenizer
+    full_text = ""
+    token_metadata = [] # List of (char_start, char_end, page_num, header)
+    
     current_header = ""
-    # Regex to find 'ARTICLE 10' or 'APPENDIX 4' at the start of lines
     header_pattern = re.compile(r"^\s*(ARTICLE|APPENDIX)\s+(\d+|[A-Z]+)", re.IGNORECASE)
     
     for page_idx, page in enumerate(reader.pages):
         page_num = page_idx + 1
-        text = page.extract_text() or ""
-        
-        # Heuristic: Check the first few lines of the page for a new Article/Appendix header
-        lines = text.split("\n")
-        for line in lines[:5]: # Usually headers are at the top
+        page_text = page.extract_text() or ""
+        if not page_text.strip():
+            continue
+            
+        # Update breadcrumb header context
+        for line in page_text.split("\n")[:10]:
+            if ".........." in line or line.strip().endswith((".",)) and re.search(r"\d+$", line.strip()):
+                continue
             match = header_pattern.search(line)
             if match:
                 current_header = match.group(0).strip().upper()
-                break # Found a new context for this (and subsequent) pages
-                
-        if text.strip():
-            all_chunks.extend(chunk_text(text, page_num, {
-                "source": source_name,
-                "header": current_header
-            }))
-    return all_chunks
+                break # Usually one primary header per page top
+
+        # Track offsets in the global full_text
+        page_offset = len(full_text)
+        full_text += page_text + "\n"
+        
+        # Tokenize this page and record metadata for every token
+        encoding = tokenizer(page_text, add_special_tokens=False, return_offsets_mapping=True, truncation=False)
+        for start, end in encoding.offset_mapping:
+            token_metadata.append((
+                page_offset + start, 
+                page_offset + end, 
+                page_num, 
+                current_header
+            ))
+            
+    return chunk_text(full_text, token_metadata, source_name)
 
 
 # ─── FAISS Index ──────────────────────────────────────────────────────────────
@@ -389,8 +391,8 @@ def startup(force_rebuild: bool = False) -> None:
     """
     global _chunks, _index
     get_anthropic()  # Ping early to catch missing ANTHROPIC_API_KEY
-    _fetch_pdf_cache_if_missing()
     if not force_rebuild:
+        _fetch_pdf_cache_if_missing()
         index, chunks = load_precomputed_index()
         if index is not None and chunks is not None:
             _index = index

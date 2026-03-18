@@ -39,8 +39,7 @@ WORKDIR /app
 COPY --from=builder --chown=1001:1001 /app/.venv /app/.venv
 COPY --from=builder --chown=1001:1001 /app/hf_cache /app/hf_cache
 
-# 2. Copy application code and PDF assets
-COPY --chown=1001:1001 pdf_cache/ ./pdf_cache/
+# 2. Copy application code and PDF assets (excluding ignored caches)
 COPY --chown=1001:1001 data/ ./data/
 COPY --chown=1001:1001 app.py ./
 

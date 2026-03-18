@@ -16,9 +16,9 @@ async def test_full_rag_flow_integration(monkeypatch, mock_anthropic):
     Uses the real PDF and real embedding model.
     """
     # 1. Setup: Ensure we use the real PDF and a temporary index path to avoid clobbering prod
-    test_pdf = Path("pdf_cache/main_public_service_19th.pdf")
+    test_pdf = Path("data/labour_law/bcgeu_19th_main_agreement.pdf")
     if not test_pdf.exists():
-        pytest.skip("Agreement PDF missing; cannot run full integration test.")
+        pytest.skip(f"Agreement PDF missing at {test_pdf}; cannot run full integration test.")
 
     # Mock the anthropic client globally for the app
     monkeypatch.setattr(app, "get_anthropic", lambda: mock_anthropic)
