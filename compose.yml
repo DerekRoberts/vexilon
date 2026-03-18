@@ -54,5 +54,6 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       HF_HOME: /app/hf_cache
       TRANSFORMERS_OFFLINE: "1"
-    # We use the builder target but sync dev deps at runtime to avoid bloating the image
-    command: sh -c "uv sync --frozen && uv run pytest tests/test_*.py tests/integration/ -v"
+      PYTHONPATH: "/app"
+    # We use python -m pytest to ensure /app is in the sys.path for module discovery
+    command: sh -c "uv sync --frozen && uv run python -m pytest tests/test_*.py tests/integration/ -v"
