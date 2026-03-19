@@ -24,8 +24,6 @@ print("[boot] Python started, importing stdlib...", flush=True)
 import json
 import os
 import time
-import urllib.request
-from urllib.error import URLError
 from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
@@ -45,13 +43,7 @@ PDF_CACHE_DIR = Path("./pdf_cache")
 LABOUR_LAW_DIR = Path("./data/labour_law")
 INDEX_PATH = PDF_CACHE_DIR / "index.faiss"
 CHUNKS_PATH = PDF_CACHE_DIR / "chunks.json"
-
-# Public GitHub raw URL base for pdf_cache/ assets.
-# Used as a fallback when the app runs in an environment where pdf_cache/
-# was not committed (e.g. Hugging Face Spaces — HF rejects binary files in git).
-_GITHUB_RAW_BASE = (
-    "https://raw.githubusercontent.com/DerekRoberts/vexilon/main/pdf_cache"
-)
+MANIFEST_PATH = PDF_CACHE_DIR / "manifest.json"
 
 # Public GitHub raw URL base for labour_law PDFs.
 # Used for folder/file links in the UI.
@@ -475,61 +467,47 @@ def load_precomputed_index() -> tuple["faiss.IndexFlatIP", list[dict]] | tuple[N
     return index, chunks
 
 
-def _fetch_pdf_cache_if_missing() -> None:
-    """
-    Download pdf_cache/ assets from GitHub if they are absent from the local filesystem.
-
-    This is a no-op when running locally (files are already present) and a transparent
-    fallback when running on Hugging Face Spaces, where binary files cannot be committed
-    to the Space git repo. Files are downloaded from the public GitHub raw URL.
-    """
-    files = {
-        INDEX_PATH: f"{_GITHUB_RAW_BASE}/index.faiss",
-        CHUNKS_PATH: f"{_GITHUB_RAW_BASE}/chunks.json",
-    }
-    missing = [path for path in files if not path.exists()]
-    if not missing:
-        return
-    PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    for path, url in files.items():
-        if not path.exists():
-            print(f"[startup] Downloading {path.name} from GitHub…")
-            try:
-                urllib.request.urlretrieve(url, path)
-                print(f"[startup] {path.name} downloaded ({path.stat().st_size:,} bytes).")
-            except URLError as e:
-                print(f"[startup] Failed to download {path.name}: {e}. Will build from PDFs instead.")
-                # Clean up any partial downloads
-                if path.exists():
-                    path.unlink()
-                return
-
-
-def build_index_from_pdfs() -> None:
+def build_index_from_pdfs(force: bool = False) -> None:
     """
     Parse all PDFs in LABOUR_LAW_DIR, embed them, and write the pre-built index to
     pdf_cache/index.faiss + pdf_cache/chunks.json.
 
-    This function does NOT require ANTHROPIC_API_KEY — it only uses the local
-    embedding model and the PDF files.  It is called during container image build:
-        RUN python -c "from app import build_index_from_pdfs; build_index_from_pdfs()"
-
-    Maintainers should also run this locally after adding or updating documents:
-        python -c "from app import build_index_from_pdfs; build_index_from_pdfs()"
-    then commit the updated pdf_cache/ files (needed only for the HF-Spaces
-    GitHub-download fallback — the container image already has them baked in).
+    SMART REFRESH: Generates a manifest of PDF hashes. If the manifest matches
+    the existing files, indexing is skipped unless force=True.
     """
+    import hashlib
     global _chunks, _index
-    print(f"[build] Scanning for PDFs in {LABOUR_LAW_DIR}…")
+    
     if not LABOUR_LAW_DIR.exists():
         print(f"[build] {LABOUR_LAW_DIR} does not exist — nothing to index.")
         return
 
-    pdf_files = list(LABOUR_LAW_DIR.glob("*.pdf"))
+    pdf_files = sorted(list(LABOUR_LAW_DIR.glob("*.pdf")))
     if not pdf_files:
         print("[build] No PDF files found to index!")
         return
 
+    # Calculate hashes for the current PDF set
+    current_manifest = {}
+    for pdf in pdf_files:
+        hasher = hashlib.md5()
+        with open(pdf, "rb") as f:
+            buf = f.read()
+            hasher.update(buf)
+        current_manifest[pdf.name] = hasher.hexdigest()
+
+    # Check against stored manifest
+    if not force and MANIFEST_PATH.exists():
+        try:
+            with open(MANIFEST_PATH, "r") as f:
+                stored_manifest = json.load(f)
+            if stored_manifest == current_manifest and INDEX_PATH.exists() and CHUNKS_PATH.exists():
+                print("[build] Smart Refresh: No changes detected in data/labour_law/. Skipping indexing.")
+                return
+        except Exception as e:
+            print(f"[build] Failed to read manifest: {e}. Rebuilding anyway.")
+
+    print(f"[build] Scanning for PDFs in {LABOUR_LAW_DIR}…")
     _chunks = []
     for pdf in pdf_files:
         _chunks.extend(load_pdf_chunks(pdf))
@@ -538,26 +516,25 @@ def build_index_from_pdfs() -> None:
     print(f"[build] Total {num_chunks} chunks loaded from {len(pdf_files)} files.")
     _index = build_index(_chunks)
     save_index(_index, _chunks)
-    print("[build] Index written to pdf_cache/.")
+    
+    # Save the new manifest
+    PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    with open(MANIFEST_PATH, "w") as f:
+        json.dump(current_manifest, f, indent=2)
+    print(f"[build] Index and manifest written to {PDF_CACHE_DIR}.")
 
 
 def startup(force_rebuild: bool = False) -> None:
     """
-    Load the FAISS index and chunks.
-
-    Fast path (normal operation): loads pre-computed index.faiss + chunks.json from pdf_cache/.
-    Slow path (first run or force_rebuild=True): calls build_index_from_pdfs().
-
-    On Hugging Face Spaces, pdf_cache/ is not committed to the Space git repo (HF rejects
-    binary files). _fetch_pdf_cache_if_missing() downloads the assets from GitHub on first run.
-
-    After updating documents, rebuild the index:
-        python -c "from app import build_index_from_pdfs; build_index_from_pdfs()"
+    Initialise the vector index and load document chunks.
+    
+    If force_rebuild=False (default), we try to load a pre-computed index
+    from pdf_cache/. If missing, we fall back to build_index_from_pdfs()
+    which embeds documents from scratch.
     """
     global _chunks, _index
     get_anthropic()  # Ping early to catch missing ANTHROPIC_API_KEY
     if not force_rebuild:
-        _fetch_pdf_cache_if_missing()
         index, chunks = load_precomputed_index()
         if index is not None and chunks is not None:
             _index = index

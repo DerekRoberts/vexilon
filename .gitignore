@@ -21,14 +21,9 @@ build/
 .ipynb_checkpoints/
 
 # ─── App runtime data (do NOT commit) ────────────────────────────────────────
-# The FAISS index and chunk JSON are built into the container image at build time
-# via `RUN python -c "from app import startup; startup(force_rebuild=True)"`.
-# They do not need to live in git.  _fetch_pdf_cache_if_missing() downloads them
-# from the GitHub raw URL as a fallback for HF Spaces (Gradio SDK mode).
-# To publish an updated fallback: rebuild the index locally and commit these files.
+# The FAISS index and metadata are built during image build and persisted locally
+# via podman-compose volumes. They are NOT tracked in git. 
 pdf_cache/
-!pdf_cache/index.faiss
-!pdf_cache/chunks.json
 chroma_db/          # Local vector store data
 gradio_cached_examples/
 flagged/
