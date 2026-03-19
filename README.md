@@ -50,7 +50,12 @@ Vexilon is programmed to prioritize the **Collective Agreement** above all else.
 
 ### Adding or Updating Documents
 
-Drop PDFs into `data/labour_law/`, then rebuild and commit the index:
+Drop PDFs into `data/labour_law/` using our **Smart Renaming** convention to ensure proper indexing and UI labeling:
+
+`[Index]_[Category]_[Human Readable Title].pdf`
+*(Example: `7_Guidance_Social Media Policy.pdf`)*
+
+Then rebuild and commit the index:
 
 ```bash
 python -c "from app import build_index_from_pdfs; build_index_from_pdfs()"
