@@ -725,6 +725,7 @@ def build_ui() -> "gr.Blocks":
             3. **Regulatory: Labour Relations Code** (Legal Framework) — [Download PDF](./file=data/labour_law/bc_labour_relations_code.pdf)
             4. **Protection: Human Rights Code** (Discrimination/Duty to Accommodate) — [Download PDF](./file=data/labour_law/bc_human_rights_code.pdf)
             5. **Resources**: Steward Manuals & Ethics Guidelines — [Download PDF](./file=data/labour_law/bcgeu_steward_resources.pdf)
+            6. **Ethics: Gov BC Standards of Conduct** — [Download PDF](./file=data/labour_law/gov_bc_standards_of_conduct.pdf)
             """)
 
         # ── Disclaimer (persistent, non-dismissible) ──────────────────────────
