@@ -720,11 +720,11 @@ def build_ui() -> "gr.Blocks":
             gr.Markdown("""
             The **Collective Agreement** is our primary reference. Anything else provides additional context.
             
-            1. **Primary: BCGEU 19th Main Agreement** (Contractual Rights)
-            2. **Statutory: Employment Standards Act** (Minimums)
-            3. **Regulatory: Labour Relations Code** (Legal Framework)
-            4. **Protection: Human Rights Code** (Discrimination/Duty to Accommodate)
-            5. **Resources**: Steward Manuals & Ethics Guidelines
+            1. **Primary: BCGEU 19th Main Agreement** (Contractual Rights) — [Download PDF](./file=data/labour_law/bcgeu_19th_main_agreement.pdf)
+            2. **Statutory: Employment Standards Act** (Minimums) — [Download PDF](./file=data/labour_law/bc_employment_standards_act.pdf)
+            3. **Regulatory: Labour Relations Code** (Legal Framework) — [Download PDF](./file=data/labour_law/bc_labour_relations_code.pdf)
+            4. **Protection: Human Rights Code** (Discrimination/Duty to Accommodate) — [Download PDF](./file=data/labour_law/bc_human_rights_code.pdf)
+            5. **Resources**: Steward Manuals & Ethics Guidelines — [Download PDF](./file=data/labour_law/bcgeu_steward_resources.pdf)
             """)
 
         # ── Disclaimer (persistent, non-dismissible) ──────────────────────────
@@ -820,6 +820,6 @@ if __name__ == "__main__":
         server_name="0.0.0.0",
         server_port=int(os.getenv("PORT", 7860)),
         share=False,
-        allowed_paths=[],
+        allowed_paths=[str(LABOUR_LAW_DIR)],
         auth=auth_creds,
     )
