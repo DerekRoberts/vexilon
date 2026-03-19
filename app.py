@@ -168,6 +168,7 @@ Your library contains the COMPLETE, full text of these documents:
 4. BC Human Rights Code [RSBC 1996]
 5. BCGEU Steward Resource Manual & Ethics Guidelines
 6. Gov BC Standards of Conduct
+7. BC Social Media Guidance for Public Service Employees
 
 IMPORTANT: For each question you receive, a semantic search retrieves the most relevant \
 excerpts from this library. You see a SUBSET of the library per query — not the whole thing. \
@@ -732,6 +733,7 @@ def build_ui() -> "gr.Blocks":
             4. **Protection: Human Rights Code** (Discrimination/Duty to Accommodate) — [Download PDF]({GITHUB_RAW_PDF_BASE}/bc_human_rights_code.pdf)
             5. **Resources: Steward Manuals & Ethics Guidelines** — [Download PDF]({GITHUB_RAW_PDF_BASE}/bcgeu_steward_resources.pdf)
             6. **Ethics: Gov BC Standards of Conduct** — [Download PDF]({GITHUB_RAW_PDF_BASE}/gov_bc_standards_of_conduct.pdf)
+            7. **Guidance: BC Social Media Guidance for Public Service Employees** — [Download PDF]({GITHUB_RAW_PDF_BASE}/guidance_for_social_media.pdf)
             """)
 
         # ── Disclaimer (persistent, non-dismissible) ──────────────────────────

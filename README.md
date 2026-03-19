@@ -40,6 +40,7 @@ Vexilon is currently indexed with the following core documents:
 - **BC Human Rights Code (Priority 4)**: Protections against discrimination and the duty to accommodate.
 - **BCGEU Steward Fundamentals Handbook**: Practical union guidance for grievances and meeting scripts.
 - **Standards of Conduct (Public Service Ethics)**: Policy framework for employee behavior and social media use.
+- **BC Social Media Guidance for Public Service Employees**: Specific guidelines for personal and professional social media conduct.
 
 ### Priority & Weighting Logic
 Vexilon is programmed to prioritize the **Collective Agreement** above all else. When a query overlaps multiple sources:
