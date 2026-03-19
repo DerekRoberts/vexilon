@@ -10,7 +10,7 @@ import app
 from pathlib import Path
 
 @pytest.mark.asyncio
-async def test_full_rag_flow_integration(monkeypatch, mock_anthropic):
+async def test_full_rag_flow_integration(monkeypatch, mock_anthropic, tmp_path):
     """
     Tests the system from PDF loading to streaming response.
     Uses the real PDF and real embedding model.
@@ -19,6 +19,13 @@ async def test_full_rag_flow_integration(monkeypatch, mock_anthropic):
     test_pdf = Path("data/labour_law/bcgeu_19th_main_agreement.pdf")
     if not test_pdf.exists():
         pytest.skip(f"Agreement PDF missing at {test_pdf}; cannot run full integration test.")
+
+    # Redirect pdf_cache to a temp dir so save_index() doesn't fail on missing directory
+    cache_dir = tmp_path / "pdf_cache"
+    cache_dir.mkdir()
+    monkeypatch.setattr(app, "PDF_CACHE_DIR", cache_dir)
+    monkeypatch.setattr(app, "INDEX_PATH", cache_dir / "index.faiss")
+    monkeypatch.setattr(app, "CHUNKS_PATH", cache_dir / "chunks.json")
 
     # Mock the anthropic client globally for the app
     monkeypatch.setattr(app, "get_anthropic", lambda: mock_anthropic)

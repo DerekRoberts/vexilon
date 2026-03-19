@@ -360,8 +360,6 @@ def _fetch_pdf_cache_if_missing() -> None:
     to the Space git repo. Files are downloaded from the public GitHub raw URL.
     """
     files = {
-        # Fallback downloads for core agreement if index is missing
-        PDF_CACHE_DIR / "bcgeu_19th_main_agreement.pdf": f"{_GITHUB_RAW_BASE}/bcgeu_19th_main_agreement.pdf",
         INDEX_PATH: f"{_GITHUB_RAW_BASE}/index.faiss",
         CHUNKS_PATH: f"{_GITHUB_RAW_BASE}/chunks.json",
     }
