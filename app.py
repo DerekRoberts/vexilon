@@ -472,8 +472,13 @@ def build_index_from_pdfs(force: bool = False) -> None:
     Parse all PDFs in LABOUR_LAW_DIR, embed them, and write the pre-built index to
     pdf_cache/index.faiss + pdf_cache/chunks.json.
 
-    SMART REFRESH: Generates a manifest of PDF hashes. If the manifest matches
-    the existing files, indexing is skipped unless force=True.
+    Args:
+        force (bool): If True, ignores the existing manifest and rebuilds the 
+                     index from scratch. Defaults to False.
+
+    SMART REFRESH: This function generates a manifest.json containing MD5 hashes
+    of all PDF files. If the current files match the stored manifest (and the 
+    index exists), the expensive embedding process is skipped.
     """
     import hashlib
     global _chunks, _index
@@ -502,7 +507,8 @@ def build_index_from_pdfs(force: bool = False) -> None:
             with open(MANIFEST_PATH, "r") as f:
                 stored_manifest = json.load(f)
             if stored_manifest == current_manifest and INDEX_PATH.exists() and CHUNKS_PATH.exists():
-                print("[build] Smart Refresh: No changes detected in data/labour_law/. Skipping indexing.")
+                print("[build] Smart Refresh: No changes detected in data/labour_law/.")
+                print(f"[build] Manifest matched and index/chunks exist. Skipping indexing.")
                 return
         except Exception as e:
             print(f"[build] Failed to read manifest: {e}. Rebuilding anyway.")
@@ -522,6 +528,7 @@ def build_index_from_pdfs(force: bool = False) -> None:
     with open(MANIFEST_PATH, "w") as f:
         json.dump(current_manifest, f, indent=2)
     print(f"[build] Index and manifest written to {PDF_CACHE_DIR}.")
+    print("[build] Indexing complete.")
 
 
 def startup(force_rebuild: bool = False) -> None:

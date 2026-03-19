@@ -42,6 +42,8 @@ COPY --from=builder --chown=1001:1001 /app/hf_cache /app/hf_cache
 # 2. Copy application code and PDF assets
 COPY --chown=1001:1001 data/ ./data/
 COPY --chown=1001:1001 app.py ./
+COPY --chown=1001:1001 scripts/ ./scripts/
+RUN chmod +x /app/scripts/*.sh
 
 # Bake the build timestamp into a file after code is copied
 RUN TZ="America/Vancouver" date +"%Y-%m-%d %H:%M %Z" > /app/build_version.txt && chown 1001:1001 /app/build_version.txt
@@ -63,4 +65,4 @@ RUN python -c "from app import build_index_from_pdfs; build_index_from_pdfs()"
 
 EXPOSE 7860
 
-CMD ["python", "app.py"]
+CMD ["/app/scripts/startup.sh"]
