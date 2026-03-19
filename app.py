@@ -694,10 +694,7 @@ DISCLAIMER_HTML = (
     "font-size:0.85rem;"
     "margin-bottom:12px;"
     '">'
-    "⚠️ <strong style=\"color:#7c4a00;\">Unofficial Explorer: </strong> This is an independent community project. "
-    "It is not affiliated with, endorsed by, or sponsored by the BCGEU. All responses are AI-generated; the"
-    "<a href='https://www2.gov.bc.ca/gov/content/careers-myhr/managers-supervisors/employee-labour-relations/conditions-agreements/collective-agreements' target='_blank' style='color:#7c4a00; font-weight:bold;'>official PDF</a>"
-    "is the sole authoritative source. Consult your BCGEU representative or a legal advisor as appropriate."
+    "This project is not affiliated with the BCGEU. AI-generated responses may contain errors."
     "</div>"
 )
 
@@ -719,9 +716,8 @@ def build_ui() -> "gr.Blocks":
         # ── Header ────────────────────────────────────────────────────────────
         gr.Markdown("## BCGEU Steward Assistant")
 
-        with gr.Accordion("📜 Knowledge Base & Priority", open=False):
+        with gr.Accordion("Knowledge Base & Priority", open=False):
             gr.Markdown("""
-            ### ⚖️ Document Priority
             The **Collective Agreement** is our primary reference. Anything else provides additional context.
             
             1. **Primary: BCGEU 19th Main Agreement** (Contractual Rights)
