@@ -53,6 +53,12 @@ _GITHUB_RAW_BASE = (
     "https://raw.githubusercontent.com/DerekRoberts/vexilon/main/pdf_cache"
 )
 
+# Public GitHub raw URL base for labour_law PDFs.
+# Used for PDF download links in the UI.
+GITHUB_RAW_PDF_BASE = (
+    "https://raw.githubusercontent.com/DerekRoberts/vexilon/main/data/labour_law"
+)
+
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
 CONDENSE_MODEL = os.getenv("CONDENSE_MODEL", "claude-haiku-4-5-20251001")
 # Brain: Local Embeddings (Search) + Cloud LLM (Claude)
@@ -717,15 +723,15 @@ def build_ui() -> "gr.Blocks":
         gr.Markdown("## BCGEU Steward Assistant")
 
         with gr.Accordion("Knowledge Base & Priority", open=False):
-            gr.Markdown("""
+            gr.Markdown(f"""
             The **Collective Agreement** is our primary reference. Anything else provides additional context.
             
-            1. **Primary: BCGEU 19th Main Agreement** (Contractual Rights) — [Download PDF](https://raw.githubusercontent.com/DerekRoberts/vexilon/main/data/labour_law/bcgeu_19th_main_agreement.pdf)
-            2. **Statutory: Employment Standards Act** (Minimums) — [Download PDF](https://raw.githubusercontent.com/DerekRoberts/vexilon/main/data/labour_law/bc_employment_standards_act.pdf)
-            3. **Regulatory: Labour Relations Code** (Legal Framework) — [Download PDF](https://raw.githubusercontent.com/DerekRoberts/vexilon/main/data/labour_law/bc_labour_relations_code.pdf)
-            4. **Protection: Human Rights Code** (Discrimination/Duty to Accommodate) — [Download PDF](https://raw.githubusercontent.com/DerekRoberts/vexilon/main/data/labour_law/bc_human_rights_code.pdf)
-            5. **Resources: Steward Manuals & Ethics Guidelines** — [Download PDF](https://raw.githubusercontent.com/DerekRoberts/vexilon/main/data/labour_law/bcgeu_steward_resources.pdf)
-            6. **Ethics: Gov BC Standards of Conduct** — [Download PDF](https://raw.githubusercontent.com/DerekRoberts/vexilon/main/data/labour_law/gov_bc_standards_of_conduct.pdf)
+            1. **Primary: BCGEU 19th Main Agreement** (Contractual Rights) — [Download PDF]({GITHUB_RAW_PDF_BASE}/bcgeu_19th_main_agreement.pdf)
+            2. **Statutory: Employment Standards Act** (Minimums) — [Download PDF]({GITHUB_RAW_PDF_BASE}/bc_employment_standards_act.pdf)
+            3. **Regulatory: Labour Relations Code** (Legal Framework) — [Download PDF]({GITHUB_RAW_PDF_BASE}/bc_labour_relations_code.pdf)
+            4. **Protection: Human Rights Code** (Discrimination/Duty to Accommodate) — [Download PDF]({GITHUB_RAW_PDF_BASE}/bc_human_rights_code.pdf)
+            5. **Resources: Steward Manuals & Ethics Guidelines** — [Download PDF]({GITHUB_RAW_PDF_BASE}/bcgeu_steward_resources.pdf)
+            6. **Ethics: Gov BC Standards of Conduct** — [Download PDF]({GITHUB_RAW_PDF_BASE}/gov_bc_standards_of_conduct.pdf)
             """)
 
         # ── Disclaimer (persistent, non-dismissible) ──────────────────────────
