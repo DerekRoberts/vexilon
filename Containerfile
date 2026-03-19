@@ -39,15 +39,18 @@ WORKDIR /app
 COPY --from=builder --chown=1001:1001 /app/.venv /app/.venv
 COPY --from=builder --chown=1001:1001 /app/hf_cache /app/hf_cache
 
-# 2. Copy application code and PDF assets (excluding ignored caches)
+# 2. Copy application code, PDF assets, and the pre-built FAISS index.
+# The index (pdf_cache/index.faiss + pdf_cache/chunks.json) is committed to the
+# repo and baked into the image so the app starts immediately without rebuilding
+# from PDFs (which takes 5–10 min on CPU).  If the files are absent at runtime
+# (e.g. fresh clone without them), _fetch_pdf_cache_if_missing() downloads them
+# from the GitHub raw URL as a fallback.
 COPY --chown=1001:1001 data/ ./data/
 COPY --chown=1001:1001 app.py ./
+COPY --chown=1001:1001 pdf_cache/ ./pdf_cache/
 
 # Bake the build timestamp into a file after code is copied
 RUN TZ="America/Vancouver" date +"%Y-%m-%d %H:%M %Z" > /app/build_version.txt && chown 1001:1001 /app/build_version.txt
-
-# The index is provided by the host volume or first-run local bootstrap
-# (Removed force_rebuild=True from image layers to prevent 404 errors)
 
 # ─── Final Environment ────────────────────────────────────────────────────────
 ENV HF_HOME=/app/hf_cache \

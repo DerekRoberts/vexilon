@@ -1,6 +1,10 @@
 # Exclude large cache directories from docker build context
 hf_cache/
-pdf_cache/
+
+# Raw PDFs in the cache dir are large; exclude them.
+# The pre-built index files (index.faiss, chunks.json) ARE included so the
+# Containerfile can bake them into the image for a fast cold start.
+pdf_cache/*.pdf
 
 # Standard Python ignores
 __pycache__/
@@ -8,7 +12,3 @@ __pycache__/
 .venv/
 .pytest_cache/
 .coverage
-
-# FAISS and persistence
-*.faiss
-*chunks.json
