@@ -1,0 +1,42 @@
+name: "Stale Cache Audit"
+
+on:
+  pull_request:
+    paths:
+      - 'data/labour_law/**'
+      - 'pdf_cache/manifest.json'
+      - 'app.py'
+
+permissions: {}
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.10.9"
+          enable-cache: true
+          
+      - name: Set up Python
+        run: uv python install 3.14.3
+        
+      - name: Install dependencies
+        run: uv sync --frozen
+        
+      - name: Run Index Validation
+        run: |
+          echo "Building fresh index based on data/labour_law/..."
+          uv run python -c "from app import build_index_from_pdfs; build_index_from_pdfs(force=True)"
+          
+          echo "Comparing newly generated manifest with the one in the PR..."
+          if ! git diff --exit-code pdf_cache/manifest.json; then
+            echo "❌ ERROR: Stale Cache Detected!"
+            echo "The manifest.json does not match the actual PDF content in data/labour_law/."
+            echo "Please run 'podman-compose run --rm index-refresh' locally and commit the updated manifest.json."
+            exit 1
+          fi
+          echo "✅ Cache is fresh."

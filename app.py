@@ -24,8 +24,6 @@ print("[boot] Python started, importing stdlib...", flush=True)
 import json
 import os
 import time
-import urllib.request
-from urllib.error import URLError
 from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
@@ -45,19 +43,17 @@ PDF_CACHE_DIR = Path("./pdf_cache")
 LABOUR_LAW_DIR = Path("./data/labour_law")
 INDEX_PATH = PDF_CACHE_DIR / "index.faiss"
 CHUNKS_PATH = PDF_CACHE_DIR / "chunks.json"
-
-# Public GitHub raw URL base for pdf_cache/ assets.
-# Used as a fallback when the app runs in an environment where pdf_cache/
-# was not committed (e.g. Hugging Face Spaces — HF rejects binary files in git).
-_GITHUB_RAW_BASE = (
-    "https://raw.githubusercontent.com/DerekRoberts/vexilon/main/pdf_cache"
-)
+MANIFEST_PATH = PDF_CACHE_DIR / "manifest.json"
 
 # Public GitHub raw URL base for labour_law PDFs.
 # Used for folder/file links in the UI.
 GITHUB_LABOUR_LAW_URL = (
     "https://github.com/DerekRoberts/vexilon/tree/main/data/labour_law"
 )
+
+# Raw URL base for downloading pre-computed index from GitHub.
+# Used by _fetch_pdf_cache_if_missing() for HF Spaces bootstrap.
+_GITHUB_RAW_BASE = "https://raw.githubusercontent.com/DerekRoberts/vexilon/main"
 
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
 CONDENSE_MODEL = os.getenv("CONDENSE_MODEL", "claude-haiku-4-5-20251001")
@@ -477,59 +473,82 @@ def load_precomputed_index() -> tuple["faiss.IndexFlatIP", list[dict]] | tuple[N
 
 def _fetch_pdf_cache_if_missing() -> None:
     """
-    Download pdf_cache/ assets from GitHub if they are absent from the local filesystem.
-
-    This is a no-op when running locally (files are already present) and a transparent
-    fallback when running on Hugging Face Spaces, where binary files cannot be committed
-    to the Space git repo. Files are downloaded from the public GitHub raw URL.
+    Download pre-computed index and chunks from GitHub raw if not present locally.
+    This enables fast cold starts on HuggingFace Spaces where PDFs aren't bundled.
     """
-    files = {
-        INDEX_PATH: f"{_GITHUB_RAW_BASE}/index.faiss",
-        CHUNKS_PATH: f"{_GITHUB_RAW_BASE}/chunks.json",
-    }
-    missing = [path for path in files if not path.exists()]
-    if not missing:
-        return
+    import urllib.request
+
+    # Ensure cache directory exists
     PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    for path, url in files.items():
-        if not path.exists():
-            print(f"[startup] Downloading {path.name} from GitHub…")
-            try:
-                urllib.request.urlretrieve(url, path)
-                print(f"[startup] {path.name} downloaded ({path.stat().st_size:,} bytes).")
-            except URLError as e:
-                print(f"[startup] Failed to download {path.name}: {e}. Will build from PDFs instead.")
-                # Clean up any partial downloads
-                if path.exists():
-                    path.unlink()
-                return
+
+    # Check if both files already exist
+    if INDEX_PATH.exists() and CHUNKS_PATH.exists():
+        return
+
+    # Build URLs for the missing files
+    base = _GITHUB_RAW_BASE
+    urls = {}
+    if not INDEX_PATH.exists():
+        urls[INDEX_PATH] = f"{base}/pdf_cache/index.faiss"
+    if not CHUNKS_PATH.exists():
+        urls[CHUNKS_PATH] = f"{base}/pdf_cache/chunks.json"
+
+    # Download missing files
+    for dest_path, url in urls.items():
+        print(f"[fetch] Downloading {dest_path.name} from {url}…")
+        urllib.request.urlretrieve(url, dest_path)
+        print(f"[fetch] Saved {dest_path}")
 
 
-def build_index_from_pdfs() -> None:
+def build_index_from_pdfs(force: bool = False) -> None:
     """
     Parse all PDFs in LABOUR_LAW_DIR, embed them, and write the pre-built index to
     pdf_cache/index.faiss + pdf_cache/chunks.json.
 
-    This function does NOT require ANTHROPIC_API_KEY — it only uses the local
-    embedding model and the PDF files.  It is called during container image build:
-        RUN python -c "from app import build_index_from_pdfs; build_index_from_pdfs()"
+    Args:
+        force (bool): If True, ignores the existing manifest and rebuilds the 
+                     index from scratch. Defaults to False.
 
-    Maintainers should also run this locally after adding or updating documents:
-        python -c "from app import build_index_from_pdfs; build_index_from_pdfs()"
-    then commit the updated pdf_cache/ files (needed only for the HF-Spaces
-    GitHub-download fallback — the container image already has them baked in).
+    SMART REFRESH: This function generates a manifest.json containing MD5 hashes
+    of all PDF files. If the current files match the stored manifest (and the 
+    index exists), the expensive embedding process is skipped.
     """
+    import hashlib
     global _chunks, _index
-    print(f"[build] Scanning for PDFs in {LABOUR_LAW_DIR}…")
+    
     if not LABOUR_LAW_DIR.exists():
         print(f"[build] {LABOUR_LAW_DIR} does not exist — nothing to index.")
         return
 
-    pdf_files = list(LABOUR_LAW_DIR.glob("*.pdf"))
+    pdf_files = sorted(LABOUR_LAW_DIR.glob("*.pdf"))
     if not pdf_files:
         print("[build] No PDF files found to index!")
         return
 
+    # Calculate hashes for the current PDF set (chunked to handle large files)
+    current_manifest = {}
+    for pdf in pdf_files:
+        hasher = hashlib.sha256()
+        with open(pdf, "rb") as f:
+            while chunk := f.read(65536):
+                hasher.update(chunk)
+        current_manifest[pdf.name] = hasher.hexdigest()
+
+    # Check against stored manifest
+    if not force and MANIFEST_PATH.exists():
+        try:
+            with open(MANIFEST_PATH, "r") as f:
+                stored_manifest = json.load(f)
+            if stored_manifest == current_manifest and INDEX_PATH.exists() and CHUNKS_PATH.exists():
+                print("[build] Smart Refresh: No changes detected in data/labour_law/. Skipping indexing.")
+                return
+        except Exception as e:
+            print(f"[build] Failed to read manifest: {e}. Rebuilding anyway.")
+
+    # Ensure cache directory exists before writing
+    PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    print(f"[build] Scanning for PDFs in {LABOUR_LAW_DIR}…")
     _chunks = []
     for pdf in pdf_files:
         _chunks.extend(load_pdf_chunks(pdf))
@@ -538,26 +557,30 @@ def build_index_from_pdfs() -> None:
     print(f"[build] Total {num_chunks} chunks loaded from {len(pdf_files)} files.")
     _index = build_index(_chunks)
     save_index(_index, _chunks)
-    print("[build] Index written to pdf_cache/.")
+    
+    # Save the new manifest
+    with open(MANIFEST_PATH, "w") as f:
+        json.dump(current_manifest, f, indent=2)
+    print(f"[build] Index and manifest written to {PDF_CACHE_DIR}.")
+    print("[build] Indexing complete.")
 
 
 def startup(force_rebuild: bool = False) -> None:
     """
-    Load the FAISS index and chunks.
-
-    Fast path (normal operation): loads pre-computed index.faiss + chunks.json from pdf_cache/.
-    Slow path (first run or force_rebuild=True): calls build_index_from_pdfs().
-
-    On Hugging Face Spaces, pdf_cache/ is not committed to the Space git repo (HF rejects
-    binary files). _fetch_pdf_cache_if_missing() downloads the assets from GitHub on first run.
-
-    After updating documents, rebuild the index:
-        python -c "from app import build_index_from_pdfs; build_index_from_pdfs()"
+    Initialise the vector index and load document chunks.
+    
+    If force_rebuild=False (default), we try to load a pre-computed index
+    from pdf_cache/. If missing, we fall back to build_index_from_pdfs()
+    which embeds documents from scratch.
     """
     global _chunks, _index
     get_anthropic()  # Ping early to catch missing ANTHROPIC_API_KEY
+
+    # Try to fetch pre-computed index from GitHub if not present locally
+    # (Needed for HuggingFace Spaces where PDFs aren't bundled)
+    _fetch_pdf_cache_if_missing()
+
     if not force_rebuild:
-        _fetch_pdf_cache_if_missing()
         index, chunks = load_precomputed_index()
         if index is not None and chunks is not None:
             _index = index
@@ -568,7 +591,7 @@ def startup(force_rebuild: bool = False) -> None:
             return
 
     # ── Slow path: delegate to the API-key-free build function ────────────
-    build_index_from_pdfs()
+    build_index_from_pdfs(force=force_rebuild)
     print("[startup] Ready.")
 
 
