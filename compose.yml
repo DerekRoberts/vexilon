@@ -78,4 +78,5 @@ services:
       - ./hf_cache:/app/hf_cache:Z
     environment:
       HF_HOME: /app/hf_cache
-    command: python -c "from app import build_index_from_pdfs; build_index_from_pdfs()"
+      PATH: "/app/.venv/bin:$PATH"
+    command: uv run python -c "from app import build_index_from_pdfs; build_index_from_pdfs()"
