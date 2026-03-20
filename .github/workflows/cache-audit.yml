@@ -7,6 +7,8 @@ on:
       - 'pdf_cache/manifest.json'
       - 'app.py'
 
+permissions: {}
+
 jobs:
   audit:
     runs-on: ubuntu-latest
