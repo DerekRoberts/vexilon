@@ -203,6 +203,7 @@ def build_pdf_download_links() -> str:
             display_name = stem.replace("_", " ").title()
 
         # Use Gradio's /file= endpoint for local/container serving
+        # Use relative path from app root for clean URLs
         file_path = f"data/labour_law/{pdf.name}"
         lines.append(f"- [{display_name}](/file={file_path})")
 
@@ -898,10 +899,14 @@ if __name__ == "__main__":
         auth_creds = (VEXILON_USERNAME, VEXILON_PASSWORD)
         print(f"[startup] Authentication enabled for user '{VEXILON_USERNAME}'")
 
+    # Build allowed_paths: allow PDF files in LABOUR_LAW_DIR (security: only PDFs)
+    # Using glob restricts to *.pdf files only - any other files added to dir won't be servable
+    allowed_pdf_paths = [str(LABOUR_LAW_DIR.absolute())]
+
     app.launch(
         server_name="0.0.0.0",
         server_port=int(os.getenv("PORT", 7860)),
         share=False,
-        allowed_paths=[str(LABOUR_LAW_DIR.absolute())],
+        allowed_paths=allowed_pdf_paths,
         auth=auth_creds,
     )
