@@ -20,6 +20,7 @@ Index pre-computation (run once after updating the PDF):
 
 # ─── Standard Library ────────────────────────────────────────────────────────
 import sys
+
 print("[boot] Python started, importing stdlib...", flush=True)
 import json
 import os
@@ -58,14 +59,15 @@ _GITHUB_RAW_BASE = "https://raw.githubusercontent.com/DerekRoberts/vexilon/main"
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
 CONDENSE_MODEL = os.getenv("CONDENSE_MODEL", "claude-haiku-4-5-20251001")
 # Brain: Local Embeddings (Search) + Cloud LLM (Claude)
-EMBED_MODEL = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5") # 512-token window
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 450))       # Sized for BGE-small
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 100)) 
-SIMILARITY_TOP_K = int(os.getenv("SIMILARITY_TOP_K", 40)) # More context depth
+EMBED_MODEL = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5")  # 512-token window
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 450))  # Sized for BGE-small
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 100))
+SIMILARITY_TOP_K = int(os.getenv("SIMILARITY_TOP_K", 40))  # More context depth
 
 # Memory / Context Condensation
 CONDENSE_QUERY_HISTORY_TURNS = int(os.getenv("CONDENSE_QUERY_HISTORY_TURNS", 3))
 CONDENSE_QUERY_CONTENT_MAX_LEN = int(os.getenv("CONDENSE_QUERY_CONTENT_MAX_LEN", 200))
+
 
 def get_vexilon_info():
     """
@@ -74,11 +76,11 @@ def get_vexilon_info():
     3. Print a beautiful startup banner
     """
     import platform
-    
+
     # Priority 1: Env Var
     version = os.getenv("VEXILON_VERSION")
     source = "External/CI"
-    
+
     if not version:
         # Priority 2: Baked-in Build File
         try:
@@ -100,12 +102,7 @@ def get_vexilon_info():
     print(f" RUNTIME OS      : {os_info}")
     print("=" * 50, flush=True)
 
-    return {
-        "ver": version,
-        "src": source,
-        "py": py_ver,
-        "os": os_info
-    }
+    return {"ver": version, "src": source, "py": py_ver, "os": os_info}
 
 
 # Initialise version and logging at imports
@@ -119,6 +116,7 @@ EMBED_DIM = 384
 
 # ─── Typing ──────────────────────────────────────────────────────────────────
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from sentence_transformers import SentenceTransformer
     import faiss
@@ -134,6 +132,7 @@ def get_embed_model() -> "SentenceTransformer":
     if _embed_model is None:
         print(f"[embed] Loading local embedding model '{EMBED_MODEL}'…")
         from sentence_transformers import SentenceTransformer
+
         _embed_model = SentenceTransformer(EMBED_MODEL)
         # Increase limits to handle full-page tokenization mapping without warnings.
         # We manually chunk to 256 tokens later, so this is just to keep the logs clean.
@@ -148,9 +147,12 @@ def get_anthropic() -> "anthropic.AsyncAnthropic":
     global _anthropic_client
     if _anthropic_client is None:
         import anthropic
+
         # Reads ANTHROPIC_API_KEY from environment automatically; raises AuthenticationError if missing
         _anthropic_client = anthropic.AsyncAnthropic()
     return _anthropic_client
+
+
 def get_knowledge_manifest() -> str:
     """
     Dynamically scan the labour_law directory and build a formatted list for the system prompt.
@@ -207,7 +209,9 @@ def build_pdf_download_links() -> str:
 
         # Use relative path for Gradio's /gradio_api/file= endpoint (works in both local and container)
         file_path = f"data/labour_law/{pdf.name}"
-        lines.append(f'<li><a href="/gradio_api/file={file_path}" target="_blank">{html.escape(display_name)}</a></li>')
+        lines.append(
+            f'<li><a href="/gradio_api/file={file_path}" target="_blank">{html.escape(display_name)}</a></li>'
+        )
 
     lines.append("</ul>")
     return "\n".join(lines)
@@ -257,7 +261,10 @@ Response format:
 
 # ─── Chunking ─────────────────────────────────────────────────────────────────
 
-def chunk_text(full_text: str, token_data: list[tuple[int, int, int, str]], source_name: str) -> list[dict]:
+
+def chunk_text(
+    full_text: str, token_data: list[tuple[int, int, int, str]], source_name: str
+) -> list[dict]:
     """
     Split *full_text* into overlapping token-based chunks across the whole document.
     Uses 'token_data' [(char_start, char_end, page_num, header)] to preserve metadata.
@@ -266,34 +273,37 @@ def chunk_text(full_text: str, token_data: list[tuple[int, int, int, str]], sour
     chunks = []
     if not token_data:
         return chunks
-        
+
     idx = 0
     start = 0
     while start < len(token_data):
         end = min(start + CHUNK_SIZE, len(token_data))
-        
+
         # Get metadata from the first token of the chunk
         char_start, _, page_num, header = token_data[start]
         # End Char index is from the last token of the chunk
         _, char_end, _, _ = token_data[end - 1]
-        
-        # Contextual Breadcrumb: Prepend source + header 
+
+        # Contextual Breadcrumb: Prepend source + header
         prefix = f"[{source_name} - {header}] " if header else f"[{source_name}] "
         chunk_text_str = prefix + full_text[char_start:char_end]
-        
-        chunks.append({
-            "text": chunk_text_str,
-            "page": page_num,
-            "source": source_name,
-            "header": header,
-            "chunk_index": idx,
-        })
+
+        chunks.append(
+            {
+                "text": chunk_text_str,
+                "page": page_num,
+                "source": source_name,
+                "header": header,
+                "chunk_index": idx,
+            }
+        )
         idx += 1
         start += CHUNK_SIZE - CHUNK_OVERLAP
     return chunks
 
 
 # ─── PDF Loader ───────────────────────────────────────────────────────────────
+
 
 def _is_toc_or_index_page(page_text: str) -> bool:
     """
@@ -306,6 +316,7 @@ def _is_toc_or_index_page(page_text: str) -> bool:
     Returns True if the page appears to be TOC/index content.
     """
     import re
+
     lines = [l.strip() for l in page_text.split("\n") if l.strip()]
     if not lines:
         return False
@@ -334,6 +345,7 @@ def _clean_page_text(page_text: str) -> str:
     date-stamps that waste ~30 tokens per chunk and dilute embedding quality.
     """
     import re
+
     # Remove bclaws.gov.bc.ca URL lines
     page_text = re.sub(
         r"https?://www\.bclaws\.gov\.bc\.ca/\S*",
@@ -363,18 +375,18 @@ def load_pdf_chunks(pdf_path: Path) -> list[dict]:
     """
     from pypdf import PdfReader
     import re
-    
+
     reader = PdfReader(str(pdf_path))
     # Parse source name from filenames like "1_Primary_Agreement Name" -> "Agreement Name"
     stem = pdf_path.stem
     parts = stem.split("_", 2)
     source_name = parts[2] if len(parts) == 3 else stem.replace("_", " ").title()
     print(f"[loader] Parsing '{source_name}' ({len(reader.pages)} pages)…")
-    
+
     tokenizer = get_embed_model().tokenizer
     full_text = ""
-    token_metadata = [] # List of (char_start, char_end, page_num, header)
-    
+    token_metadata = []  # List of (char_start, char_end, page_num, header)
+
     current_header = ""
     header_pattern = re.compile(r"^\s*(ARTICLE|APPENDIX)\s+(\d+|[A-Z]+)", re.IGNORECASE)
     skipped_pages = 0
@@ -397,7 +409,7 @@ def load_pdf_chunks(pdf_path: Path) -> list[dict]:
         page_text = _clean_page_text(page_text)
         if not page_text.strip():
             continue
-            
+
         # Update breadcrumb header context
         # Look through more lines - headers can appear anywhere on the page due to
         # complex PDF layouts (two-column, footnotes, etc.)
@@ -405,30 +417,36 @@ def load_pdf_chunks(pdf_path: Path) -> list[dict]:
         lines_to_check = min(50, len(page_lines))
         for line in page_lines[:lines_to_check]:
             # Skip TOC-style entries and page numbers
-            if ".........." in line or (line.strip().endswith(".") and re.search(r"\d+$", line.strip())):
+            if ".........." in line or (
+                line.strip().endswith(".") and re.search(r"\d+$", line.strip())
+            ):
                 continue
             match = header_pattern.search(line)
             if match:
                 current_header = match.group(0).strip().upper()
-                break # Usually one primary header per page
+                break  # Usually one primary header per page
 
         # Track offsets in the global full_text
         page_offset = len(full_text)
         full_text += page_text + "\n"
-        
+
         # Tokenize this page and record metadata for every token
-        encoding = tokenizer(page_text, add_special_tokens=False, return_offsets_mapping=True, truncation=False)
+        encoding = tokenizer(
+            page_text,
+            add_special_tokens=False,
+            return_offsets_mapping=True,
+            truncation=False,
+        )
         for start, end in encoding.offset_mapping:
-            token_metadata.append((
-                page_offset + start,
-                page_offset + end,
-                page_num,
-                current_header
-            ))
+            token_metadata.append(
+                (page_offset + start, page_offset + end, page_num, current_header)
+            )
 
     if skipped_pages:
-        print(f"[loader] Skipped {skipped_pages} navigational pages (TOC/index) in '{source_name}'.")
-            
+        print(
+            f"[loader] Skipped {skipped_pages} navigational pages (TOC/index) in '{source_name}'."
+        )
+
     return chunk_text(full_text, token_metadata, source_name)
 
 
@@ -436,6 +454,7 @@ def load_pdf_chunks(pdf_path: Path) -> list[dict]:
 def embed_texts(texts: list[str]) -> "np.ndarray":
     """Embed a list of texts using the local sentence-transformers model. Returns (N, EMBED_DIM) float32 array."""
     import numpy as np
+
     model = get_embed_model()
     # encode() handles batching internally; show_progress_bar=False keeps logs clean
     embeddings = model.encode(texts, show_progress_bar=False, convert_to_numpy=True)
@@ -448,11 +467,12 @@ def build_index(chunks: list[dict]) -> "faiss.IndexFlatIP":
     Vectors are L2-normalised so inner product == cosine similarity.
     """
     import faiss
+
     texts = [c["text"] for c in chunks]
     print(f"[index] Embedding {len(texts)} chunks locally (may take 30–90 s on CPU)…")
     t0 = time.time()
     vectors = embed_texts(texts)
-    print(f"[index] Embeddings complete in {time.time()-t0:.1f}s")
+    print(f"[index] Embeddings complete in {time.time() - t0:.1f}s")
     # L2-normalise for cosine similarity via inner product
     faiss.normalize_L2(vectors)
     index = faiss.IndexFlatIP(EMBED_DIM)
@@ -469,6 +489,7 @@ def search_index(
 ) -> list[dict]:
     """Return the top-k most similar chunks for *query*."""
     import faiss
+
     query_vec = embed_texts([query])  # (1, EMBED_DIM)
     faiss.normalize_L2(query_vec)
     _scores, indices = index.search(query_vec, top_k)
@@ -483,13 +504,16 @@ _index: "faiss.IndexFlatIP | None" = None
 def save_index(index: "faiss.IndexFlatIP", chunks: list[dict]) -> None:
     """Persist the FAISS index and chunk metadata to pdf_cache/ for fast cold starts."""
     import faiss
+
     faiss.write_index(index, str(INDEX_PATH))
     with open(CHUNKS_PATH, "w", encoding="utf-8") as f:
         json.dump(chunks, f, ensure_ascii=False)
     print(f"[index] Saved index → {INDEX_PATH} and chunks → {CHUNKS_PATH}")
 
 
-def load_precomputed_index() -> tuple["faiss.IndexFlatIP", list[dict]] | tuple[None, None]:
+def load_precomputed_index() -> (
+    tuple["faiss.IndexFlatIP", list[dict]] | tuple[None, None]
+):
     """
     Load a pre-computed FAISS index and chunks from disk if both exist.
     Returns (index, chunks) on success, (None, None) if files are missing.
@@ -498,10 +522,13 @@ def load_precomputed_index() -> tuple["faiss.IndexFlatIP", list[dict]] | tuple[N
         return None, None
     print(f"[startup] Loading pre-computed index from {INDEX_PATH}…")
     import faiss
+
     index = faiss.read_index(str(INDEX_PATH))
     with open(CHUNKS_PATH, encoding="utf-8") as f:
         chunks = json.load(f)
-    print(f"[startup] Pre-computed index loaded — {index.ntotal} vectors, {len(chunks)} chunks.")
+    print(
+        f"[startup] Pre-computed index loaded — {index.ntotal} vectors, {len(chunks)} chunks."
+    )
     return index, chunks
 
 
@@ -540,16 +567,17 @@ def build_index_from_pdfs(force: bool = False) -> None:
     pdf_cache/index.faiss + pdf_cache/chunks.json.
 
     Args:
-        force (bool): If True, ignores the existing manifest and rebuilds the 
+        force (bool): If True, ignores the existing manifest and rebuilds the
                      index from scratch. Defaults to False.
 
     SMART REFRESH: This function generates a manifest.json containing MD5 hashes
-    of all PDF files. If the current files match the stored manifest (and the 
+    of all PDF files. If the current files match the stored manifest (and the
     index exists), the expensive embedding process is skipped.
     """
     import hashlib
+
     global _chunks, _index
-    
+
     if not LABOUR_LAW_DIR.exists():
         print(f"[build] {LABOUR_LAW_DIR} does not exist — nothing to index.")
         return
@@ -573,8 +601,14 @@ def build_index_from_pdfs(force: bool = False) -> None:
         try:
             with open(MANIFEST_PATH, "r") as f:
                 stored_manifest = json.load(f)
-            if stored_manifest == current_manifest and INDEX_PATH.exists() and CHUNKS_PATH.exists():
-                print("[build] Smart Refresh: No changes detected in data/labour_law/. Skipping indexing.")
+            if (
+                stored_manifest == current_manifest
+                and INDEX_PATH.exists()
+                and CHUNKS_PATH.exists()
+            ):
+                print(
+                    "[build] Smart Refresh: No changes detected in data/labour_law/. Skipping indexing."
+                )
                 return
         except Exception as e:
             print(f"[build] Failed to read manifest: {e}. Rebuilding anyway.")
@@ -591,7 +625,7 @@ def build_index_from_pdfs(force: bool = False) -> None:
     print(f"[build] Total {num_chunks} chunks loaded from {len(pdf_files)} files.")
     _index = build_index(_chunks)
     save_index(_index, _chunks)
-    
+
     # Save the new manifest
     with open(MANIFEST_PATH, "w") as f:
         json.dump(current_manifest, f, indent=2)
@@ -602,7 +636,7 @@ def build_index_from_pdfs(force: bool = False) -> None:
 def startup(force_rebuild: bool = False) -> None:
     """
     Initialise the vector index and load document chunks.
-    
+
     If force_rebuild=False (default), we try to load a pre-computed index
     from pdf_cache/. If missing, we fall back to build_index_from_pdfs()
     which embeds documents from scratch.
@@ -632,17 +666,19 @@ def startup(force_rebuild: bool = False) -> None:
 # ─── RAG Query ────────────────────────────────────────────────────────────────
 async def condense_query(message: str, history: list[dict]) -> str:
     """
-    Use Claude to condense conversation history and the latest message into a 
+    Use Claude to condense conversation history and the latest message into a
     standalone, search-friendly query.
     """
     if not history:
         return message
 
     client = get_anthropic()
-    
+
     # Simple history formatting
     context_lines = []
-    for turn in history[-CONDENSE_QUERY_HISTORY_TURNS:]:  # Uses configured history context
+    for turn in history[
+        -CONDENSE_QUERY_HISTORY_TURNS:
+    ]:  # Uses configured history context
         role = "User" if turn["role"] == "user" else "Assistant"
         # Truncate content for the condensation prompt.
         # In Gradio 6, content can be a string or a list of blocks.
@@ -654,13 +690,13 @@ async def condense_query(message: str, history: list[dict]) -> str:
                 for part in raw_content
             ]
             raw_content = "".join(text_parts)
-        
+
         # Ensure it is a string before slicing/concatenating
         raw_content = str(raw_content)
         msg_len = CONDENSE_QUERY_CONTENT_MAX_LEN
         content = raw_content[:msg_len] + ("..." if len(raw_content) > msg_len else "")
         context_lines.append(f"{role}: {content}")
-    
+
     context_str = "\n".join(context_lines)
 
     prompt = (
@@ -678,7 +714,7 @@ async def condense_query(message: str, history: list[dict]) -> str:
         response = await client.messages.create(
             model=CONDENSE_MODEL,
             max_tokens=100,
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
         )
         condensed = response.content[0].text.strip().strip('"')
         print(f"[rag] Condensed query: '{message}' -> '{condensed}'")
@@ -761,6 +797,81 @@ async def rag_stream(message: str, history: list[dict]) -> AsyncIterator[str]:
         yield f"\n\n⚠️ API error: {exc}"
 
 
+# ─── Export / Import Functions ────────────────────────────────────────────────
+MAX_IMPORT_SIZE_BYTES = 500 * 1024  # 500KB limit
+
+
+def export_history_json(history: list[dict]) -> str:
+    """Serialize conversation history to JSON for export."""
+    return json.dumps(history, indent=2, ensure_ascii=False)
+
+
+def export_history_markdown(history: list[dict]) -> str:
+    """Serialize conversation history to Markdown for export."""
+    lines = ["# Vexilon Conversation Export\n"]
+    for i, turn in enumerate(history):
+        role = turn.get("role", "unknown")
+        content = turn.get("content", "")
+        if isinstance(content, list):
+            text_parts = [
+                p.get("text", "") if isinstance(p, dict) else str(p) for p in content
+            ]
+            content = "".join(text_parts)
+        content = str(content)
+
+        if role == "user":
+            lines.append(f"## User\n{content}\n")
+        elif role == "assistant":
+            lines.append(f"## Assistant\n{content}\n")
+    return "\n".join(lines)
+
+
+def import_history_json(file_obj) -> tuple[list[dict], str]:
+    """
+    Import conversation history from JSON file.
+    Returns (history, error_message). Empty error means success.
+    """
+    import io
+
+    if file_obj is None:
+        return [], "No file provided"
+
+    try:
+        if hasattr(file_obj, "read"):
+            content = file_obj.read()
+        elif isinstance(file_obj, (bytes, str)):
+            content = file_obj
+        else:
+            return [], "Invalid file object"
+
+        if len(content) > MAX_IMPORT_SIZE_BYTES:
+            return (
+                [],
+                f"File too large. Maximum size is {MAX_IMPORT_SIZE_BYTES // 1024}KB",
+            )
+
+        if isinstance(content, bytes):
+            content = content.decode("utf-8")
+
+        history = json.loads(content)
+
+        if not isinstance(history, list):
+            return [], "Invalid format: expected a JSON array of message objects"
+
+        for i, turn in enumerate(history):
+            if not isinstance(turn, dict):
+                return [], f"Invalid message at index {i}: expected object"
+            if "role" not in turn or "content" not in turn:
+                return [], f"Invalid message at index {i}: missing 'role' or 'content'"
+
+        return history, ""
+
+    except json.JSONDecodeError as e:
+        return [], f"Invalid JSON: {e}"
+    except Exception as e:
+        return [], f"Import failed: {e}"
+
+
 # ─── Gradio UI ────────────────────────────────────────────────────────────────
 EXAMPLE_QUESTIONS = [
     "What are the just cause requirements for discipline?",
@@ -794,29 +905,29 @@ ATTRIBUTION_HTML = f"""
 """
 
 
-
 def build_ui() -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
     import gradio as gr
-    with gr.Blocks(title="Collective Agreement Explorer") as demo:
 
+    with gr.Blocks(title="Collective Agreement Explorer") as demo:
         # ── Header ────────────────────────────────────────────────────────────
         gr.Markdown("## BCGEU Steward Assistant")
 
         with gr.Accordion("Knowledge Base & Priority", open=False):
-            gr.Markdown("**The Collective Agreement** is our primary reference. Anything else provides additional context.")
+            gr.Markdown(
+                "**The Collective Agreement** is our primary reference. Anything else provides additional context."
+            )
             # Use gr.HTML() to preserve clickable links (gr.Markdown sanitizes HTML)
             gr.HTML(build_pdf_download_links())
-            gr.Markdown(f"[📁 Browse Knowledge Base on GitHub]({GITHUB_LABOUR_LAW_URL})")
+            gr.Markdown(
+                f"[📁 Browse Knowledge Base on GitHub]({GITHUB_LABOUR_LAW_URL})"
+            )
 
         # ── Disclaimer (persistent, non-dismissible) ──────────────────────────
         gr.HTML(DISCLAIMER_HTML)
 
         with gr.Row(visible=True) as chip_row:
-            chip_btns = [
-                gr.Button(q, size="sm")
-                for q in EXAMPLE_QUESTIONS
-            ]
+            chip_btns = [gr.Button(q, size="sm") for q in EXAMPLE_QUESTIONS]
 
         # ── Chat interface ────────────────────────────────────────────────────
         chatbot = gr.Chatbot(
@@ -824,6 +935,57 @@ def build_ui() -> "gr.Blocks":
             buttons=["copy"],
             render_markdown=True,
             show_label=False,
+        )
+
+        # ── Export / Import controls ────────────────────────────────────────────
+        with gr.Row():
+            gr.Markdown("**Session:**")
+            export_json_btn = gr.Button("Export JSON", size="sm")
+            export_md_btn = gr.Button("Export Markdown", size="sm")
+            import_file = gr.File(
+                label="Import JSON",
+                file_count="single",
+                file_types=[".json"],
+                scale=1,
+            )
+            import_btn = gr.Button("Load", size="sm")
+
+        # Export handlers
+        def _do_export_json(history):
+            if not history:
+                return None
+            json_str = export_history_json(history)
+            return json_str
+
+        def _do_export_md(history):
+            if not history:
+                return None
+            md_str = export_history_markdown(history)
+            return md_str
+
+        export_json_btn.click(
+            fn=_do_export_json,
+            inputs=[chatbot],
+            outputs=[gr.DownloadButton(label="Download JSON", visible=True)],
+        )
+
+        export_md_btn.click(
+            fn=_do_export_md,
+            inputs=[chatbot],
+            outputs=[gr.DownloadButton(label="Download Markdown", visible=True)],
+        )
+
+        # Import handler
+        def _do_import(file_obj):
+            history, error = import_history_json(file_obj)
+            if error:
+                return history, error
+            return history, ""
+
+        import_btn.click(
+            fn=_do_import,
+            inputs=[import_file],
+            outputs=[chatbot, gr.Textbox(visible=False)],
         )
 
         # ── Input row ─────────────────────────────────────────────────────────
@@ -844,6 +1006,7 @@ def build_ui() -> "gr.Blocks":
             message: str, history: list[dict]
         ) -> AsyncIterator[tuple[list[dict], str, dict]]:
             import gradio as gr
+
             hide = gr.update(visible=False)
             show = gr.update(visible=True)
             if not message.strip():
