@@ -203,9 +203,9 @@ def build_pdf_download_links() -> str:
         else:
             display_name = stem.replace("_", " ").title()
 
-        # Use GitHub raw URLs since Gradio 6 /file= endpoint is unreliable
-        github_raw_url = f"https://raw.githubusercontent.com/DerekRoberts/vexilon/main/data/labour_law/{pdf.name}"
-        lines.append(f'<li><a href="{github_raw_url}" target="_blank">{display_name}</a></li>')
+        # Use /gradio_api/file= endpoint (Gradio 6 static file serving)
+        file_path = str(pdf.absolute())
+        lines.append(f'<li><a href="/gradio_api/file={file_path}" target="_blank">{display_name}</a></li>')
 
     lines.append("</ul>")
     return "\n".join(lines)
@@ -897,7 +897,7 @@ if __name__ == "__main__":
         print(f"[startup] Authentication enabled for user '{VEXILON_USERNAME}'")
 
     # Build allowed_paths: allow specific PDF files in LABOUR_LAW_DIR (security: only PDFs)
-    # List each PDF explicitly to ensure exact paths work with /file= endpoint
+    # Allow access to PDF files
     allowed_pdf_paths = [str(p.absolute()) for p in LABOUR_LAW_DIR.glob("*.pdf")]
 
     app.launch(
