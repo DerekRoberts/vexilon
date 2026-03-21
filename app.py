@@ -900,6 +900,8 @@ if __name__ == "__main__":
 
     # Build allowed_paths: allow labour_law directory for PDF downloads
     # Use relative path for cross-environment compatibility (local dev + Docker container)
+    # Note: This allows the entire directory rather than specific files for cross-environment
+    # compatibility. The directory only contains PDF files per project structure, so this is acceptable.
     allowed_paths = [str(LABOUR_LAW_DIR)]
 
     app.launch(
