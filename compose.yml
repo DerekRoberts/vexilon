@@ -91,3 +91,42 @@ services:
     extends: vexilon
     profiles: ["app"]
     depends_on: [] # This overrides and removes the default dependencies
+
+  # ── Fast UI Development ───────────────────────────────────────────────────
+  # Use: podman compose up --build ui
+  # Builds from source with live reload. Skips startup() entirely for instant UI testing.
+  ui:
+    build:
+      context: .
+      dockerfile: Containerfile
+      target: builder
+    profiles: ["ui"]
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      VEXILON_USERNAME: ${VEXILON_USERNAME:-admin}
+      VEXILON_PASSWORD: ${VEXILON_PASSWORD:-}
+      HF_TOKEN_PATH: /dev/null
+      TRANSFORMERS_OFFLINE: "1"
+      PORT: "7860"
+      HF_HOME: /app/hf_cache
+      VEXILON_SKIP_STARTUP: "1"
+    ports:
+      - "7860:7860"
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./app.py:/app/app.py:rw,Z
+      - ./scripts:/app/scripts:ro,Z
+      - ./data:/app/data:ro,Z
+      - ./pdf_cache:/app/pdf_cache:Z
+      - ./hf_cache:/app/hf_cache:Z
+      - ./pyproject.toml:/app/pyproject.toml:ro,Z
+    command: sh -c "uv sync --frozen && gradio app.py --port 7860 --host 0.0.0.0 --reload"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
