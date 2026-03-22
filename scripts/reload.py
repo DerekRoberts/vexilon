@@ -24,10 +24,13 @@ class ReloadHandler(FileSystemEventHandler):
 
 if __name__ == "__main__":
     handler = ReloadHandler()
-    Observer().schedule(handler, ".", recursive=False).start()
+    observer = Observer()
+    observer.schedule(handler, ".", recursive=False)
+    observer.start()
     print("Watching for changes to app.py...")
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
+        observer.stop()
         handler.proc.terminate()
