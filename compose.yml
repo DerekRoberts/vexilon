@@ -94,7 +94,7 @@ services:
 
   # ── Fast UI Development ───────────────────────────────────────────────────
   # Use: podman compose up --build ui
-  # Builds from source with live reload. Skips startup() entirely for instant UI testing.
+  # Builds from source with live reload. Loads pre-computed index if available.
   ui:
     build:
       context: .
@@ -109,7 +109,6 @@ services:
       TRANSFORMERS_OFFLINE: "1"
       PORT: "7860"
       HF_HOME: /app/hf_cache
-      VEXILON_SKIP_STARTUP: "1"
     ports:
       - "7860:7860"
     cap_drop:
