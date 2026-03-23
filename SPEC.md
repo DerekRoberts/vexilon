@@ -204,6 +204,16 @@ To prevent unintended public access while running on Hugging Face Spaces or othe
   - If unset, the app remains public (intended for local development).
   - Credentials are checked on every session start.
 
+### Input Sanitization
+
+To prevent prompt injection attacks, Vexilon implements input sanitization:
+
+- **Detection:** Regex-based pattern matching for 16+ known prompt injection patterns
+- **Patterns include:** `ignore all instructions`, `forget your rules`, `jailbreak`, `developer mode`, `sudo mode`, roleplay attempts, and other common injection techniques
+- **Length limits:** Maximum input length (default 2000 characters) to prevent buffer overflow attacks
+- **Logging:** Flagged inputs are logged for security monitoring (configurable)
+- **User feedback:** When input is flagged, users receive: "Your input was flagged for security review. Please try a different question."
+
 ---
 
 ## 6. Response Format
@@ -436,6 +446,8 @@ Open `http://localhost:7860`.
 | `VERIFY_MODEL` | `claude-haiku-4-5-20251001` | Claude model for verification |
 | `RATE_LIMIT_PER_MINUTE` | `10` | Max requests per minute per client IP |
 | `RATE_LIMIT_PER_HOUR` | `100` | Max requests per hour per client IP |
+| `MAX_INPUT_LENGTH` | `2000` | Max characters per user message |
+| `LOG_SUSPICIOUS_INPUTS` | `true` | Log flagged inputs for security review |
 
 ---
 

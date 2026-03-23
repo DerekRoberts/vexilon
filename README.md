@@ -173,6 +173,24 @@ Rate limiting prevents abuse and controls API costs by throttling requests per c
 
 When a rate limit is exceeded, users receive a clear error message indicating which limit was hit and when they can retry.
 
+### Input Sanitization
+
+Input sanitization prevents prompt injection attacks by detecting and blocking malicious inputs:
+
+| Variable | Default | Description |
+|---|---|---|
+| `MAX_INPUT_LENGTH` | `2000` | Maximum characters per message |
+| `LOG_SUSPICIOUS_INPUTS` | `true` | Log flagged inputs for security review |
+
+The sanitization checks for 16+ prompt injection patterns including:
+- `ignore all/previous/system instructions`
+- `forget your/the instructions`
+- `you are now ... instead`
+- `jailbreak`, `developer mode`, `sudo mode`
+- And other common injection techniques
+
+When a potentially malicious input is detected, users receive a friendly message: "Your input was flagged for security review. Please try a different question."
+
 ## Hugging Face Spaces Deployment
 
 The Space runs as **`sdk: docker`** in production — the deploy script pushes a stub

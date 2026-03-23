@@ -69,6 +69,66 @@ SIMILARITY_TOP_K = int(os.getenv("SIMILARITY_TOP_K", 40))  # More context depth
 CONDENSE_QUERY_HISTORY_TURNS = int(os.getenv("CONDENSE_QUERY_HISTORY_TURNS", 3))
 CONDENSE_QUERY_CONTENT_MAX_LEN = int(os.getenv("CONDENSE_QUERY_CONTENT_MAX_LEN", 200))
 
+import re
+import logging
+
+# Input Sanitization (for prompt injection prevention)
+MAX_INPUT_LENGTH = int(os.getenv("MAX_INPUT_LENGTH", 2000))
+LOG_SUSPICIOUS_INPUTS = os.getenv("LOG_SUSPICIOUS_INPUTS", "true").lower() == "true"
+
+PROMPT_INJECTION_PATTERNS = [
+    re.compile(r, re.IGNORECASE)
+    for r in [
+        r"ignore\s+.*instructions",
+        r"forget\s+.*instructions",
+        r"disregard\s+.*rules",
+        r"you\s+are\s+now\s+.+\s+instead",
+        r"new\s+(system\s+|)prompt:",
+        r"#\#\#\s*(system\s+|)instructions",
+        r"\[\[SYSTEM\]\]",
+        r"override\s+.*instructions",
+        r"disable\s+.*safety",
+        r"\bjailbreak\b",
+        r"developer\s+mode",
+        r"sudo\s+mode",
+        r"roleplay\s+as",
+        r"pretend\s+(you\s+are|to\s+be)",
+        r"forget\s+everything\s+above",
+        r"discard\s+.*instructions",
+    ]
+]
+
+
+def sanitize_input(user_input: str) -> tuple[str, bool]:
+    """
+    Check for prompt injection patterns and length limits.
+    Returns (sanitized_input, was_flagged).
+    """
+    if not user_input:
+        return user_input, False
+
+    injection_found = False
+    for pattern in PROMPT_INJECTION_PATTERNS:
+        if pattern.search(user_input):
+            injection_found = True
+            if LOG_SUSPICIOUS_INPUTS:
+                logging.warning(
+                    f"[security] Prompt injection pattern detected: {pattern.pattern[:30]}..."
+                )
+            break
+
+    too_long = len(user_input) > MAX_INPUT_LENGTH
+    if too_long and LOG_SUSPICIOUS_INPUTS:
+        logging.warning(
+            f"[security] Input length ({len(user_input)}) exceeds limit of {MAX_INPUT_LENGTH}. Input rejected."
+        )
+
+    flagged = injection_found or too_long
+    sanitized = user_input[:MAX_INPUT_LENGTH]
+
+    return sanitized, flagged
+
+
 # Verification Bot (for reducing hallucinations)
 VERIFY_MODEL = os.getenv("VERIFY_MODEL", "claude-haiku-4-5-20251001")
 VERIFY_ENABLED = os.getenv("VERIFY_ENABLED", "true").lower() == "true"
@@ -1027,6 +1087,14 @@ def build_ui() -> "gr.Blocks":
                 yield history, "", show
                 return
 
+            message, was_flagged = sanitize_input(message)
+            if was_flagged:
+                yield (
+                    history,
+                    "Your input was flagged for security review. Please try a different question.",
+                    show,
+                )
+                return
             prior_history = list(history)
             # Append user turn; seed an empty assistant bubble for streaming.
             # Hide onboarding components on first message.
