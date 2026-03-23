@@ -157,6 +157,11 @@ Vexilon includes a second AI bot that verifies responses against source citation
 
 When enabled, the verification bot reviews each response and checks if quoted text actually supports the claims made. If claims are disputed, a "Verification" note is appended to the response. Verified responses remain clean with no added note.
 
+> **Evaluation:** After deploying, monitor responses for "Verification:" notes.
+> - If notes appear frequently → verification is catching real issues; keep enabled
+> - If notes never appear → the main bot is reliable; consider disabling to save ~30% on API costs
+> - This evaluation approach assumes VERIFY_ENABLED=true by default to assess value over time
+
 ## Hugging Face Spaces Deployment
 
 The Space runs as **`sdk: docker`** in production — the deploy script pushes a stub
