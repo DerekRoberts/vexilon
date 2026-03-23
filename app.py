@@ -927,8 +927,7 @@ def build_ui() -> "gr.Blocks":
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    if os.getenv("VEXILON_SKIP_STARTUP", "").lower() not in ("1", "true"):
-        startup()
+    startup()
     app = build_ui()
     # Enable authentication if a password is set in the environment.
     auth_creds = None
