@@ -1271,11 +1271,11 @@ def build_ui() -> "gr.Blocks":
             message: str,
             history: list[dict],
             use_reviewer: bool,
-            request=None,
             **kwargs,
         ) -> AsyncIterator[tuple[list[dict], str, dict]]:
             import gradio as gr
 
+            request = kwargs.get("request")
             hide = gr.update(visible=False)
             show = gr.update(visible=True)
             if not message.strip():
