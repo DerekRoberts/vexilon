@@ -1268,7 +1268,11 @@ def build_ui() -> "gr.Blocks":
 
         # ── Submit handlers ───────────────────────────────────────────────────
         async def submit(
-            message: str, history: list[dict], use_reviewer: bool, request=None
+            message: str,
+            history: list[dict],
+            use_reviewer: bool,
+            request=None,
+            **kwargs,
         ) -> AsyncIterator[tuple[list[dict], str, dict]]:
             import gradio as gr
 
