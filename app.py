@@ -1107,8 +1107,6 @@ async def rag_review_stream(
     Retrieve relevant chunks, build the prompt, stream from Bot A (RAG),
     and optionally pass through Bot B (reviewer) for verification.
     """
-    if use_reviewer is None:
-        use_reviewer = USE_REVIEWER
 
     if _index is None:
         yield "⚠️ The index is not ready yet. Please wait a moment and try again."
@@ -1270,7 +1268,7 @@ def build_ui() -> "gr.Blocks":
 
         # ── Submit handlers ───────────────────────────────────────────────────
         async def submit(
-            message: str, history: list[dict], use_reviewer: bool
+            message: str, history: list[dict], use_reviewer: bool, request=None
         ) -> AsyncIterator[tuple[list[dict], str, dict]]:
             import gradio as gr
 
