@@ -28,6 +28,9 @@ import os
 import time
 from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
+import datetime
+import tempfile
+
 
 # Ensure the HuggingFace model cache is writable and persistent.
 # Inside the container (WORKDIR /app), this resolves to /app/hf_cache.
@@ -1177,6 +1180,67 @@ async def rag_review_stream(
         yield f"\n\n⚠️ API error: {exc}"
 
 
+# ─── Export & Import ──────────────────────────────────────────────────────────
+
+
+def history_to_markdown(history: list[dict]) -> str:
+    """Convert chat history to a Markdown string."""
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    md = f"# Vexilon Conversation Export - {timestamp}\n\n"
+
+    for turn in history:
+        role = turn["role"].capitalize()
+        # content can be a string or a list of blocks in Gradio 6
+        content = turn["content"]
+        if isinstance(content, list):
+            # Extract text from message parts
+            text_parts = [
+                part.get("text", "") if isinstance(part, dict) else str(part)
+                for part in content
+            ]
+            content = "".join(text_parts)
+
+        md += f"### {role}\n{content}\n\n"
+
+    return md
+
+
+def markdown_to_history(file_path: str) -> list[dict]:
+    """Parse a Markdown conversation file back into a list of dicts."""
+    with open(file_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    history = []
+    current_role = None
+    current_content = []
+
+    for line in lines:
+        if line.startswith("### User"):
+            if current_role:
+                history.append(
+                    {"role": current_role, "content": "\n".join(current_content).strip()}
+                )
+            current_role = "user"
+            current_content = []
+        elif line.startswith("### Assistant"):
+            if current_role:
+                history.append(
+                    {"role": current_role, "content": "\n".join(current_content).strip()}
+                )
+            current_role = "assistant"
+            current_content = []
+        elif current_role:
+            current_content.append(line.rstrip("\n"))
+
+    # Append the last turn
+    if current_role:
+        history.append(
+            {"role": current_role, "content": "\n".join(current_content).strip()}
+        )
+
+    return history
+
+
 # ─── Gradio UI ────────────────────────────────────────────────────────────────
 EXAMPLE_QUESTIONS = [
     "What are the just cause requirements for discipline?",
@@ -1230,6 +1294,17 @@ def build_ui() -> "gr.Blocks":
 
         # ── Disclaimer (persistent, non-dismissible) ──────────────────────────
         gr.HTML(DISCLAIMER_HTML)
+
+        # ── Export & Import ───────────────────────────────────────────────────
+        with gr.Accordion("Conversation Management", open=False):
+            with gr.Row():
+                export_btn = gr.Button("📤 Export Conversation", variant="secondary")
+                import_btn = gr.UploadButton(
+                    "📥 Import Conversation", file_types=[".md"], variant="secondary"
+                )
+            export_file = gr.File(
+                label="Download Conversation", interactive=False, visible=False
+            )
 
         with gr.Row(visible=True) as chip_row:
             chip_btns = [gr.Button(q, size="sm") for q in EXAMPLE_QUESTIONS]
@@ -1332,6 +1407,34 @@ def build_ui() -> "gr.Blocks":
                 inputs=submit_inputs,
                 outputs=submit_outputs,
             )
+
+        # ── Export/Import Handlers ───────────────────────────────────────────
+        def handle_export(history):
+            if not history:
+                return gr.update(visible=False, value=None)
+            md_str = history_to_markdown(history)
+            # Create a temporary file that Gradio can serve
+            fd, path = tempfile.mkstemp(suffix=".md")
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(md_str)
+            return gr.update(value=path, visible=True)
+
+        export_btn.click(fn=handle_export, inputs=[chatbot], outputs=[export_file])
+
+        def handle_import(file):
+            if file is None:
+                return gr.update()
+            try:
+                new_history = markdown_to_history(file.name)
+                # Hide onboardings if history is restored
+                return new_history, gr.update(visible=False)
+            except Exception as e:
+                print(f"[ui] Import failed: {e}")
+                return gr.update(), gr.update()
+
+        import_btn.upload(
+            fn=handle_import, inputs=[import_btn], outputs=[chatbot, chip_row]
+        )
 
         # ── Attribution Footer ────────────────────────────────────────────────
         gr.HTML(ATTRIBUTION_HTML)
