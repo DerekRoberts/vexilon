@@ -1310,14 +1310,11 @@ def build_ui() -> "gr.Blocks":
             reviewer_toggle = gr.Checkbox(
                 label="Enable Senior Rep Review (Two-Bot Pipeline)",
                 value=USE_REVIEWER,
-                scale=2,
+                scale=3,
             )
             export_btn = gr.DownloadButton("📤 Save Chat", variant="secondary", scale=1)
             import_btn = gr.UploadButton(
                 "📥 Load Chat", file_types=[".md"], variant="secondary", scale=1
-            )
-            gr.HTML(
-                "<span style='color:#6b7280;font-size:0.85rem;margin-left:10px;'>Bot B verifies Bot A's output for accuracy</span>"
             )
 
         # ── Input row ─────────────────────────────────────────────────────────
