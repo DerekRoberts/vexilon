@@ -1215,19 +1215,18 @@ def markdown_to_history(file_path: str) -> list[dict]:
     current_content = []
 
     for line in lines:
+        new_role = None
         if line.startswith("### User"):
-            if current_role:
-                history.append(
-                    {"role": current_role, "content": "\n".join(current_content).strip()}
-                )
-            current_role = "user"
-            current_content = []
+            new_role = "user"
         elif line.startswith("### Assistant"):
+            new_role = "assistant"
+
+        if new_role:
             if current_role:
                 history.append(
                     {"role": current_role, "content": "\n".join(current_content).strip()}
                 )
-            current_role = "assistant"
+            current_role = new_role
             current_content = []
         elif current_role:
             current_content.append(line.rstrip("\n"))
@@ -1417,6 +1416,18 @@ def build_ui() -> "gr.Blocks":
             fd, path = tempfile.mkstemp(suffix=".md")
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(md_str)
+
+            # Schedule file deletion after 10 minutes to avoid resource leak
+            def cleanup():
+                try:
+                    if os.path.exists(path):
+                        os.remove(path)
+                        print(f"[ui] Cleaned up temporary export file: {path}")
+                except Exception:
+                    logging.error(f"[ui] Failed to clean up export file: {path}", exc_info=True)
+
+            threading.Timer(600, cleanup).start()
+
             return gr.update(value=path, visible=True)
 
         export_btn.click(fn=handle_export, inputs=[chatbot], outputs=[export_file])
@@ -1428,8 +1439,8 @@ def build_ui() -> "gr.Blocks":
                 new_history = markdown_to_history(file.name)
                 # Hide onboardings if history is restored
                 return new_history, gr.update(visible=False)
-            except Exception as e:
-                print(f"[ui] Import failed: {e}")
+            except Exception:
+                logging.error("[ui] Import failed", exc_info=True)
                 return gr.update(), gr.update()
 
         import_btn.upload(
