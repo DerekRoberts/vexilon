@@ -1294,13 +1294,6 @@ def build_ui() -> "gr.Blocks":
         # ── Disclaimer (persistent, non-dismissible) ──────────────────────────
         gr.HTML(DISCLAIMER_HTML)
 
-        # ── Export & Import Toolbar ───────────────────────────────────────────
-        with gr.Row():
-            export_btn = gr.DownloadButton("📤 Save Chat", variant="secondary", scale=1)
-            import_btn = gr.UploadButton(
-                "📥 Load Chat", file_types=[".md"], variant="secondary", scale=1
-            )
-
         with gr.Row(visible=True) as chip_row:
             chip_btns = [gr.Button(q, size="sm") for q in EXAMPLE_QUESTIONS]
 
@@ -1312,15 +1305,20 @@ def build_ui() -> "gr.Blocks":
             show_label=False,
         )
 
-        # ── Reviewer Toggle ───────────────────────────────────────────────────
+        # ── Reviewer Toggle & Management ──────────────────────────────────────
         with gr.Row():
             reviewer_toggle = gr.Checkbox(
                 label="Enable Senior Rep Review (Two-Bot Pipeline)",
                 value=USE_REVIEWER,
-                scale=1,
+                scale=2,
+            )
+            export_btn = gr.DownloadButton("📤 Save Chat", variant="secondary", scale=1)
+            import_btn = gr.UploadButton(
+                "📥 Load Chat", file_types=[".md"], variant="secondary", scale=1
             )
             gr.Markdown(
-                "<span style='color:#6b7280;font-size:0.85rem'>Bot B verifies Bot A's output for accuracy</span>"
+                "<span style='color:#6b7280;font-size:0.85rem'>Bot B verifies Bot A's output for accuracy</span>",
+                scale=2,
             )
 
         # ── Input row ─────────────────────────────────────────────────────────
