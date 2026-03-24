@@ -209,7 +209,7 @@ _rate_limiter = RateLimiter(
 )
 
 # Two-Bot Self-Review Pipeline (Issue #104)
-USE_REVIEWER = os.getenv("USE_REVIEWER", "true").lower() == "true"
+USE_REVIEWER = os.getenv("USE_REVIEWER", "false").lower() == "true"
 REVIEWER_MODEL = os.getenv("REVIEWER_MODEL", "claude-haiku-4-5-20251001")
 
 
@@ -1308,7 +1308,7 @@ def build_ui() -> "gr.Blocks":
         # ── Reviewer Toggle & Management ──────────────────────────────────────
         with gr.Row():
             reviewer_toggle = gr.Checkbox(
-                label="🔍 Enable Senior Rep Review (Two-Bot Pipeline)",
+                label="Enable Senior Rep Review (Two-Bot Pipeline)",
                 value=USE_REVIEWER,
                 scale=3,
             )
