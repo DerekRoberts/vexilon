@@ -309,20 +309,26 @@ def get_knowledge_manifest() -> str:
         return "No documents available."
 
     pdfs = sorted(LABOUR_LAW_DIR.glob("*.pdf"))
-    if not pdfs:
+    mds = sorted(LABOUR_LAW_DIR.glob("*.md"))
+    files = sorted(pdfs + mds, key=lambda p: p.name)
+    
+    if not files:
         return "No documents available."
 
     lines = []
-    for pdf in pdfs:
-        stem = pdf.stem
+    for f in files:
+        stem = f.stem
         # Try to parse our convention: Index_Category_Title
         parts = stem.split("_", 2)
-        if len(parts) == 3:
+        if len(parts) == 1:
+            # Fallback for non-conforming filenames
+            lines.append(f"- {stem.replace('_', ' ').title()} (Uncategorized)")
+        elif len(parts) == 2:
+            idx, title = parts
+            lines.append(f"{idx}. {title} (Reference)")
+        else:
             idx, cat, title = parts
             lines.append(f"{idx}. {title} ({cat})")
-        else:
-            # Fallback for non-conforming filenames
-            lines.append(f"- {stem.replace('_', ' ').title()}")
 
     return "\n".join(lines)
 
@@ -338,23 +344,29 @@ def build_pdf_download_links() -> str:
         return ""
 
     pdfs = sorted(LABOUR_LAW_DIR.glob("*.pdf"))
-    if not pdfs:
+    mds = sorted(LABOUR_LAW_DIR.glob("*.md"))
+    files = sorted(pdfs + mds, key=lambda p: p.name)
+
+    if not files:
         return ""
 
     # Use relative path for cross-environment compatibility (local dev + Docker container)
     lines = ["<b>Download Documents:</b>", "<ul>"]
-    for pdf in pdfs:
-        stem = pdf.stem
+    for f in files:
+        stem = f.stem
         # Parse convention: Index_Category_Title
         parts = stem.split("_", 2)
         if len(parts) == 3:
             idx, cat, title = parts
             display_name = f"{idx}. {title} ({cat})"
+        elif len(parts) == 2:
+            idx, title = parts
+            display_name = f"{idx}. {title} (Reference)"
         else:
             display_name = stem.replace("_", " ").title()
 
         # Use relative path for Gradio's /gradio_api/file= endpoint (works in both local and container)
-        file_path = f"data/labour_law/{pdf.name}"
+        file_path = f"data/labour_law/{f.name}"
         lines.append(
             f'<li><a href="/gradio_api/file={file_path}" target="_blank">{html.escape(display_name)}</a></li>'
         )
@@ -549,6 +561,47 @@ def _clean_page_text(page_text: str) -> str:
     # Collapse runs of 3+ blank lines down to a single blank line
     page_text = re.sub(r"\n{3,}", "\n\n", page_text)
     return page_text.strip()
+
+
+def load_md_chunks(md_path: Path) -> list[dict]:
+    """
+    Parse a Markdown file into tokens and chunks.
+    Markdown is preferred for structured summaries as it preserves semantic hierarchies
+    better than PDF extraction.
+    """
+    content = md_path.read_text(encoding="utf-8")
+    stem = md_path.stem
+    parts = stem.split("_", 2)
+    source_name = parts[2] if len(parts) == 3 else stem.replace("_", " ").title()
+    print(f"[loader] Parsing Markdown '{source_name}'…")
+
+    tokenizer = get_embed_model().tokenizer
+    token_metadata = []
+    
+    # Very simple header detection for MD
+    current_header = ""
+    lines = content.split("\n")
+    char_offset = 0
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            current_header = stripped.lstrip("#").strip().upper()
+        
+        # Tokenize line and record metadata
+        encoding = tokenizer(
+            line,
+            add_special_tokens=False,
+            return_offsets_mapping=True,
+            truncation=False,
+        )
+        for start_off, end_off in encoding.offset_mapping:
+            token_metadata.append(
+                (char_offset + start_off, char_offset + end_off, 1, current_header)
+            )
+        
+        char_offset += len(line) + 1 # +1 for newline
+
+    return chunk_text(content, token_metadata, source_name)
 
 
 def load_pdf_chunks(pdf_path: Path) -> list[dict]:
@@ -750,16 +803,12 @@ def _fetch_pdf_cache_if_missing() -> None:
 
 def build_index_from_pdfs(force: bool = False) -> None:
     """
-    Parse all PDFs in LABOUR_LAW_DIR, embed them, and write the pre-built index to
-    pdf_cache/index.faiss + pdf_cache/chunks.json.
+    Parse all source files (PDF and MD) in LABOUR_LAW_DIR, embed them, 
+    and write the pre-built index to pdf_cache/index.faiss + pdf_cache/chunks.json.
 
     Args:
         force (bool): If True, ignores the existing manifest and rebuilds the
-                     index from scratch. Defaults to False.
-
-    SMART REFRESH: This function generates a manifest.json containing MD5 hashes
-    of all PDF files. If the current files match the stored manifest (and the
-    index exists), the expensive embedding process is skipped.
+                      index from scratch. Defaults to False.
     """
     import hashlib
 
@@ -770,18 +819,21 @@ def build_index_from_pdfs(force: bool = False) -> None:
         return
 
     pdf_files = sorted(LABOUR_LAW_DIR.glob("*.pdf"))
-    if not pdf_files:
-        print("[build] No PDF files found to index!")
+    md_files = sorted(LABOUR_LAW_DIR.glob("*.md"))
+    all_files = pdf_files + md_files
+    
+    if not all_files:
+        print("[build] No source files found to index!")
         return
 
-    # Calculate hashes for the current PDF set (chunked to handle large files)
+    # Calculate hashes for the current source set
     current_manifest = {}
-    for pdf in pdf_files:
+    for source_file in all_files:
         hasher = hashlib.sha256()
-        with open(pdf, "rb") as f:
+        with open(source_file, "rb") as f:
             while chunk := f.read(65536):
                 hasher.update(chunk)
-        current_manifest[pdf.name] = hasher.hexdigest()
+        current_manifest[source_file.name] = hasher.hexdigest()
 
     # Check against stored manifest
     if not force and MANIFEST_PATH.exists():
@@ -803,13 +855,16 @@ def build_index_from_pdfs(force: bool = False) -> None:
     # Ensure cache directory exists before writing
     PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-    print(f"[build] Scanning for PDFs in {LABOUR_LAW_DIR}…")
+    print(f"[build] Scanning Sources in {LABOUR_LAW_DIR}…")
     _chunks = []
-    for pdf in pdf_files:
-        _chunks.extend(load_pdf_chunks(pdf))
+    for f in all_files:
+        if f.suffix.lower() == ".pdf":
+            _chunks.extend(load_pdf_chunks(f))
+        elif f.suffix.lower() == ".md":
+            _chunks.extend(load_md_chunks(f))
 
     num_chunks = len(_chunks)
-    print(f"[build] Total {num_chunks} chunks loaded from {len(pdf_files)} files.")
+    print(f"[build] Total {num_chunks} chunks loaded from {len(all_files)} files.")
     _index = build_index(_chunks)
     save_index(_index, _chunks)
 
