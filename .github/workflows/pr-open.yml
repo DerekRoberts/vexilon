@@ -1,4 +1,4 @@
-name: pr-open
+name: PR Open
 
 # Runs unit tests on pull requests (excluding drafts) and on the weekly schedule.
 # Images are built during PRs and promoted on merge — no rebuild on main.
@@ -10,13 +10,15 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
     paths-ignore:
-      - '**.md'
+      - 'README.md'
+      - 'SPEC.md'
       - 'LICENSE'
       - '.gitignore'
       - '.dockerignore'
       - '.trivyignore'
       - '.github/trivy.yml'
       - '.github/workflows/deploy-*.yml'
+      - 'renovate.json'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
