@@ -13,12 +13,9 @@ on:
       - 'app.py'
       - 'Containerfile'
       - 'data/**'
-      - 'pdf_cache/**'
-      - 'prompts/**'
       - 'scripts/**'
       - 'pyproject.toml'
       - 'uv.lock'
-      - 'requirements.txt'
 
 permissions: {}
 
