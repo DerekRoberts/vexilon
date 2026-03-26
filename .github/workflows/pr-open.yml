@@ -1,4 +1,4 @@
-name: Analysis
+name: pr-open
 
 # Runs unit tests on pull requests (excluding drafts) and on the weekly schedule.
 # Images are built during PRs and promoted on merge — no rebuild on main.
