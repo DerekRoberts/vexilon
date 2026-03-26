@@ -15,7 +15,6 @@ on:
       - 'LICENSE'
       - '.gitignore'
       - '.dockerignore'
-      - '.trivyignore'
       - '.kilo/**'
       - 'renovate.json'
       - '.github/**'
