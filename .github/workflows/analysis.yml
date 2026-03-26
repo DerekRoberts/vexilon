@@ -8,13 +8,55 @@ name: Analysis
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft]
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.dockerignore'
+      - '.trivyignore'
+      - '.github/trivy.yaml'
+      - '.github/workflows/deploy-*.yml'
   schedule:
     - cron: "0 11 * * 0" # 3 AM PST = 11 AM UTC, runs Sundays
 
 permissions: {}
 
 jobs:
+  audit:
+    name: Stale Cache Audit
+    if: (! github.event.pull_request.draft)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+          enable-cache: true
+          
+      - name: Install dependencies
+        run: uv sync --frozen
+        
+      - name: Run Index Validation
+        run: |
+          echo "Building fresh index based on data/labour_law/..."
+          uv run python -c "from app import build_index_from_sources; build_index_from_sources(force=True)"
+          
+          echo "Comparing newly generated manifest with the one in the PR..."
+          if ! git diff --exit-code pdf_cache/manifest.json; then
+            echo "❌ ERROR: Stale Cache Detected!"
+            echo "The manifest.json does not match the actual PDF content in data/labour_law/."
+            echo "Please run 'podman-compose run --rm index-refresh' locally and commit the updated manifest.json."
+            exit 1
+          fi
+          echo "✅ Cache is fresh."
+
   tests:
     name: Unit Tests
     if: ${{ ! github.event.pull_request.draft }}
@@ -186,7 +228,7 @@ jobs:
 
   results:
     name: Results
-    needs: [container_build, container_test, trivy]
+    needs: [audit, tests, container_build, container_test, trivy]
     if: always()
     runs-on: ubuntu-slim
     steps:
