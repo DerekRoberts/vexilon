@@ -979,83 +979,15 @@ async def condense_query(message: str, history: list[dict]) -> str:
 MAX_IMPORT_SIZE_BYTES = 500 * 1024  # 500KB limit
 
 
-def export_history_markdown(history: list[dict]) -> str:
-    """Serialize conversation history to Markdown for export."""
-    lines = ["# Vexilon Conversation Export\n"]
-
-    # Handle None or empty
-    if not history:
-        return "\n".join(lines)
-
-    for turn in history:
-        # Gradio chatbot returns list of tuples: [(user_msg, bot_msg), ...]
-        if isinstance(turn, (list, tuple)) and len(turn) >= 2:
-            user_msg, bot_msg = turn[0], turn[1]
-            if user_msg:
-                lines.append(f"## User\n{user_msg}\n")
-            if bot_msg:
-                lines.append(f"## Assistant\n{bot_msg}\n")
-        elif isinstance(turn, dict):
-            role = turn.get("role", "unknown")
-            content = turn.get("content", "")
-            if isinstance(content, list):
-                text_parts = [
-                    p.get("text", "") if isinstance(p, dict) else str(p)
-                    for p in content
-                ]
-                content = "".join(text_parts)
-            content = str(content)
-
-            if role == "user":
-                lines.append(f"## User\n{content}\n")
-            elif role == "assistant":
-                lines.append(f"## Assistant\n{content}\n")
-
-    return "\n".join(lines)
+def history_to_json(history: list[dict]) -> str:
+    """Serialize conversation history to JSON for backup/restore."""
+    return json.dumps(history, ensure_ascii=False, indent=2)
 
 
-def import_history_json(file_obj: object) -> tuple[list[dict], str]:
-    """
-    Import conversation history from JSON file.
-    Returns (history, error_message). Empty error means success.
-    """
-    if file_obj is None:
-        return [], "No file provided"
-
-    try:
-        if hasattr(file_obj, "read"):
-            content = file_obj.read()
-        elif isinstance(file_obj, (bytes, str)):
-            content = file_obj
-        else:
-            return [], "Invalid file object"
-
-        if len(content) > MAX_IMPORT_SIZE_BYTES:
-            return (
-                [],
-                f"File too large. Maximum size is {MAX_IMPORT_SIZE_BYTES // 1024}KB",
-            )
-
-        if isinstance(content, bytes):
-            content = content.decode("utf-8")
-
-        history = json.loads(content)
-
-        if not isinstance(history, list):
-            return [], "Invalid format: expected a JSON array of message objects"
-
-        for i, turn in enumerate(history):
-            if not isinstance(turn, dict):
-                return [], f"Invalid message at index {i}: expected object"
-            if "role" not in turn or "content" not in turn:
-                return [], f"Invalid message at index {i}: missing 'role' or 'content'"
-
-        return history, ""
-
-    except json.JSONDecodeError as e:
-        return [], f"Invalid JSON: {e}"
-    except Exception as e:
-        return [], f"Import failed: {e}"
+def json_to_history(file_path: str) -> list[dict]:
+    """Parse a JSON conversation file back into a list of dicts."""
+    with open(file_path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 
@@ -1508,9 +1440,10 @@ def build_ui() -> "gr.Blocks":
                 value=False,
                 scale=2,
             )
-            export_btn = gr.DownloadButton("⬇️ Save Chat", variant="secondary", scale=1)
+            export_md_btn = gr.DownloadButton("⬇️ Save as Markdown", variant="secondary", scale=1)
+            export_json_btn = gr.DownloadButton("💾 Backup (JSON)", variant="secondary", scale=1)
             import_btn = gr.UploadButton(
-                "⬆️ Load Chat", file_types=[".md"], variant="secondary", scale=1
+                "⬆️ Load Chat", file_types=[".json", ".md"], variant="secondary", scale=1
             )
 
         # ── Input row ─────────────────────────────────────────────────────────
@@ -1601,42 +1534,42 @@ def build_ui() -> "gr.Blocks":
             )
 
         # ── Export/Import Handlers ───────────────────────────────────────────
-        def handle_export(history):
+        def handle_export_md(history):
             if not history:
                 return None
-
             md_str = history_to_markdown(history)
-
-            # Format filename as requested: 2026-03-24_09-19.md
             timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
-            filename = f"{timestamp}.md"
-
-            # Use os.path.join for robust path handling
+            filename = f"vexilon_chat_{timestamp}.md"
             save_path = os.path.join(tempfile.gettempdir(), filename)
-
             with open(save_path, "w", encoding="utf-8") as f:
                 f.write(md_str)
-
-            # Cleanup timer (10 mins)
-            def cleanup():
-                try:
-                    if os.path.exists(save_path):
-                        os.remove(save_path)
-                except Exception:
-                    logging.error(f"[ui] Cleanup failed for {save_path}", exc_info=True)
-
-            threading.Timer(600, cleanup).start()
-
+            threading.Timer(600, lambda: os.path.exists(save_path) and os.remove(save_path)).start()
             return save_path
 
-        export_btn.click(fn=handle_export, inputs=[chatbot], outputs=[export_btn])
+        def handle_export_json(history):
+            if not history:
+                return None
+            json_str = history_to_json(history)
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+            filename = f"vexilon_backup_{timestamp}.json"
+            save_path = os.path.join(tempfile.gettempdir(), filename)
+            with open(save_path, "w", encoding="utf-8") as f:
+                f.write(json_str)
+            threading.Timer(600, lambda: os.path.exists(save_path) and os.remove(save_path)).start()
+            return save_path
+
+        export_md_btn.click(fn=handle_export_md, inputs=[chatbot], outputs=[export_md_btn])
+        export_json_btn.click(fn=handle_export_json, inputs=[chatbot], outputs=[export_json_btn])
 
         def handle_import(file):
             if file is None:
                 return gr.update()
             try:
-                new_history = markdown_to_history(file.name)
-                # Hide onboardings if history is restored
+                if file.name.endswith(".json"):
+                    new_history = json_to_history(file.name)
+                else:
+                    new_history = markdown_to_history(file.name)
+                # Hide onboarding if history is restored
                 return new_history, gr.update(visible=False)
             except Exception:
                 logging.error("[ui] Import failed", exc_info=True)
