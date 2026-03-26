@@ -979,7 +979,7 @@ async def condense_query(message: str, history: list[dict]) -> str:
 MAX_IMPORT_SIZE_BYTES = 500 * 1024  # 500KB limit
 
 
-def export_history_markdown(history) -> str:
+def export_history_markdown(history: list[dict]) -> str:
     """Serialize conversation history to Markdown for export."""
     lines = ["# Vexilon Conversation Export\n"]
 
@@ -987,7 +987,7 @@ def export_history_markdown(history) -> str:
     if not history:
         return "\n".join(lines)
 
-    for i, turn in enumerate(history):
+    for turn in history:
         # Gradio chatbot returns list of tuples: [(user_msg, bot_msg), ...]
         if isinstance(turn, (list, tuple)) and len(turn) >= 2:
             user_msg, bot_msg = turn[0], turn[1]
