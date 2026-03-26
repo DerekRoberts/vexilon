@@ -979,15 +979,6 @@ async def condense_query(message: str, history: list[dict]) -> str:
 MAX_IMPORT_SIZE_BYTES = 500 * 1024  # 500KB limit
 
 
-def history_to_json(history: list[dict]) -> str:
-    """Serialize conversation history to JSON for backup/restore."""
-    return json.dumps(history, ensure_ascii=False, indent=2)
-
-
-def json_to_history(file_path: str) -> list[dict]:
-    """Parse a JSON conversation file back into a list of dicts."""
-    with open(file_path, "r", encoding="utf-8") as f:
-        return json.load(f)
 
 
 
@@ -1440,10 +1431,9 @@ def build_ui() -> "gr.Blocks":
                 value=False,
                 scale=2,
             )
-            export_md_btn = gr.DownloadButton("⬇️ Save as Markdown", variant="secondary", scale=1)
-            export_json_btn = gr.DownloadButton("💾 Backup (JSON)", variant="secondary", scale=1)
+            export_btn = gr.DownloadButton("⬇️ Save Chat", variant="secondary", scale=1)
             import_btn = gr.UploadButton(
-                "⬆️ Load Chat", file_types=[".json", ".md"], variant="secondary", scale=1
+                "⬆️ Load Chat", file_types=[".md"], variant="secondary", scale=1
             )
 
         # ── Input row ─────────────────────────────────────────────────────────
@@ -1534,7 +1524,7 @@ def build_ui() -> "gr.Blocks":
             )
 
         # ── Export/Import Handlers ───────────────────────────────────────────
-        def handle_export_md(history):
+        def handle_export(history):
             if not history:
                 return None
             md_str = history_to_markdown(history)
@@ -1546,29 +1536,13 @@ def build_ui() -> "gr.Blocks":
             threading.Timer(600, lambda: os.path.exists(save_path) and os.remove(save_path)).start()
             return save_path
 
-        def handle_export_json(history):
-            if not history:
-                return None
-            json_str = history_to_json(history)
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
-            filename = f"vexilon_backup_{timestamp}.json"
-            save_path = os.path.join(tempfile.gettempdir(), filename)
-            with open(save_path, "w", encoding="utf-8") as f:
-                f.write(json_str)
-            threading.Timer(600, lambda: os.path.exists(save_path) and os.remove(save_path)).start()
-            return save_path
-
-        export_md_btn.click(fn=handle_export_md, inputs=[chatbot], outputs=[export_md_btn])
-        export_json_btn.click(fn=handle_export_json, inputs=[chatbot], outputs=[export_json_btn])
+        export_btn.click(fn=handle_export, inputs=[chatbot], outputs=[export_btn])
 
         def handle_import(file):
             if file is None:
                 return gr.update()
             try:
-                if file.name.endswith(".json"):
-                    new_history = json_to_history(file.name)
-                else:
-                    new_history = markdown_to_history(file.name)
+                new_history = markdown_to_history(file.name)
                 # Hide onboarding if history is restored
                 return new_history, gr.update(visible=False)
             except Exception:
