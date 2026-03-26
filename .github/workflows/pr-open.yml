@@ -15,7 +15,7 @@ on:
       - '.gitignore'
       - '.dockerignore'
       - '.trivyignore'
-      - '.github/trivy.yaml'
+      - '.github/trivy.yml'
       - '.github/workflows/deploy-*.yml'
   schedule:
     - cron: "0 11 * * 0" # 3 AM PST = 11 AM UTC, runs Sundays
@@ -218,7 +218,7 @@ jobs:
           scan-type: "fs"
           scanners: "vuln,secret,misconfig"
           severity: "CRITICAL,HIGH"
-          trivy-config: ".github/trivy.yaml"
+          trivy-config: ".github/trivy.yml"
           trivyignores: ".trivyignore"
 
       - name: Upload Trivy scan results to GitHub Security tab
