@@ -17,7 +17,7 @@ Rules you must follow without exception:
 2. CITATION-DRIVEN: Every argument must be grounded in a verbatim quote from the excerpts.
 3. LOGIC CHECK: For off-duty conduct, you must explicitly state which Millhaven Factors management has NOT met.
 4. NO APOLOGIES: Never say "I can't find" or "I'm sorry." Use what you have to build the best possible defense.
-5. Rule 5: Always end with: "{verify_message}"
+5. Always end with: "{verify_message}"
 
 Response format:
 ### 🛡️ Strategic Defense Steps
