@@ -473,6 +473,18 @@ ISSUES: [specific errors or gaps found, if any]
 ESCALATE: [yes/no - only if score < 5]
 """
 
+# Millhaven Factors for Off-Duty Conduct Audit (Issue #154)
+MILLHAVEN_FACTORS_PATH = Path("./prompts/millhaven_audit_criteria.txt")
+MILLHAVEN_FACTORS = ""
+if MILLHAVEN_FACTORS_PATH.is_file():
+    MILLHAVEN_FACTORS = MILLHAVEN_FACTORS_PATH.read_text(encoding="utf-8")
+
+OFF_DUTY_KEYWORDS = {
+    "off-duty", "personal conduct", "nexus", "outside of work", "facebook",
+    "reddit", "social media", "arrest", "charged", "personal life",
+    "instagram", "twitter", "tiktok", "personal blog", "off-site"
+}
+
 # ─── Chunking ─────────────────────────────────────────────────────────────────
 
 
@@ -1236,6 +1248,17 @@ async def rag_review_stream(
             manifest=get_knowledge_manifest(),
             verify_message=VERIFY_STEWARD_MESSAGE,
         )
+
+        # Logic Check (Issue #154): Proactively detect off-duty conduct
+        msg_lower = message.lower()
+        query_lower = query.lower()
+        is_off_duty = any(k in msg_lower or k in query_lower for k in OFF_DUTY_KEYWORDS)
+        
+        if is_off_duty and direct_mode and MILLHAVEN_FACTORS:
+            formatted_prompt += f"\n\n--- MANDATORY LOGIC CHECK: MILLHAVEN AUDIT ---\n"
+            formatted_prompt += f"This case involves potential off-duty conduct. You MUST audit the facts against these 5 factors:\n"
+            formatted_prompt += MILLHAVEN_FACTORS
+            formatted_prompt += "\nIn your response, identify which factors management HAS NOT PROVEN."
 
         # Bot A: Get raw RAG response
         raw_response = ""
