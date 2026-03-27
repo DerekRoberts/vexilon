@@ -539,12 +539,8 @@ class TestRegistry:
     def find_matches(self, query: str) -> list[TestDoctrine]:
         """Find all tests whose keywords appear in the lowercased query."""
         q_lower = query.lower()
-        matches = []
         with self._lock:
-            for test in self.tests:
-                if any(k in q_lower for k in test.keywords):
-                    matches.append(test)
-        return matches
+            return [test for test in self.tests if any(k in q_lower for k in test.keywords)]
 
 _test_registry = TestRegistry()
 
@@ -972,7 +968,6 @@ def startup(force_rebuild: bool = False) -> None:
     # (Needed for HuggingFace Spaces where PDFs aren't bundled)
     print(f"[startup] Starting Vexilon {VEXILON_VERSION}…")
     _fetch_pdf_cache_if_missing()
-    load_local_state()
     _test_registry.load(TESTS_DIR)
 
     if not force_rebuild:
@@ -1315,26 +1310,25 @@ async def rag_review_stream(
             verify_message=VERIFY_STEWARD_MESSAGE,
         )
 
-        # Test Registry Logic (Issue #160): Proactively detect doctrines
-        matched_tests = _test_registry.find_matches(message + " " + query)
-        
-        if direct_mode and matched_tests:
+        # Audit Logic (Issue #161 Refactor): Consolidate tests and fallbacks
+        if direct_mode:
+            matched_tests = _test_registry.find_matches(message + " " + query)
+            
+            # 1. New Registry Tests
             for test in matched_tests:
                 formatted_prompt += f"\n\n--- MANDATORY LOGIC CHECK: {test.name.upper()} ---\n"
-                formatted_prompt += f"This case involves potential {test.name}. You MUST audit the facts against these criteria:\n"
-                formatted_prompt += test.content
-                formatted_prompt += f"\nIn your response, identify which factors in the {test.name} management HAS NOT PROVEN."
+                formatted_prompt += f"This case involves potential {test.name}. You MUST audit the facts against these criteria:\n{test.content}\n"
+                formatted_prompt += f"In your response, identify which factors in the {test.name} management HAS NOT PROVEN."
 
-        # Fallback for Millhaven if registry didn't catch it (legacy compat)
-        if not matched_tests and direct_mode and MILLHAVEN_FACTORS:
-            msg_lower = message.lower()
-            query_lower = query.lower()
-            is_off_duty = any(k in msg_lower or k in query_lower for k in OFF_DUTY_KEYWORDS)
-            if is_off_duty:
-                formatted_prompt += f"\n\n--- MANDATORY LOGIC CHECK: MILLHAVEN AUDIT ---\n"
-                formatted_prompt += f"This case involves potential off-duty conduct. You MUST audit the facts against these 5 factors:\n"
-                formatted_prompt += MILLHAVEN_FACTORS
-                formatted_prompt += "\nIn your response, identify which factors management HAS NOT PROVEN."
+            # 2. Legacy Millhaven Fallback (if registry doesn't catch it)
+            if not matched_tests and MILLHAVEN_FACTORS:
+                msg_lower = message.lower()
+                query_lower = query.lower()
+                is_off_duty = any(k in msg_lower or k in query_lower for k in OFF_DUTY_KEYWORDS)
+                if is_off_duty:
+                    formatted_prompt += f"\n\n--- MANDATORY LOGIC CHECK: MILLHAVEN AUDIT ---\n"
+                    formatted_prompt += f"This case involves potential off-duty conduct. You MUST audit the facts against these 5 factors:\n{MILLHAVEN_FACTORS}\n"
+                    formatted_prompt += "In your response, identify which factors management HAS NOT PROVEN."
 
         # Bot A: Get raw RAG response
         raw_response = ""
