@@ -435,22 +435,23 @@ Response format:
 
 VERIFY_STEWARD_MESSAGE = "Verify w/ Area Office: 604-291-9611"
 
-# Direct Advice Mode Prompt (Issue #103)
-DIRECT_ADVICE_PROMPT_PATH = Path("./prompts/direct_staff_rep.txt")
-DIRECT_ADVICE_PROMPT = ""
-if DIRECT_ADVICE_PROMPT_PATH.is_file():
-    DIRECT_ADVICE_PROMPT = DIRECT_ADVICE_PROMPT_PATH.read_text(encoding="utf-8")
-
-if not DIRECT_ADVICE_PROMPT.strip():
-    # Fallback to a simplified version if file is missing or empty
-    DIRECT_ADVICE_PROMPT = f"""You are a BCGEU Staff Rep providing DIRECT OPERATIONAL GUIDANCE.
-1. Provide numbered IMMEDIATE ACTIONS.
-2. Provide verbatim MEETING SCRIPTS.
-3. Provide verbatim ARTICLE CITATIONS from excerpts.
-4. Walk through NEXUS factors for off-duty conduct.
-End with: "{VERIFY_STEWARD_MESSAGE}"
-{{manifest}}
-"""
+def get_persona_prompt(mode_name: str) -> str:
+    """Helper to load system prompts for different operational modes."""
+    paths = {
+        "Direct": Path("./prompts/direct_staff_rep.txt"),
+        "Defend": Path("./prompts/case_builder.txt"),
+    }
+    
+    path = paths.get(mode_name)
+    if path and path.is_file():
+        return path.read_text(encoding="utf-8")
+    
+    # Fallbacks if files are missing or empty
+    fallbacks = {
+        "Direct": "You are a BCGEU Staff Rep providing DIRECT OPERATIONAL GUIDANCE.",
+        "Defend": "You are a BCGEU Staff Rep specializing in Grievance Drafting.",
+    }
+    return fallbacks.get(mode_name, SYSTEM_PROMPT)
 
 # ─── Two-Bot Review Prompt (Bot B) ──────────────────────────────────────────────
 REVIEWER_SYSTEM_PROMPT = """You are a Senior BCGEU Staff Representative reviewing a junior steward's output for accuracy and completeness.
@@ -488,14 +489,13 @@ OFF_DUTY_KEYWORDS = {
 }
 
 # ─── Test Registry (Issue #160) ────────────────────────────────────────────────
-from dataclasses import dataclass
-
-@dataclass
 class TestDoctrine:
-    name: str
-    keywords: set[str]
-    content: str
-    file_path: Path
+    """A labour law test or doctrine with trigger keywords and logic excerpts."""
+    def __init__(self, name: str, keywords: set[str], content: str, file_path: Path):
+        self.name = name
+        self.keywords = keywords
+        self.content = content
+        self.file_path = file_path
 
 class TestRegistry:
     """Registry for modular labour-law tests/doctrines."""
@@ -1269,12 +1269,13 @@ async def rag_review_stream(
     message: str,
     history: list[dict],
     use_reviewer: bool = False,
-    direct_mode: bool = False,
+    persona_mode: str = "Explorer",
 ) -> AsyncIterator[str]:
     """
     Retrieve relevant chunks, build the prompt, stream from Bot A (RAG),
     and optionally pass through Bot B (reviewer) for verification.
     If direct_mode is True, swaps the system prompt for a more operational persona.
+    If case_builder is True, swaps the system prompt for a formal drafting persona.
     """
 
     if _index is None:
@@ -1303,15 +1304,18 @@ async def rag_review_stream(
     client = get_anthropic()
 
     try:
-        # Choose system prompt based on mode
-        base_prompt = DIRECT_ADVICE_PROMPT if direct_mode else SYSTEM_PROMPT
+        # 1. Resolve System Prompt based on Persona
+        base_prompt = persona_mode if persona_mode != "Explore" else SYSTEM_PROMPT
+        if base_prompt in ["Direct", "Defend"]:
+            base_prompt = get_persona_prompt(base_prompt)
+
         formatted_prompt = base_prompt.format(
             manifest=get_knowledge_manifest(),
             verify_message=VERIFY_STEWARD_MESSAGE,
         )
 
-        # Audit Logic (Issue #161 Refactor): Consolidate tests and fallbacks
-        if direct_mode:
+        # 2. Audit Logic (Issue #161 Refactor)
+        if persona_mode != "Explore":
             matched_tests = _test_registry.find_matches(message + " " + query)
             
             # 1. New Registry Tests
@@ -1457,19 +1461,17 @@ DISCLAIMER_HTML = (
     "</div>"
 )
 
-DIRECT_MODE_HTML = (
-    '<div style="'
-    "background-color:#e0f2fe;"
-    "border-left:4px solid #0ea5e9;"
-    "color:#075985;"
-    "padding:10px 14px;"
-    "border-radius:4px;"
-    "font-size:0.85rem;"
-    "margin-bottom:12px;"
-    '">'
-    "<b>⚡ Direct Advice Mode Active:</b> Responses focus on operational steps and scripts."
-    "</div>"
-)
+DIRECT_MODE_HTML = """
+<div style="background-color:#e0f2fe; border-left:4px solid #0ea5e9; color:#075985; padding:10px 14px; border-radius:4px; font-size:0.85rem; margin-bottom:12px;">
+    <b>⚡ Direct Advice Mode Active:</b> Responses focus on operational steps and scripts.
+</div>
+"""
+
+CASE_BUILDER_HTML = """
+<div style="background-color:#f0fdf4; border-left:4px solid #22c55e; color:#14532d; padding:10px 14px; border-radius:4px; font-size:0.85rem; margin-bottom:12px;">
+    <b>📝 Case Builder Mode Active:</b> Responses focus on drafting formal rebuttals and grievances.
+</div>
+"""
 
 ATTRIBUTION_HTML = f"""
 <div style='text-align: center; color: #6b7280; font-size: 0.85rem; margin-top: 1rem;'>
@@ -1479,12 +1481,113 @@ ATTRIBUTION_HTML = f"""
 </div>
 """
 
+# Custom CSS for a Unified, Single-Line Action Bar
+CUSTOM_CSS = """
+/* 1. Unified row alignment */
+.compact-row {
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+    overflow: visible !important;
+}
+
+/* 2. Persona Segmented Control (Pill style) */
+#persona_selector.block {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-width: fit-content !important;
+}
+#persona_selector .wrap {
+    display: flex !important;
+    gap: 0 !important;
+    flex-wrap: nowrap !important;
+    padding: 0 !important;
+}
+#persona_selector label {
+    flex: 1 !important;
+    height: 32px !important;
+    line-height: 32px !important;
+    padding: 0 !important;
+    border: 1px solid var(--border-color-primary) !important;
+    font-size: 0.8rem !important;
+    border-radius: 0 !important;
+    background: var(--background-fill-secondary) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+#persona_selector label span {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+#persona_selector label:not(:last-child) {
+    margin-right: -1px !important;
+}
+#persona_selector label:first-child {
+    border-top-left-radius: 8px !important;
+    border-bottom-left-radius: 8px !important;
+}
+#persona_selector label:last-child {
+    border-top-right-radius: 8px !important;
+    border-bottom-right-radius: 8px !important;
+}
+#persona_selector input[type="radio"], 
+#persona_selector .radio-circle {
+    display: none !important;
+}
+#persona_selector label.selected {
+    background-color: var(--primary-500) !important;
+    color: white !important;
+    border-color: var(--primary-600) !important;
+    z-index: 1;
+}
+
+/* 3. Reviewer Checkbox (Unified height) */
+#reviewer_toggle.block {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-width: 90px !important;
+    overflow: visible !important;
+}
+#reviewer_toggle label {
+    height: 32px !important;
+    line-height: 32px !important;
+    padding: 0 10px !important;
+    border: 1px solid var(--border-color-primary) !important;
+    border-radius: 8px !important;
+    font-size: 0.8rem !important;
+    display: flex !important;
+    align-items: center !important;
+    white-space: nowrap !important;
+    background: var(--background-fill-secondary) !important;
+    cursor: pointer !important;
+}
+#reviewer_toggle input {
+    margin: 0 6px 0 0 !important;
+}
+
+/* 4. Button normalization */
+.sm-btn {
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 0.8rem !important;
+    min-width: 60px !important;
+}
+"""
+
 
 def build_ui() -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
     import gradio as gr
 
-    with gr.Blocks(title="Collective Agreement Explorer") as demo:
+    with gr.Blocks(title="Collective Agreement Explorer", css=CUSTOM_CSS) as demo:
         # ── Header ────────────────────────────────────────────────────────────
         gr.Markdown("## BCGEU Steward Assistant")
 
@@ -1513,21 +1616,24 @@ def build_ui() -> "gr.Blocks":
         )
 
         # ── Reviewer Toggle & Management ──────────────────────────────────────
-        with gr.Row():
+        with gr.Row(variant="compact", elem_classes="compact-row"):
+            persona_selector = gr.Radio(
+                choices=["Explore", "Direct", "Defend"],
+                value="Explore",
+                show_label=False,
+                container=False,
+                scale=3,
+                elem_id="persona_selector",
+            )
             reviewer_toggle = gr.Checkbox(
-                label="Enable Senior Rep Review",
+                label="Reviewer",
                 value=USE_REVIEWER,
-                scale=2,
+                container=False,
+                scale=1,
+                elem_id="reviewer_toggle",
             )
-            direct_mode_toggle = gr.Checkbox(
-                label="Direct Advice Mode",
-                value=False,
-                scale=2,
-            )
-            export_btn = gr.DownloadButton("⬇️ Save Chat", variant="secondary", scale=1)
-            import_btn = gr.UploadButton(
-                "⬆️ Load Chat", file_types=[".md"], variant="secondary", scale=1
-            )
+            export_btn = gr.DownloadButton("⬇️ Save", variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
+            import_btn = gr.UploadButton("⬆️ Load", file_types=[".md"], variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
 
         # ── Input row ─────────────────────────────────────────────────────────
         with gr.Row():
@@ -1547,13 +1653,17 @@ def build_ui() -> "gr.Blocks":
             message: str,
             history: list[dict],
             use_reviewer: bool,
-            direct_mode: bool,
+            persona_mode: str,
             **kwargs,
         ) -> AsyncIterator[tuple[list[dict], str, dict, dict]]:
             import gradio as gr
             
-            # Show direct mode banner if active
-            top_banner = DIRECT_MODE_HTML if direct_mode else DISCLAIMER_HTML
+            # 1. Identify Banner
+            top_banner = DISCLAIMER_HTML
+            if persona_mode == "Direct":
+                top_banner = DIRECT_MODE_HTML
+            elif persona_mode == "Defend":
+                top_banner = CASE_BUILDER_HTML
 
             request = kwargs.get("request")
             hide = gr.update(visible=False)
@@ -1592,13 +1702,13 @@ def build_ui() -> "gr.Blocks":
             # Stream tokens from RAG; accumulate into the assistant bubble
             accumulated = ""
             async for chunk in rag_review_stream(
-                message, prior_history, use_reviewer, direct_mode
+                message, prior_history, use_reviewer, persona_mode
             ):
                 accumulated += chunk
                 history[-1]["content"] = accumulated
                 yield history, "", hide, gr.update(value=top_banner)
 
-        submit_inputs = [msg_input, chatbot, reviewer_toggle, direct_mode_toggle]
+        submit_inputs = [msg_input, chatbot, reviewer_toggle, persona_selector]
         submit_outputs = [chatbot, msg_input, chip_row, disclaimer_box]
 
         send_btn.click(fn=submit, inputs=submit_inputs, outputs=submit_outputs)
