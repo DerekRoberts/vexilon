@@ -1531,7 +1531,11 @@ CUSTOM_CSS = """
 }
 
 /* 3. Reviewer Checkbox (Unified height) */
-#reviewer_toggle {
+#reviewer_toggle.block {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
     margin: 0 !important;
     min-width: 90px !important;
     overflow: visible !important;
@@ -1540,13 +1544,14 @@ CUSTOM_CSS = """
     height: 32px !important;
     line-height: 32px !important;
     padding: 0 8px !important;
-    border: none !important;
-    border-radius: 8px !important;
+    border: 1px solid var(--border-color-primary) !important;
+    border-radius: 6px !important;
     font-size: 0.8rem !important;
     display: flex !important;
     align-items: center !important;
     white-space: nowrap !important;
-    background: transparent !important;
+    background: var(--background-fill-secondary) !important;
+    cursor: pointer !important;
 }
 
 /* 4. Button normalization */
