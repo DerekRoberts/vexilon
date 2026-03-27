@@ -438,8 +438,8 @@ VERIFY_STEWARD_MESSAGE = "Verify w/ Area Office: 604-291-9611"
 def get_persona_prompt(mode_name: str) -> str:
     """Helper to load system prompts for different operational modes."""
     paths = {
-        "Direct Advice": Path("./prompts/direct_staff_rep.txt"),
-        "Case Builder": Path("./prompts/case_builder.txt"),
+        "Direct": Path("./prompts/direct_staff_rep.txt"),
+        "Draft": Path("./prompts/case_builder.txt"),
     }
     
     path = paths.get(mode_name)
@@ -448,8 +448,8 @@ def get_persona_prompt(mode_name: str) -> str:
     
     # Fallbacks if files are missing or empty
     fallbacks = {
-        "Direct Advice": "You are a BCGEU Staff Rep providing DIRECT OPERATIONAL GUIDANCE.",
-        "Case Builder": "You are a BCGEU Staff Rep specializing in Grievance Drafting.",
+        "Direct": "You are a BCGEU Staff Rep providing DIRECT OPERATIONAL GUIDANCE.",
+        "Draft": "You are a BCGEU Staff Rep specializing in Grievance Drafting.",
     }
     return fallbacks.get(mode_name, SYSTEM_PROMPT)
 
@@ -1306,7 +1306,7 @@ async def rag_review_stream(
     try:
         # 1. Resolve System Prompt based on Persona
         base_prompt = persona_mode if persona_mode != "Explorer" else SYSTEM_PROMPT
-        if base_prompt in ["Direct Advice", "Case Builder"]:
+        if base_prompt in ["Direct", "Draft"]:
             base_prompt = get_persona_prompt(base_prompt)
 
         formatted_prompt = base_prompt.format(
@@ -1515,22 +1515,23 @@ def build_ui() -> "gr.Blocks":
         )
 
         # ── Reviewer Toggle & Management ──────────────────────────────────────
-        with gr.Row():
+        with gr.Row(variant="compact"):
             reviewer_toggle = gr.Checkbox(
                 label="2nd Bot Review",
                 value=USE_REVIEWER,
-                scale=2,
+                container=False,
+                min_width=80,
+                scale=1,
             )
             persona_selector = gr.Radio(
-                choices=["Explorer", "Direct Advice", "Case Builder"],
-                label="Persona",
-                value="Explorer",
-                scale=5,
+                choices=["Explore", "Direct", "Defend"],
+                value="Explore",
+                show_label=False,
+                container=False,
+                scale=3,
             )
-            export_btn = gr.DownloadButton("⬇️ Save Chat", variant="secondary", scale=1)
-            import_btn = gr.UploadButton(
-                "⬆️ Load Chat", file_types=[".md"], variant="secondary", scale=1
-            )
+            export_btn = gr.DownloadButton("💾 Save", variant="secondary", size="sm", scale=1, min_width=80)
+            import_btn = gr.UploadButton("📁 Load", file_types=[".md"], variant="secondary", size="sm", scale=1, min_width=80)
 
         # ── Input row ─────────────────────────────────────────────────────────
         with gr.Row():
@@ -1557,9 +1558,9 @@ def build_ui() -> "gr.Blocks":
             
             # 1. Identify Banner
             top_banner = DISCLAIMER_HTML
-            if persona_mode == "Direct Advice":
+            if persona_mode == "Direct":
                 top_banner = DIRECT_MODE_HTML
-            elif persona_mode == "Case Builder":
+            elif persona_mode == "Draft":
                 top_banner = CASE_BUILDER_HTML
 
             request = kwargs.get("request")
