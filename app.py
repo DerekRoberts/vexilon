@@ -439,7 +439,7 @@ def get_persona_prompt(mode_name: str) -> str:
     """Helper to load system prompts for different operational modes."""
     paths = {
         "Direct": Path("./prompts/direct_staff_rep.txt"),
-        "Draft": Path("./prompts/case_builder.txt"),
+        "Defend": Path("./prompts/case_builder.txt"),
     }
     
     path = paths.get(mode_name)
@@ -449,7 +449,7 @@ def get_persona_prompt(mode_name: str) -> str:
     # Fallbacks if files are missing or empty
     fallbacks = {
         "Direct": "You are a BCGEU Staff Rep providing DIRECT OPERATIONAL GUIDANCE.",
-        "Draft": "You are a BCGEU Staff Rep specializing in Grievance Drafting.",
+        "Defend": "You are a BCGEU Staff Rep specializing in Grievance Drafting.",
     }
     return fallbacks.get(mode_name, SYSTEM_PROMPT)
 
@@ -1305,8 +1305,8 @@ async def rag_review_stream(
 
     try:
         # 1. Resolve System Prompt based on Persona
-        base_prompt = persona_mode if persona_mode != "Explorer" else SYSTEM_PROMPT
-        if base_prompt in ["Direct", "Draft"]:
+        base_prompt = persona_mode if persona_mode != "Explore" else SYSTEM_PROMPT
+        if base_prompt in ["Direct", "Defend"]:
             base_prompt = get_persona_prompt(base_prompt)
 
         formatted_prompt = base_prompt.format(
@@ -1315,7 +1315,7 @@ async def rag_review_stream(
         )
 
         # 2. Audit Logic (Issue #161 Refactor)
-        if persona_mode != "Explorer":
+        if persona_mode != "Explore":
             matched_tests = _test_registry.find_matches(message + " " + query)
             
             # 1. New Registry Tests
@@ -1481,12 +1481,79 @@ ATTRIBUTION_HTML = f"""
 </div>
 """
 
+# Custom CSS for a Unified, Single-Line Action Bar
+CUSTOM_CSS = """
+/* 1. Unified row alignment */
+.compact-row {
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+/* 2. Persona Segmented Control */
+#persona_selector .wrap {
+    display: flex !important;
+    gap: 0 !important;
+}
+#persona_selector label {
+    height: 32px !important;
+    line-height: 32px !important;
+    padding: 0 12px !important;
+    border-radius: 0 !important;
+    border: 1px solid var(--border-color-primary) !important;
+    margin-right: -1px !important;
+    font-size: 0.85rem !important;
+}
+#persona_selector label:first-child {
+    border-top-left-radius: 6px !important;
+    border-bottom-left-radius: 6px !important;
+}
+#persona_selector label:last-child {
+    border-top-right-radius: 6px !important;
+    border-bottom-right-radius: 6px !important;
+}
+#persona_selector label .radio-circle {
+    display: none !important;
+}
+#persona_selector label.selected {
+    background-color: var(--primary-500) !important;
+    color: white !important;
+    border-color: var(--primary-600) !important;
+    z-index: 1;
+}
+
+/* 3. Reviewer Checkbox (Styled as a single pill button) */
+#reviewer_toggle {
+    margin: 0 !important;
+}
+#reviewer_toggle label {
+    height: 32px !important;
+    line-height: 32px !important;
+    padding: 0 10px !important;
+    border: 1px solid var(--border-color-primary) !important;
+    border-radius: 6px !important;
+    font-size: 0.85rem !important;
+    background: var(--background-fill-secondary) !important;
+    cursor: pointer !important;
+}
+#reviewer_toggle input {
+    margin-right: 6px !important;
+}
+
+/* 4. Button normalization */
+.sm-btn {
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 0.85rem !important;
+}
+"""
+
 
 def build_ui() -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
     import gradio as gr
 
-    with gr.Blocks(title="Collective Agreement Explorer") as demo:
+    with gr.Blocks(title="Collective Agreement Explorer", css=CUSTOM_CSS) as demo:
         # ── Header ────────────────────────────────────────────────────────────
         gr.Markdown("## BCGEU Steward Assistant")
 
@@ -1515,13 +1582,13 @@ def build_ui() -> "gr.Blocks":
         )
 
         # ── Reviewer Toggle & Management ──────────────────────────────────────
-        with gr.Row(variant="compact"):
+        with gr.Row(variant="compact", elem_classes="compact-row"):
             reviewer_toggle = gr.Checkbox(
-                label="2nd Bot Review",
+                label="Reviewer",
                 value=USE_REVIEWER,
                 container=False,
-                min_width=80,
                 scale=1,
+                elem_id="reviewer_toggle",
             )
             persona_selector = gr.Radio(
                 choices=["Explore", "Direct", "Defend"],
@@ -1529,9 +1596,10 @@ def build_ui() -> "gr.Blocks":
                 show_label=False,
                 container=False,
                 scale=3,
+                elem_id="persona_selector",
             )
-            export_btn = gr.DownloadButton("💾 Save", variant="secondary", size="sm", scale=1, min_width=80)
-            import_btn = gr.UploadButton("📁 Load", file_types=[".md"], variant="secondary", size="sm", scale=1, min_width=80)
+            export_btn = gr.DownloadButton("💾 Save", variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
+            import_btn = gr.UploadButton("📁 Load", file_types=[".md"], variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
 
         # ── Input row ─────────────────────────────────────────────────────────
         with gr.Row():
@@ -1560,7 +1628,7 @@ def build_ui() -> "gr.Blocks":
             top_banner = DISCLAIMER_HTML
             if persona_mode == "Direct":
                 top_banner = DIRECT_MODE_HTML
-            elif persona_mode == "Draft":
+            elif persona_mode == "Defend":
                 top_banner = CASE_BUILDER_HTML
 
             request = kwargs.get("request")
