@@ -8,14 +8,13 @@ COPY --from=uv_source /uv /usr/local/bin/uv
 WORKDIR /app
 
 # Install dependencies into a virtualenv
-# This creates a standalone /app/.venv directory
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     UV_LINK_MODE=copy uv sync --frozen --no-dev --no-install-project
 
 # Pre-download the embedding model into a persistent cache
-RUN HF_HOME=/app/hf_cache \
-    UV_LINK_MODE=copy uv run python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-small-en-v1.5')"
+RUN HF_HOME=/app/hf_cache UV_LINK_MODE=copy uv run python -c \
+    "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-small-en-v1.5')"
 
 # ─── Stage 2: Runtime ─────────────────────────────────────────────────────────
 FROM python:3.14.3-slim AS runner
@@ -34,7 +33,6 @@ RUN useradd --uid 1001 --no-create-home --shell /sbin/nologin vexilon
 WORKDIR /app
 
 # 1. Copy the virtualenv and model cache from the builder
-# We use --chown to ensure the runner user owns these files immediately
 COPY --from=builder --chown=1001:1001 /app/.venv /app/.venv
 COPY --from=builder --chown=1001:1001 /app/hf_cache /app/hf_cache
 
@@ -46,7 +44,8 @@ COPY --chown=1001:1001 app.py ./
 RUN chmod +x /app/scripts/*.sh
 
 # Bake the build timestamp into a file after code is copied
-RUN TZ="America/Vancouver" date +"%Y-%m-%d %H:%M %Z" > /app/build_version.txt && chown 1001:1001 /app/build_version.txt
+RUN TZ="America/Vancouver" date +"%Y-%m-%d %H:%M %Z" > /app/build_version.txt \
+    && chown 1001:1001 /app/build_version.txt
 
 # ─── Final Environment ────────────────────────────────────────────────────────
 # Set PATH before any RUN steps that invoke Python so they use the venv.
