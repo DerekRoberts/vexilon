@@ -7,7 +7,7 @@ Tests verify the RateLimiter class behavior.
 import pytest
 import time
 
-from app import RateLimiter
+from src.vexilon.utils import RateLimiter
 
 
 class TestRateLimiter:

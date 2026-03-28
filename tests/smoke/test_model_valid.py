@@ -30,7 +30,7 @@ def test_claude_model_exists_and_responds():
     Fails with a clear message if the model name is invalid (404).
     This is the exact failure mode that hit production on 2026-03-08.
     """
-    from app import CLAUDE_MODEL
+    from src.vexilon.config import CLAUDE_MODEL
 
     client = anthropic.Anthropic()
     try:
@@ -54,7 +54,7 @@ def test_condense_model_exists_and_responds():
     """
     Send a minimal 1-token request to CONDENSE_MODEL.
     """
-    from app import CONDENSE_MODEL
+    from src.vexilon.config import CONDENSE_MODEL
 
     client = anthropic.Anthropic()
     try:

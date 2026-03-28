@@ -6,7 +6,8 @@ using the real embedding model but a mocked Anthropic API.
 """
 
 import pytest
-import app
+import app as main_app
+from src.vexilon import vector, config, loader, utils
 from pathlib import Path
 
 @pytest.mark.asyncio
@@ -23,19 +24,19 @@ async def test_full_rag_flow_integration(monkeypatch, mock_anthropic, tmp_path):
     # Redirect pdf_cache to a temp dir so save_index() doesn't fail on missing directory
     cache_dir = tmp_path / "pdf_cache"
     cache_dir.mkdir()
-    monkeypatch.setattr(app, "PDF_CACHE_DIR", cache_dir)
-    monkeypatch.setattr(app, "INDEX_PATH", cache_dir / "index.faiss")
-    monkeypatch.setattr(app, "CHUNKS_PATH", cache_dir / "chunks.json")
+    monkeypatch.setattr(config, "PDF_CACHE_DIR", cache_dir)
+    monkeypatch.setattr(config, "INDEX_PATH", cache_dir / "index.faiss")
+    monkeypatch.setattr(config, "CHUNKS_PATH", cache_dir / "chunks.json")
 
     # Mock the anthropic client globally for the app
-    monkeypatch.setattr(app, "get_anthropic", lambda: mock_anthropic)
+    monkeypatch.setattr(main_app, "get_anthropic", lambda: mock_anthropic)
     
     # 2. Startup: This builds the index in memory (slow but thorough)
     # We use force_rebuild=True to ensure we test the parsing/indexing logic
-    app.startup(force_rebuild=True)
+    main_app.startup(force_rebuild=True)
     
-    assert app._index is not None
-    assert len(app._chunks) > 0
+    assert main_app._index is not None
+    assert len(main_app._chunks) > 0
     
     # 3. Query: Run a real RAG query
     # This will:
@@ -46,16 +47,16 @@ async def test_full_rag_flow_integration(monkeypatch, mock_anthropic, tmp_path):
     history = []
     
     tokens = []
-    async for chunk in app.rag_stream(message, history):
+    async for chunk, context_val in main_app.rag_review_stream(message, history):
         tokens.append(chunk)
     
     # 4. Assertions
     full_response = "".join(tokens)
     assert "Mocked response content" in full_response
-    assert app._index.ntotal > 0
+    assert main_app._index.ntotal > 0
     
     # Check that search actually found something
     query = "overtime rate"
-    results = app.search_index(app._index, app._chunks, query, top_k=1)
+    results = vector.search_index(main_app._index, main_app._chunks, query, k=1)
     assert len(results) == 1
     assert "overtime" in results[0]["text"].lower()

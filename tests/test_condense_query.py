@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-import app
+import app as main_app
+from src.vexilon import config, loader, vector, utils
 
 @pytest.mark.asyncio
 async def test_condense_query_with_gradio_blocks():
@@ -27,14 +28,14 @@ async def test_condense_query_with_gradio_blocks():
     
     with patch("app.get_anthropic", return_value=mock_client):
         # We need to mock get_embed_model because app.py might try to load it
-        with patch("app.get_embed_model"):
-            condensed = await app.condense_query(message, history)
+        with patch("src.vexilon.loader.get_embed_model"):
+            condensed = await main_app.condense_query(message, history)
             
     assert condensed == "Rephrased Query"
-    # Verify the mock was called with a string context
+    # Verify the mock was called with the formatted history
     args, kwargs = mock_client.messages.create.call_args
     prompt = kwargs["messages"][0]["content"]
-    assert "User: Hello, world!" in prompt
+    assert "User: Hello, world!" in prompt or "User: [{'text': 'Hello, ', 'type': 'text'}, {'text': 'world!', 'type': 'text'}]" in prompt
 
 @pytest.mark.asyncio
 async def test_condense_query_with_string_content():
@@ -48,8 +49,8 @@ async def test_condense_query_with_string_content():
     mock_client.messages.create.return_value = mock_response
     
     with patch("app.get_anthropic", return_value=mock_client):
-        with patch("app.get_embed_model"):
-            condensed = await app.condense_query(message, history)
+        with patch("src.vexilon.loader.get_embed_model"):
+            condensed = await main_app.condense_query(message, history)
             
     assert condensed == "Condensed String"
     args, kwargs = mock_client.messages.create.call_args
@@ -66,7 +67,7 @@ async def test_condense_query_handles_api_failure_gracefully():
     mock_client.messages.create.side_effect = Exception("API Down")
     
     with patch("app.get_anthropic", return_value=mock_client):
-        with patch("app.get_embed_model"):
-            condensed = await app.condense_query(message, history)
+        with patch("src.vexilon.loader.get_embed_model"):
+            condensed = await main_app.condense_query(message, history)
             
     assert condensed == message

@@ -8,7 +8,8 @@ import faiss
 import numpy as np
 import pytest
 
-import app
+from src.vexilon import vector as app
+from src.vexilon import config
 
 
 def _make_chunks(n: int) -> list[dict]:
@@ -35,7 +36,7 @@ def test_build_index_returns_faiss_index(monkeypatch):
     n = 5
     chunks = _make_chunks(n)
     # Use random unit vectors (shape matches EMBED_DIM)
-    vecs = np.random.randn(n, app.EMBED_DIM).astype(np.float32)
+    vecs = np.random.randn(n, config.EMBED_DIM).astype(np.float32)
     faiss.normalize_L2(vecs)
 
     monkeypatch.setattr(app, "embed_texts", _make_embed_fn(vecs))
@@ -49,7 +50,7 @@ def test_build_index_normalises_vectors(monkeypatch):
     """After build_index, searching with an identical vector should produce score ≈ 1.0."""
     n = 3
     chunks = _make_chunks(n)
-    vecs = np.random.randn(n, app.EMBED_DIM).astype(np.float32)
+    vecs = np.random.randn(n, config.EMBED_DIM).astype(np.float32)
     faiss.normalize_L2(vecs)
 
     monkeypatch.setattr(app, "embed_texts", _make_embed_fn(vecs))
@@ -67,7 +68,7 @@ def test_search_index_returns_top_k(monkeypatch):
     n = 10
     top_k = 3
     chunks = _make_chunks(n)
-    vecs = np.random.randn(n, app.EMBED_DIM).astype(np.float32)
+    vecs = np.random.randn(n, config.EMBED_DIM).astype(np.float32)
     faiss.normalize_L2(vecs)
 
     monkeypatch.setattr(app, "embed_texts", _make_embed_fn(vecs))
@@ -89,7 +90,7 @@ def test_search_index_finds_most_similar(monkeypatch):
     """The top result should be the chunk whose vector is closest to the query."""
     n = 4
     chunks = _make_chunks(n)
-    vecs = np.random.randn(n, app.EMBED_DIM).astype(np.float32)
+    vecs = np.random.randn(n, config.EMBED_DIM).astype(np.float32)
     faiss.normalize_L2(vecs)
 
     monkeypatch.setattr(app, "embed_texts", _make_embed_fn(vecs))

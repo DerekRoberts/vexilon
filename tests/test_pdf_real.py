@@ -15,8 +15,8 @@ using only standard library (struct + bytes literals) — no additional deps.
 from pathlib import Path
 import pytest
 from unittest.mock import MagicMock
-import app
-from app import load_pdf_chunks
+from src.vexilon import loader as app
+from src.vexilon.loader import load_pdf_chunks
 
 @pytest.fixture(autouse=True)
 def mock_tokenizer(monkeypatch):

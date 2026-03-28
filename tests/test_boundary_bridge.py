@@ -1,8 +1,9 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
-import app
-from app import load_pdf_chunks
+from src.vexilon import loader as app
+from src.vexilon.loader import load_pdf_chunks
+from src.vexilon import config
 
 @pytest.fixture(autouse=True)
 def mock_tokenizer(monkeypatch):
@@ -42,8 +43,8 @@ def test_semantic_bridge_stitches_page_boundaries(tmp_path, monkeypatch):
     thanks to the 'Semantic Bridge' (Unified Scroll) refactor.
     """
     # Force a small chunk size for testing boundaries
-    monkeypatch.setattr(app, "CHUNK_SIZE", 20)
-    monkeypatch.setattr(app, "CHUNK_OVERLAP", 5)
+    monkeypatch.setattr(config, "CHUNK_SIZE", 20)
+    monkeypatch.setattr(config, "CHUNK_OVERLAP", 5)
 
     dummy_pdf = tmp_path / "test.pdf"
     dummy_pdf.write_bytes(b"%PDF-1.4")

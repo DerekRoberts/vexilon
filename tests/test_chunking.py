@@ -1,7 +1,8 @@
 import pytest
 from unittest.mock import MagicMock
-import app
-from app import chunk_text, CHUNK_SIZE, CHUNK_OVERLAP
+from src.vexilon import loader as app
+from src.vexilon.loader import chunk_text
+from src.vexilon import config
 
 @pytest.fixture(autouse=True)
 def mock_tokenizer(monkeypatch):
@@ -61,14 +62,14 @@ def test_chunk_metadata_fields():
     assert all(c["page"] == 7 for c in chunks)
 
 def test_chunk_index_is_sequential():
-    long_text = "word " * (CHUNK_SIZE * 3)
+    long_text = "word " * (config.CHUNK_SIZE * 3)
     chunks = _call_chunk_text(long_text, page_num=1)
     assert len(chunks) > 1
     for i, chunk in enumerate(chunks):
         assert chunk["chunk_index"] == i
 
 def test_multi_chunk_text_overlaps():
-    long_text = "word " * (CHUNK_SIZE * 2)
+    long_text = "word " * (config.CHUNK_SIZE * 2)
     chunks = _call_chunk_text(long_text, page_num=1)
     assert len(chunks) > 1
     # Check that original content is roughly there (allowing for prefix bloat)
@@ -85,8 +86,8 @@ def test_chunk_text_preserves_page_num():
         assert all(c["page"] == page for c in chunks)
 
 def test_large_chunk_size_produces_single_chunk(monkeypatch):
-    monkeypatch.setattr(app, "CHUNK_SIZE", 10_000)
-    monkeypatch.setattr(app, "CHUNK_OVERLAP", 0)
+    monkeypatch.setattr(config, "CHUNK_SIZE", 10_000)
+    monkeypatch.setattr(config, "CHUNK_OVERLAP", 0)
     text = "a short sentence."
     chunks = _call_chunk_text(text, page_num=1)
     assert len(chunks) == 1

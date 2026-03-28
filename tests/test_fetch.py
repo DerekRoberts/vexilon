@@ -1,5 +1,5 @@
 """
-tests/test_fetch.py — Unit tests for _fetch_pdf_cache_if_missing()
+tests/test_fetch.py — Unit tests for fetch_pdf_cache_if_missing()
 
 Mocks urllib.request.urlretrieve so no actual network calls are made.
 Purpose: verify the HF Spaces download bootstrap logic — if this function
@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-import app
+from src.vexilon import utils as app, config, loader, vector
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -24,9 +24,9 @@ def _patch_paths(monkeypatch, tmp_path: Path) -> dict:
     index_path = tmp_path / "index.faiss"
     chunks_path = tmp_path / "chunks.json"
 
-    monkeypatch.setattr(app, "INDEX_PATH", index_path)
-    monkeypatch.setattr(app, "CHUNKS_PATH", chunks_path)
-    monkeypatch.setattr(app, "PDF_CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "INDEX_PATH", index_path)
+    monkeypatch.setattr(config, "CHUNKS_PATH", chunks_path)
+    monkeypatch.setattr(config, "PDF_CACHE_DIR", tmp_path)
     return {"index": index_path, "chunks": chunks_path}
 
 
@@ -39,7 +39,7 @@ def test_no_download_when_all_files_present(monkeypatch, tmp_path):
         p.write_bytes(b"placeholder")
 
     with patch("urllib.request.urlretrieve") as mock_retrieve:
-        app._fetch_pdf_cache_if_missing()
+        app.fetch_pdf_cache_if_missing()
 
     mock_retrieve.assert_not_called()
 
@@ -54,7 +54,7 @@ def test_downloads_both_when_cache_dir_empty(monkeypatch, tmp_path):
         Path(dest).write_bytes(b"fake content")
 
     with patch("urllib.request.urlretrieve", side_effect=_fake_retrieve) as mock_retrieve:
-        app._fetch_pdf_cache_if_missing()
+        app.fetch_pdf_cache_if_missing()
 
     assert mock_retrieve.call_count == 2
 
@@ -69,7 +69,7 @@ def test_only_downloads_missing_files(monkeypatch, tmp_path):
         Path(dest).write_bytes(b"downloaded")
 
     with patch("urllib.request.urlretrieve", side_effect=_fake_retrieve) as mock_retrieve:
-        app._fetch_pdf_cache_if_missing()
+        app.fetch_pdf_cache_if_missing()
 
     assert mock_retrieve.call_count == 1
     downloaded_dest = Path(mock_retrieve.call_args[0][1])
@@ -89,11 +89,11 @@ def test_urls_point_to_github_raw(monkeypatch, tmp_path):
         Path(dest).write_bytes(b"data")
 
     with patch("urllib.request.urlretrieve", side_effect=_fake_retrieve):
-        app._fetch_pdf_cache_if_missing()
+        app.fetch_pdf_cache_if_missing()
 
     assert len(called_urls) == 2
     for url in called_urls:
-        assert url.startswith(app._GITHUB_RAW_BASE), (
+        assert url.startswith(config._GITHUB_RAW_BASE), (
             f"Download URL {url!r} does not start with _GITHUB_RAW_BASE. "
             "Did someone change the base URL accidentally?"
         )
@@ -105,9 +105,9 @@ def test_creates_cache_dir_when_missing(monkeypatch, tmp_path):
     """If PDF_CACHE_DIR does not exist, it must be created before downloading."""
     # Point cache dir to a subdirectory that doesn't exist yet
     missing_dir = tmp_path / "new_cache_dir"
-    monkeypatch.setattr(app, "PDF_CACHE_DIR", missing_dir)
-    monkeypatch.setattr(app, "INDEX_PATH", missing_dir / "index.faiss")
-    monkeypatch.setattr(app, "CHUNKS_PATH", missing_dir / "chunks.json")
+    monkeypatch.setattr(config, "PDF_CACHE_DIR", missing_dir)
+    monkeypatch.setattr(config, "INDEX_PATH", missing_dir / "index.faiss")
+    monkeypatch.setattr(config, "CHUNKS_PATH", missing_dir / "chunks.json")
 
     assert not missing_dir.exists()
 
@@ -115,6 +115,6 @@ def test_creates_cache_dir_when_missing(monkeypatch, tmp_path):
         Path(dest).write_bytes(b"data")
 
     with patch("urllib.request.urlretrieve", side_effect=_fake_retrieve):
-        app._fetch_pdf_cache_if_missing()
+        app.fetch_pdf_cache_if_missing()
 
     assert missing_dir.exists(), "PDF_CACHE_DIR must be created if it doesn't exist"

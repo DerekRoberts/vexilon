@@ -6,7 +6,8 @@ Does NOT rely on internal gradio.testing utilities which may vary across version
 """
 
 import pytest
-import app
+import app as main_app
+from src.vexilon import config, loader, utils
 import gradio as gr
 
 def test_ui_builds_correctly(monkeypatch, mock_anthropic):
@@ -18,7 +19,7 @@ def test_ui_builds_correctly(monkeypatch, mock_anthropic):
     monkeypatch.setattr(app, "_index", "not-none")
     
     # This catches syntax errors in handlers or missing component references
-    demo = app.build_ui()
+    demo = main_app.build_ui()
     
     assert isinstance(demo, gr.Blocks)
     assert len(demo.children) > 0

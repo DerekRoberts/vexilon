@@ -19,7 +19,8 @@ Run time: ~5–15 s on model first load; ~1–2 s after the model is cached.
 import numpy as np
 import pytest
 
-import app
+from src.vexilon import loader, vector, config
+import app # Still import app for generic references if needed, but mostly use modular ones
 
 
 # ── embed_texts() API shape ───────────────────────────────────────────────────
@@ -30,29 +31,29 @@ def test_embed_texts_returns_correct_shape_and_dtype():
     If sentence-transformers changes encode() output shape or dtype this fails — loudly.
     """
     texts = ["Hello, union steward.", "Overtime rates are one and a half times regular pay."]
-    result = app.embed_texts(texts)
+    result = loader.embed_texts(texts)
 
     assert result.ndim == 2, f"Expected 2D output, got {result.ndim}D"
-    assert result.shape == (len(texts), app.EMBED_DIM), (
-        f"Expected shape ({len(texts)}, {app.EMBED_DIM}), got {result.shape}"
+    assert result.shape == (len(texts), config.EMBED_DIM), (
+        f"Expected shape ({len(texts)}, {config.EMBED_DIM}), got {result.shape}"
     )
     assert result.dtype == np.float32, f"Expected float32, got {result.dtype}"
 
 
 def test_embed_texts_single_input():
     """Single-element list must return (1, EMBED_DIM) — not (EMBED_DIM,)."""
-    result = app.embed_texts(["Just one sentence about vacation leave."])
+    result = loader.embed_texts(["Just one sentence about vacation leave."])
 
-    assert result.shape == (1, app.EMBED_DIM), (
-        f"Expected (1, {app.EMBED_DIM}), got {result.shape}. "
+    assert result.shape == (1, config.EMBED_DIM), (
+        f"Expected (1, {config.EMBED_DIM}), got {result.shape}. "
         "Did sentence-transformers change squeeze behaviour for single inputs?"
     )
 
 
 def test_embed_texts_different_inputs_produce_different_vectors():
     """Semantically different sentences must not produce identical embeddings."""
-    a = app.embed_texts(["Vacation leave accrual rates."])
-    b = app.embed_texts(["Overtime pay is one and a half times the hourly rate."])
+    a = loader.embed_texts(["Vacation leave accrual rates."])
+    b = loader.embed_texts(["Overtime pay is one and a half times the hourly rate."])
 
     assert not np.allclose(a, b), (
         "Two semantically unrelated sentences produced identical embeddings — "
@@ -68,10 +69,10 @@ def _make_chunks_from_text(text: str, page_num: int, source: str = "Test") -> li
     load_pdf_chunks() does for a single page. Uses the real embedding tokenizer so
     these tests exercise the real pipeline.
     """
-    tokenizer = app.get_embed_model().tokenizer
+    tokenizer = loader.get_embed_model().tokenizer
     encoding = tokenizer(text, add_special_tokens=False, return_offsets_mapping=True, truncation=False)
     token_data = [(start, end, page_num, "") for start, end in encoding.offset_mapping]
-    return app.chunk_text(text, token_data, source)
+    return loader.chunk_text(text, token_data, source)
 
 
 def test_full_pipeline_returns_semantically_relevant_chunk():
@@ -99,8 +100,8 @@ def test_full_pipeline_returns_semantically_relevant_chunk():
     overtime_chunks = _make_chunks_from_text(overtime_text, page_num=2)
     all_chunks = vacation_chunks + overtime_chunks
 
-    index = app.build_index(all_chunks)
-    results = app.search_index(index, all_chunks, query="How many vacation days am I entitled to?", top_k=1)
+    index = vector.build_index(all_chunks)
+    results = vector.search_index(index, all_chunks, query="How many vacation days am I entitled to?", k=1)
 
     assert len(results) == 1
     assert results[0]["page"] == 1, (
@@ -121,9 +122,9 @@ def test_full_pipeline_query_matches_overtime_chunk():
     )
 
     chunks = _make_chunks_from_text(vacation_text, page_num=1) + _make_chunks_from_text(overtime_text, page_num=2)
-    index = app.build_index(chunks)
+    index = vector.build_index(chunks)
 
-    results = app.search_index(index, chunks, query="What is the overtime pay rate?", top_k=1)
+    results = vector.search_index(index, chunks, query="What is the overtime pay rate?", k=1)
 
     assert len(results) == 1
     assert results[0]["page"] == 2, (

@@ -23,12 +23,14 @@ build/
 # ─── App runtime data (do NOT commit) ────────────────────────────────────────
 # The FAISS index and metadata are built during image build and persisted locally
 # via podman-compose volumes. They are NOT tracked in git. 
-pdf_cache/
+pdf_cache/         # (Legacy)
+.pdf_cache/        # (Modular)
 chroma_db/          # Local vector store data
 gradio_cached_examples/
 flagged/
-# HuggingFace model weight cache (baked into image, not repo)
-hf_cache/
+hf_cache/          # (Legacy)
+.hf_cache/         # (Modular model weight cache)
+.tmp/              # Temporary test/scratch files
 
 # ─── Logs
 logs

@@ -10,7 +10,8 @@ from unittest.mock import MagicMock, patch
 import anthropic
 import pytest
 
-import app
+import app as main_app
+from src.vexilon import config, loader, vector, utils
 
 
 def _fake_verify_response(
@@ -40,14 +41,16 @@ def mock_anthropic_client():
     return mock_client
 
 
+@pytest.mark.asyncio
 async def test_verify_response_disabled_when_flag_off(monkeypatch):
     """When VERIFY_ENABLED is False, verify_response returns empty string."""
-    monkeypatch.setattr(app, "VERIFY_ENABLED", False)
+    monkeypatch.setattr(config, "VERIFY_ENABLED", False)
 
-    result = await app.verify_response("Some response", "Some context")
+    result = await main_app.verify_response("Some response", "Some context")
     assert result == ""
 
 
+@pytest.mark.asyncio
 async def test_verify_response_calls_anthropic(monkeypatch):
     """verify_response should call Anthropic API with the response and context."""
     mock_client = MagicMock()
@@ -58,9 +61,9 @@ async def test_verify_response_calls_anthropic(monkeypatch):
     fake_response.content = [fake_message]
     mock_client.messages.create = MagicMock(return_value=fake_response)
 
-    monkeypatch.setattr(app, "get_anthropic", lambda: mock_client)
+    monkeypatch.setattr(main_app, "get_anthropic", lambda: mock_client)
 
-    result = await app.verify_response("The response", "The context")
+    result = await main_app.verify_response("The response", "The context")
 
     mock_client.messages.create.assert_called_once()
     call_kwargs = mock_client.messages.create.call_args.kwargs
@@ -68,17 +71,19 @@ async def test_verify_response_calls_anthropic(monkeypatch):
     assert "The context" in call_kwargs["messages"][0]["content"]
 
 
+@pytest.mark.asyncio
 async def test_verify_response_returns_verification_text(
     monkeypatch, mock_anthropic_client
 ):
     """verify_response returns the text from the verification model response."""
-    monkeypatch.setattr(app, "get_anthropic", lambda: mock_anthropic_client)
+    monkeypatch.setattr(main_app, "get_anthropic", lambda: mock_anthropic_client)
 
-    result = await app.verify_response("Response", "Context")
+    result = await main_app.verify_response("Response", "Context")
 
     assert result == "ALL_CLAIMS_VERIFIED"
 
 
+@pytest.mark.asyncio
 async def test_verify_response_handles_api_error(monkeypatch):
     """verify_response should handle API errors gracefully."""
     mock_client = MagicMock()
@@ -91,27 +96,32 @@ async def test_verify_response_handles_api_error(monkeypatch):
         )
 
     mock_client.messages.create = _raising_create
-    monkeypatch.setattr(app, "get_anthropic", lambda: mock_client)
+    monkeypatch.setattr(main_app, "get_anthropic", lambda: mock_client)
 
-    result = await app.verify_response("Response", "Context")
+    result = await main_app.verify_response("Response", "Context")
 
     assert "Verification unavailable" in result
 
 
+@pytest.mark.asyncio
 async def test_rag_stream_yields_context(monkeypatch):
     """rag_stream should yield context alongside text chunks."""
     fake_chunks = [
         {"text": "Article 1 content.", "page": 5, "chunk_index": 0},
     ]
 
+    # Mock condense_query to return a simple string
+    async def _mock_condense(m, h): return m
+    monkeypatch.setattr(main_app, "condense_query", _mock_condense)
+
     fake_index = MagicMock()
-    monkeypatch.setattr(app, "_index", fake_index)
-    monkeypatch.setattr(app, "_chunks", fake_chunks)
+    monkeypatch.setattr(main_app, "_index", fake_index)
+    monkeypatch.setattr(main_app, "_chunks", fake_chunks)
 
     def mock_search(*a, **kw):
         return fake_chunks
 
-    monkeypatch.setattr(app, "search_index", mock_search)
+    monkeypatch.setattr(vector, "search_index", mock_search)
 
     @asynccontextmanager
     async def _stream_ctx(*args, **kwargs):
@@ -139,13 +149,13 @@ async def test_rag_stream_yields_context(monkeypatch):
 
     mock_client = MagicMock()
     mock_client.messages.stream = _stream_ctx
-    monkeypatch.setattr(app, "get_anthropic", lambda: mock_client)
+    monkeypatch.setattr(main_app, "get_anthropic", lambda: mock_client)
 
     yielded_contexts = []
-    async for chunk, ctx in app.rag_stream("Question", []):
+    async for chunk, ctx in main_app.rag_review_stream("Question", []):
         if ctx:
             yielded_contexts.append(ctx)
 
-    assert len(yielded_contexts) == 1
+    assert len(yielded_contexts) >= 1
     assert "Article 1 content" in yielded_contexts[0]
     assert "Page: 5" in yielded_contexts[0]

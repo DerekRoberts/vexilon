@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
-import app
+from src.vexilon import loader as app, config
 
 @pytest.fixture(autouse=True)
 def mock_tokenizer(monkeypatch):
@@ -59,12 +59,11 @@ def _make_mock_reader(pages: list[str]):
 
 def test_load_pdf_chunks_basic(tmp_path, monkeypatch):
     """load_pdf_chunks should return at least one chunk for non-empty content."""
-    import app as _app
-    from app import load_pdf_chunks
+    from src.vexilon.loader import load_pdf_chunks
 
     # Use a tiny CHUNK_SIZE so even short pages produce multiple chunks across the document.
-    monkeypatch.setattr(_app, "CHUNK_SIZE", 2)
-    monkeypatch.setattr(_app, "CHUNK_OVERLAP", 0)
+    monkeypatch.setattr(config, "CHUNK_SIZE", 2)
+    monkeypatch.setattr(config, "CHUNK_OVERLAP", 0)
 
     dummy_pdf = tmp_path / "test.pdf"
     dummy_pdf.write_bytes(b"%PDF-1.4 placeholder")  # path just needs to exist
@@ -80,7 +79,7 @@ def test_load_pdf_chunks_basic(tmp_path, monkeypatch):
 
 def test_load_pdf_chunks_skips_blank_pages(tmp_path):
     """Pages with only whitespace should be skipped entirely."""
-    from app import load_pdf_chunks
+    from src.vexilon.loader import load_pdf_chunks
 
     dummy_pdf = tmp_path / "test.pdf"
     dummy_pdf.write_bytes(b"%PDF-1.4 placeholder")
@@ -97,7 +96,7 @@ def test_load_pdf_chunks_skips_blank_pages(tmp_path):
 
 def test_load_pdf_chunks_page_numbers_are_one_based(tmp_path):
     """Page numbers in chunk metadata must be 1-based, not 0-based."""
-    from app import load_pdf_chunks
+    from src.vexilon.loader import load_pdf_chunks
 
     dummy_pdf = tmp_path / "test.pdf"
     dummy_pdf.write_bytes(b"%PDF-1.4 placeholder")
@@ -111,7 +110,7 @@ def test_load_pdf_chunks_page_numbers_are_one_based(tmp_path):
 
 def test_load_pdf_chunks_extract_text_none_treated_as_empty(tmp_path):
     """If extract_text() returns None the page should be skipped gracefully."""
-    from app import load_pdf_chunks
+    from src.vexilon.loader import load_pdf_chunks
 
     dummy_pdf = tmp_path / "test.pdf"
     dummy_pdf.write_bytes(b"%PDF-1.4 placeholder")
@@ -129,12 +128,11 @@ def test_load_pdf_chunks_extract_text_none_treated_as_empty(tmp_path):
 
 def test_load_pdf_chunks_tracks_article_headers(tmp_path, monkeypatch):
     """load_pdf_chunks should detect and track Article headers to prepend as breadcrumbs."""
-    import app as _app
-    from app import load_pdf_chunks
+    from src.vexilon.loader import load_pdf_chunks
 
     # Small CHUNK_SIZE forces separate chunks per page so page metadata is cleanly isolated.
-    monkeypatch.setattr(_app, "CHUNK_SIZE", 2)
-    monkeypatch.setattr(_app, "CHUNK_OVERLAP", 0)
+    monkeypatch.setattr(config, "CHUNK_SIZE", 2)
+    monkeypatch.setattr(config, "CHUNK_OVERLAP", 0)
 
     dummy_pdf = tmp_path / "agreement.pdf"
     dummy_pdf.write_bytes(b"%PDF-1.4")
@@ -274,11 +272,10 @@ def test_toc_pages_skipped_in_load_pdf_chunks(tmp_path, monkeypatch):
     TOC pages mention every article by name — indexing them causes their
     references to crowd out actual contract text in semantic search.
     """
-    import app as _app
-    from app import load_pdf_chunks
+    from src.vexilon.loader import load_pdf_chunks
 
-    monkeypatch.setattr(_app, "CHUNK_SIZE", 5)
-    monkeypatch.setattr(_app, "CHUNK_OVERLAP", 0)
+    monkeypatch.setattr(config, "CHUNK_SIZE", 5)
+    monkeypatch.setattr(config, "CHUNK_OVERLAP", 0)
 
     dummy_pdf = tmp_path / "agreement.pdf"
     dummy_pdf.write_bytes(b"%PDF-1.4")
