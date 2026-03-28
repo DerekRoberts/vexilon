@@ -168,15 +168,26 @@ async def review_stream(raw_response: str, query: str, context: str) -> AsyncIte
     client = get_anthropic()
     prompt = f"Review steward output.\nQUERY: {query}\nRESPONSE: {raw_response}\nCONTEXT: {context[:2000]}\n{prompts.REVIEWER_SYSTEM_PROMPT}"
     try:
+        review_text = ""
         async with client.messages.stream(
             model=config.REVIEWER_MODEL,
             max_tokens=512,
             messages=[{"role": "user", "content": prompt}]
         ) as stream:
-            async for chunk in stream.text_stream: yield chunk
+            async for chunk in stream.text_stream: 
+                review_text += chunk
+                yield chunk
             final = await stream.get_final_message()
-            # Simplistic logging for now
-            print(f"[review] Complete for {query[:20]}...")
+            
+            # Parse score from response
+            import re
+            score = 5
+            score_match = re.search(r"SCORE:\s*(\d+)", review_text, re.IGNORECASE)
+            if score_match: score = int(score_match.group(1))
+            
+            # Log the review
+            utils.log_review(query, raw_response, review_text, score)
+            print(f"[review] Score: {score}/10 for query '{query[:20]}...'")
     except Exception as exc: yield f"⚠️ Review error: {exc}"
 
 async def verify_response(response_text: str, context: str) -> str:

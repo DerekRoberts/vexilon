@@ -88,6 +88,26 @@ def sanitize_input(user_input: str) -> tuple[str, bool]:
     return user_input[:config.MAX_INPUT_LENGTH], injection_found or too_long
 
 # ─── Vexilon Info ─────────────────────────────────────────────────────────────
+def log_review(query: str, raw_response: str, review_output: str, score: int) -> None:
+    """Append a review record to the audit log CSV."""
+    import csv
+    
+    log_path = config.PDF_CACHE_DIR / "review_log.csv"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    write_header = not log_path.exists()
+    
+    with open(log_path, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if write_header:
+            writer.writerow(["timestamp", "query", "raw_response", "review_output", "score", "steward"])
+        writer.writerow([
+            datetime.datetime.now().isoformat(),
+            query[:500],
+            raw_response[:1000],
+            review_output[:2000],
+            score,
+            config.VEXILON_USERNAME,
+        ])
 def get_vexilon_info():
     """Get Version, Python and OS metadata."""
     import platform
