@@ -29,7 +29,7 @@ services:
     tmpfs:
       - /tmp                  # Writable tmp for Gradio and other runtime files
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7860"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:7860')\""]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -110,6 +110,11 @@ services:
       PORT: "7860"
       HF_HOME: /app/hf_cache
       PATH: "/app/.venv/bin:$PATH"
+    depends_on:
+      index-refresh:
+        condition: service_completed_successfully
+      tests:
+        condition: service_completed_successfully
     ports:
       - "7860:7860"
     cap_drop:
@@ -125,8 +130,8 @@ services:
       - ./pyproject.toml:/app/pyproject.toml:ro,Z
     command: sh -c "uv sync --frozen && uv run gradio app.py --watch-dirs ."
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7860"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:7860')\""]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
