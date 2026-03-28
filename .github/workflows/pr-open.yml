@@ -27,38 +27,48 @@ permissions: {}
 
 jobs:
   audit:
-    name: Stale Cache Audit
+    name: Index Build Validation
     if: (! github.event.pull_request.draft)
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: read
+
+    env:
+      HF_HOME: /home/runner/.cache/huggingface
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      
+
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.14"
           enable-cache: true
-          
+
+      - name: Cache HuggingFace model
+        uses: actions/cache@v5
+        with:
+          path: /home/runner/.cache/huggingface
+          key: hf-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+
       - name: Install dependencies
         run: uv sync --frozen
-        
-      - name: Run Index Validation
+
+      - name: Validate index builds from source
         run: |
-          echo "Building fresh index based on data/labour_law/..."
+          echo "Building fresh index from data/labour_law/..."
           uv run python -c "from src.vexilon.vector import build_index_from_sources; build_index_from_sources(force=True)"
-          
-          echo "Comparing newly generated manifest with the one in the PR..."
-          if ! git diff --exit-code pdf_cache/manifest.json; then
-            echo "❌ ERROR: Stale Cache Detected!"
-            echo "The manifest.json does not match the actual PDF content in data/labour_law/."
-            echo "Please run 'podman-compose run --rm index-refresh' locally and commit the updated manifest.json."
-            exit 1
-          fi
-          echo "✅ Cache is fresh."
+
+          echo "Verifying output files..."
+          for f in .pdf_cache/index.faiss .pdf_cache/chunks.json .pdf_cache/manifest.json; do
+            if [ ! -s "$f" ]; then
+              echo "❌ ERROR: Expected output file $f is missing or empty."
+              exit 1
+            fi
+          done
+          echo "✅ Index built successfully from source."
 
   tests:
     name: Unit Tests

@@ -67,7 +67,7 @@ services:
 
   # ── Cache Refresh ────────────────────────────────────────────────────────────
   # Run with: podman-compose run --rm index-refresh
-  # This updates the local pdf_cache/ folder using the smart refresh logic.
+  # This updates the local .pdf_cache/ folder using the smart refresh logic.
   index-refresh:
     build:
       context: .
