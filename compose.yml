@@ -110,6 +110,11 @@ services:
       PORT: "7860"
       HF_HOME: /app/hf_cache
       PATH: "/app/.venv/bin:$PATH"
+    depends_on:
+      index-refresh:
+        condition: service_completed_successfully
+      tests:
+        condition: service_completed_successfully
     ports:
       - "7860:7860"
     cap_drop:
