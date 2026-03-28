@@ -105,7 +105,7 @@ async def test_verify_response_handles_api_error(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_rag_stream_yields_context(monkeypatch):
-    """rag_stream should yield context alongside text chunks."""
+    """rag_stream should include chunk context in the system prompt sent to Claude."""
     fake_chunks = [
         {"text": "Article 1 content.", "page": 5, "chunk_index": 0},
     ]
@@ -117,14 +117,19 @@ async def test_rag_stream_yields_context(monkeypatch):
     fake_index = MagicMock()
     monkeypatch.setattr(main_app, "_index", fake_index)
     monkeypatch.setattr(main_app, "_chunks", fake_chunks)
+    monkeypatch.setattr(config, "VERIFY_ENABLED", False)
 
     def mock_search(*a, **kw):
         return fake_chunks
 
     monkeypatch.setattr(vector, "search_index", mock_search)
 
+    captured_kwargs = {}
+
     @asynccontextmanager
-    async def _stream_ctx(*args, **kwargs):
+    async def _stream_ctx(**kwargs):
+        nonlocal captured_kwargs
+        captured_kwargs = kwargs
         mock_stream = MagicMock()
 
         async def _async_gen():
@@ -151,11 +156,10 @@ async def test_rag_stream_yields_context(monkeypatch):
     mock_client.messages.stream = _stream_ctx
     monkeypatch.setattr(main_app, "get_anthropic", lambda: mock_client)
 
-    yielded_contexts = []
-    async for chunk, ctx in main_app.rag_review_stream("Question", []):
-        if ctx:
-            yielded_contexts.append(ctx)
+    async for chunk in main_app.rag_review_stream("Question", []):
+        pass
 
-    assert len(yielded_contexts) >= 1
-    assert "Article 1 content" in yielded_contexts[0]
-    assert "Page: 5" in yielded_contexts[0]
+    # Context should be embedded in the system prompt, not yielded separately
+    system_text = "".join([s.get("text", "") for s in captured_kwargs.get("system", [])])
+    assert "Article 1 content" in system_text
+    assert "Page: 5" in system_text

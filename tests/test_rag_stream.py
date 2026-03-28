@@ -72,7 +72,7 @@ async def test_rag_review_stream_no_index_yields_not_ready(monkeypatch):
     monkeypatch.setattr(main_app, "_chunks", [])
 
     results = []
-    async for chunk, ctx in main_app.rag_review_stream("Any question", []):
+    async for chunk in main_app.rag_review_stream("Any question", []):
         results.append(chunk)
 
     assert any("not ready" in r.lower() for r in results)
@@ -102,7 +102,7 @@ async def test_rag_review_stream_yields_tokens_from_claude(monkeypatch):
     monkeypatch.setattr(main_app, "get_anthropic", lambda: mock_client)
 
     output = []
-    async for chunk, ctx in main_app.rag_review_stream("Any question", []):
+    async for chunk in main_app.rag_review_stream("Any question", []):
         if chunk:  # Skip context-only yields
             output.append(chunk)
 
@@ -135,7 +135,7 @@ async def test_rag_review_stream_includes_page_context_in_system_prompt(monkeypa
     mock_client.messages.stream = _capture_stream
     monkeypatch.setattr(main_app, "get_anthropic", lambda: mock_client)
 
-    async for chunk, ctx in main_app.rag_review_stream("Question", []):
+    async for chunk in main_app.rag_review_stream("Question", []):
         pass
 
     # Check system prompt contents - correctly handling list-of-dicts system param
@@ -170,7 +170,7 @@ async def test_rag_review_stream_appends_user_message_last(monkeypatch):
     monkeypatch.setattr(main_app, "get_anthropic", lambda: mock_client)
 
     history = [{"role": "user", "content": "Hi"}, {"role": "assistant", "content": "Hello"}]
-    async for chunk, ctx in main_app.rag_review_stream("New Q", history):
+    async for chunk in main_app.rag_review_stream("New Q", history):
         pass
 
     assert len(captured_messages) == 3
@@ -210,7 +210,7 @@ async def test_rag_review_stream_api_error_yields_error_message(monkeypatch):
     monkeypatch.setattr(main_app, "get_anthropic", lambda: mock_client)
 
     output = []
-    async for chunk, ctx in main_app.rag_review_stream("Any question", []):
+    async for chunk in main_app.rag_review_stream("Any question", []):
         output.append(chunk)
 
     assert any("api error" in str(chunk).lower() for chunk in output)
