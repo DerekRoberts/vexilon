@@ -75,7 +75,7 @@ def build_index_from_sources(force: bool = False) -> tuple["faiss.IndexFlatIP", 
     if not force and config.MANIFEST_PATH.exists():
         try:
             with open(config.MANIFEST_PATH, "r") as f:
-                if json.load(f) == current_manifest and config.INDEX_PATH.exists():
+                if json.load(f) == current_manifest and config.INDEX_PATH.exists() and config.CHUNKS_PATH.exists():
                     print("[build] Smart Refresh: No changes detected.")
                     return load_precomputed_index()
         except: pass

@@ -153,10 +153,9 @@ async def rag_review_stream(
 
         # Automatically verify if enabled
         if config.VERIFY_ENABLED:
-            raw_response = "".join([c[0] for c in history if c["role"] == "assistant"]) # This is wrong, I need to capture it better in bot_stream
-            # For the stream specifically, we usually want to verify the WHOLE thing at the end
-            # Local bot_stream handles the accumulation.
-            pass
+            verify_res = await verify_response(raw_response, context)
+            if verify_res:
+                yield f"\n\n---\n\n**🔍 Verification:**\n{verify_res}", context
 
         if use_reviewer:
             yield "\n\n---\n\n**🔍 Senior Rep Review:**\n", context
@@ -210,7 +209,7 @@ def build_ui():
     import gradio as gr
     from src.vexilon import ui_styles
     
-    with gr.Blocks(title="Vexilon: Steward Assistant", css=ui_styles.CUSTOM_CSS) as demo:
+    with gr.Blocks(title="Vexilon: Steward Assistant", css=ui_styles.CUSTOM_CSS, allowed_paths=[config.LABOUR_LAW_DIR.absolute()]) as demo:
         gr.Markdown("## BCGEU Steward Assistant")
         
         with gr.Accordion("Knowledge Base & Priority", open=False):

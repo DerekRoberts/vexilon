@@ -121,7 +121,7 @@ def fetch_pdf_cache_if_missing() -> None:
         return
 
     config.PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"[bootstrap] Cache missing. Fetching from {config.GITHUB_LABOUR_LAW_URL}…")
+    print(f"[bootstrap] Cache missing. Fetching from {config._GITHUB_RAW_BASE}…")
     
     # Files are served from the root of the branch in raw mode
     assets = ["index.faiss", "chunks.json"]
