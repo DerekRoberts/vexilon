@@ -1,7 +1,10 @@
+# ─── Stage 0: External Binaries ──────────────────────────────────────────────
+FROM ghcr.io/astral-sh/uv:0.11.1 AS uv_source
+
 # ─── Stage 1: Builder ─────────────────────────────────────────────────────────
 FROM python:3.14.3-slim AS builder
 
-COPY --from=ghcr.io/astral-sh/uv:0.11.1 /uv /usr/local/bin/uv
+COPY --from=uv_source /uv /usr/local/bin/uv
 ENV UV_LINK_MODE=copy
 
 WORKDIR /app
