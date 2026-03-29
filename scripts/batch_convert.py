@@ -17,6 +17,7 @@ DATA_DIR = Path("data/labour_law")
 
 def main():
     parser = argparse.ArgumentParser(description="Batch convert PDFs to forensic Markdown.")
+    parser.add_argument("files", nargs="*", help="Optional: Specific PDF files to convert (paths or filenames)")
     parser.add_argument("--force", action="store_true", help="Recreate MD files even if they already exist")
     args = parser.parse_args()
 
@@ -30,23 +31,47 @@ def main():
         print("export ANTHROPIC_API_KEY=sk-ant-...")
         sys.exit(1)
 
-    skip_dirs = {DATA_DIR / "tests", DATA_DIR / ".pdf_cache"}
-    pdfs = [
-        p for p in DATA_DIR.rglob("*.pdf") 
-        if not any(p.is_relative_to(s) for s in skip_dirs)
-    ]
+    if args.files:
+        # Convert user-provided paths into confirmed Path objects
+        input_target_paths = [Path(f) for f in args.files]
+        target_pdfs = []
+        for path in input_target_paths:
+            if path.exists():
+                target_pdfs.append(path)
+            else:
+                # Try finding it in the DATA_DIR if just a filename was given
+                matches = list(DATA_DIR.rglob(path.name))
+                if matches:
+                    target_pdfs.extend(matches)
+                else:
+                    print(f"⚠️ Warning: File '{path}' not found. Skipping.")
+        
+        if not target_pdfs:
+            print("❌ Error: No valid PDF targets found.")
+            sys.exit(1)
+        
+        print(f"Found {len(target_pdfs)} specific PDF(s) to convert.")
 
-    if args.force:
-        target_pdfs = pdfs
-        print("⚠️ FORCE MODE: All PDFs will be re-converted, overwriting existing Markdown files.")
     else:
-        target_pdfs = [p for p in pdfs if not p.with_suffix(".md").exists()]
+        # Default behavior: Scan for all missing MD files
+        skip_dirs = {DATA_DIR / "tests", DATA_DIR / ".pdf_cache"}
+        pdfs = [
+            p for p in DATA_DIR.rglob("*.pdf") 
+            if not any(p.is_relative_to(s) for s in skip_dirs)
+        ]
 
-    if not target_pdfs:
-        print("✅ Excellent: All PDFs already have matching Markdown files. Nothing to do.")
-        sys.exit(0)
+        if args.force:
+            target_pdfs = pdfs
+            print("⚠️ FORCE MODE: All PDFs will be re-converted, overwriting existing Markdown files.")
+        else:
+            target_pdfs = [p for p in pdfs if not p.with_suffix(".md").exists()]
 
-    print(f"Found {len(target_pdfs)} PDF(s) to convert:")
+        if not target_pdfs:
+            print("✅ Excellent: All PDFs already have matching Markdown files. Nothing to do.")
+            sys.exit(0)
+
+        print(f"Found {len(target_pdfs)} missing PDF(s) to convert.")
+    
     for m in target_pdfs:
         print(f" - {m.name}")
 
