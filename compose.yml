@@ -55,6 +55,7 @@ services:
     volumes:
       - ./app.py:/app/app.py:ro,z
       - ./tests:/app/tests:ro,z
+      - ./data:/app/data:ro,z
       - ./pyproject.toml:/app/pyproject.toml:ro,z
       - ./uv.lock:/app/uv.lock:ro,z
       - ./conftest.py:/app/conftest.py:ro,z
@@ -65,7 +66,7 @@ services:
       TRANSFORMERS_OFFLINE: "1"
       PYTHONPATH: "/app"
     # We use python -m pytest to ensure /app is in the sys.path for module discovery
-    command: sh -c "uv sync --frozen && uv run python -m pytest tests/test_*.py tests/integration/ -v"
+    command: uv run python -m pytest tests/test_*.py tests/integration/ -v
 
   # ── Cache Refresh ────────────────────────────────────────────────────────────
   # Run with: podman-compose run --rm index-refresh
