@@ -10,12 +10,13 @@ Usage:
   python scripts/pdf_to_md.py path/to/input.pdf [path/to/output.md]
 """
 
-import os
+import re
 import sys
 import time
+import os
 import argparse
-import re
 import traceback
+import difflib
 from pathlib import Path
 from typing import Optional, List
 
@@ -33,8 +34,17 @@ def clean_for_integrity_check(text: str) -> str:
     text = re.sub(r"https?://\S*", "", text)
     # Remove non-alphanumeric (except spaces)
     text = re.sub(r"[^a-zA-Z0-9\s]", " ", text)
-    # Collapse whitespace and lowercase
+    # Merge into single string and normalize
     return " ".join(text.lower().split())
+
+def is_hallucination(word: str, raw_text_lower: str) -> bool:
+    """True if word is substantive (>3 chars) and NOT found as a whole or sub-word in raw text."""
+    w = word.lower()
+    if len(w) <= 3: return False
+    if w in STRUCTURAL_WORDS: return False
+    # Check if this word exists anywhere in the raw text (including as a subsection/sub-word)
+    if w in raw_text_lower: return False
+    return True
 
 STRUCTURAL_WORDS = {
     "table", "contents", "continued", "appendix", "article", "section", 
@@ -96,7 +106,6 @@ def convert_to_md(raw_pages: List[str], source_name: str, output_path: Path, ver
     client = anthropic.Anthropic()
     
     # Selection based on user request for "best outcome"
-    # The app.py format suggests the standard is: claude-<model>-<major>-<minor>-<YYYYMMDD>
     primary_model = os.getenv("CONVERT_MODEL", "claude-sonnet-4-6")
     secondary_model = os.getenv("CONCENSUS_MODEL", "claude-haiku-4-5-20251001") # Fast consensus model
     
@@ -124,27 +133,29 @@ def convert_to_md(raw_pages: List[str], source_name: str, output_path: Path, ver
             # Pass 2
             md_p2 = convert_batch(client, secondary_model, batch_text, source_name, batch_id)
             
-            # Word-Fingerprint Integrity Check (Raw vs MD)
-            raw_fingerprint = clean_for_integrity_check(batch_text)
-            md_fingerprint = clean_for_integrity_check(md_p1)
+            # Hallucination Check
+            raw_text_lower = "".join(batch).lower()
+            md_words = set(re.findall(r'\b\w+\b', md_p1.lower()))
             
-            # Note: We allow minor word count drops (noise removal), 
-            # but we check if the MD contains words NOT in the raw text (hallucination).
-            raw_words = set(raw_fingerprint.split())
-            md_words = set(md_fingerprint.split())
-            new_words = md_words - raw_words
-            
-            # Filter out structural and common formatting words
-            true_hallucinations = [w for w in new_words if len(w) > 3 and w not in STRUCTURAL_WORDS] 
+            true_hallucinations = [w for w in md_words if is_hallucination(w, raw_text_lower)]
             
             if true_hallucinations:
-                print(f"    [!] WARNING: Potential substantive hallucinations: {true_hallucinations[:5]}...")
-                # Also print the context line for rapid human audit
-                for h_word in true_hallucinations[:3]:
+                print(f"\n    [!] WARNING: Potential substantive hallucinations: {true_hallucinations[:5]}...")
+                for h_word in true_hallucinations[:2]:
                     for line in md_p1.split("\n"):
                         if h_word in line.lower():
                             print(f"        [>] Line: \"{line.strip()[:100]}\"")
                             break
+                
+                # INTERACTIVE APPROVAL
+                ans = input("    [?] Approve this batch anyway? (y/n/skip): ").lower().strip()
+                if ans == 'n':
+                    print("[ABORT] Use ^C to exit or fix the source.")
+                    sys.exit(1)
+                elif ans == 'skip':
+                    print("[SKIP] Skipping this batch.")
+                    continue
+
                 integrity_failures += 1
                 
                 # Capture the 'iffier' lines for the audit report
@@ -160,19 +171,27 @@ def convert_to_md(raw_pages: List[str], source_name: str, output_path: Path, ver
                     af.write("\n---\n")
             
             # Consensus Check (P1 vs P2)
-            if clean_for_integrity_check(md_p1) != clean_for_integrity_check(md_p2):
-                primary_model = os.getenv("CONVERT_MODEL", "claude-sonnet-4-6")
-                secondary_model = os.getenv("CONSENSUS_MODEL", "claude-haiku-4-5-20251001")
-                print(f"    [!] NOTICE: Structural divergence between models. Defaulting to {primary_model}.")
+            p1_clean = clean_for_integrity_check(md_p1)
+            p2_clean = clean_for_integrity_check(md_p2)
+
+            if p1_clean != p2_clean:
+                print(f"    [!] NOTICE: Structural divergence detected.")
                 
-                # Find first divergence for terminal preview
-                lines1 = md_p1.split("\n")
-                lines2 = md_p2.split("\n")
-                for l1, l2 in zip(lines1, lines2):
-                    if clean_for_integrity_check(l1) != clean_for_integrity_check(l2):
-                        print(f"        [>] {primary_model:12}: \"{l1.strip()[:60]}\"")
-                        print(f"        [>] {secondary_model:12}: \"{l2.strip()[:60]}\"")
+                # Fuzzy Sync Diff
+                lines1 = [l.strip() for l in md_p1.split("\n") if l.strip()]
+                lines2 = [l.strip() for l in md_p2.split("\n") if l.strip()]
+                
+                for i, l1 in enumerate(lines1[:10]):
+                    # Find best match in lines2 window
+                    matches = difflib.get_close_matches(l1, lines2, n=1, cutoff=0.6)
+                    if not matches or clean_for_integrity_check(l1) != clean_for_integrity_check(matches[0]):
+                        print(f"        [>] P1: \"{l1[:60]}\"")
+                        print(f"        [>] P2: \"{(matches[0] if matches else 'No match')[:60]}\"")
                         break
+                
+                ans = input("    [?] Approve Sonnet's structure? (y/n): ").lower().strip()
+                if ans == 'n':
+                    sys.exit(1)
                 
                 with open(audit_path, "a", encoding="utf-8") as af:
                     af.write(f"### [Batch {batch_id}] Structural Divergence Detected\n")
