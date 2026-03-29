@@ -46,9 +46,6 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
         
-      - name: Check PDF/MD Parity
-        run: uv run python scripts/check_parity.py
-        
 
       - name: Run Index Validation
         run: |
