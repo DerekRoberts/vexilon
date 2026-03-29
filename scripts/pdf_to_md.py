@@ -101,9 +101,11 @@ STRICT INTEGRITY RULES:
     
     return "" # Unreachable
 
-def convert_to_md(raw_pages: List[str], source_name: str, output_path: Path, verify: bool = True) -> str:
+def convert_to_md(input_path: Path, output_path: Path, verify: bool = True, resume: bool = False) -> str:
     """Use Claude to restructure into clean MD with optional dual-pass verification."""
     client = anthropic.Anthropic()
+    raw_pages = extract_raw_text(input_path)
+    source_name = input_path.stem
     
     # Selection based on user request for "best outcome"
     primary_model = os.getenv("CONVERT_MODEL", "claude-sonnet-4-6")
@@ -113,7 +115,6 @@ def convert_to_md(raw_pages: List[str], source_name: str, output_path: Path, ver
     if verify:
         print(f"[*] Consensus Model: {secondary_model} (Dual-Pass Enabled)")
     
-    batch_size = 3 # Smaller batches = higher precision
     BATCH_SIZE = 3
     batches = [raw_pages[i:i + BATCH_SIZE] for i in range(0, len(raw_pages), BATCH_SIZE)]
     full_markdown = []
@@ -121,10 +122,33 @@ def convert_to_md(raw_pages: List[str], source_name: str, output_path: Path, ver
     pages_processed = 0
     total_pages = len(raw_pages)
     audit_path = output_path.with_suffix(".integrity.md")
-    audit_path.write_text(f"# Vexilon Forensic Integrity Audit: {source_name}\n\n", encoding="utf-8")
+    
+    start_batch_idx = 0
+    if resume and output_path.exists():
+        print(f"[*] RESUME MODE: Checking existing progress for {output_path.name}...")
+        if audit_path.exists():
+            audit_content = audit_path.read_text(encoding="utf-8")
+            batch_matches = re.findall(r'### \[Batch (\d+)\]', audit_content)
+            if batch_matches:
+                last_batch = int(batch_matches[-1])
+                start_batch_idx = last_batch
+                print(f"[*] Identified Batch {last_batch} as last milestone. Resuming from {start_batch_idx + 1}...")
+        
+        # Pre-load existing content
+        existing_md = output_path.read_text(encoding="utf-8")
+        # Strip truncation warning if present
+        if "> [!CAUTION]" in existing_md:
+            existing_md = existing_md.split("> [!CAUTION]")[0].strip()
+        full_markdown = [existing_md]
+        pages_processed = start_batch_idx * BATCH_SIZE
+    else:
+        audit_path.write_text(f"# Vexilon Forensic Integrity Audit: {source_name}\n\n", encoding="utf-8")
 
     try:
         for batch_id, batch_pages in enumerate(batches, 1):
+            if batch_id <= start_batch_idx:
+                continue
+            
             batch_text = "\n\n".join(batch_pages)
             page_start = (batch_id - 1) * BATCH_SIZE + 1
             page_end = min(batch_id * BATCH_SIZE, total_pages)
@@ -253,6 +277,7 @@ def main():
     parser.add_argument("input", help="Path to input PDF file")
     parser.add_argument("output", nargs="?", help="Path to output MD file (optional)")
     parser.add_argument("--no-verify", action="store_false", dest="verify", help="Disable dual-pass verification (faster/cheaper)")
+    parser.add_argument("--resume", action="store_true", help="Resume translation from the last recorded batch in the integrity log")
     parser.set_defaults(verify=True)
     args = parser.parse_args()
 
@@ -282,8 +307,7 @@ def main():
     output_path.write_text("", encoding="utf-8")
 
     try:
-        raw_pages = extract_raw_text(input_path)
-        markdown_content = convert_to_md(raw_pages, input_path.stem, output_path, verify=args.verify)
+        markdown_content = convert_to_md(input_path, output_path, verify=args.verify, resume=args.resume)
         
         print("-" * 66)
         print(f"[FINISH] Conversion Complete.")

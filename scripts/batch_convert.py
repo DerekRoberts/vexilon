@@ -19,6 +19,7 @@ def main():
     parser = argparse.ArgumentParser(description="Batch convert PDFs to forensic Markdown.")
     parser.add_argument("files", nargs="*", help="Optional: Specific PDF files to convert (paths or filenames)")
     parser.add_argument("--force", action="store_true", help="Recreate MD files even if they already exist")
+    parser.add_argument("--resume", action="store_true", help="Resume translation from last recorded checkpoint")
     args = parser.parse_args()
 
     if not DATA_DIR.exists():
@@ -84,7 +85,11 @@ def main():
     for i, target_pdf in enumerate(target_pdfs, start=1):
         print(f"\n[{i}/{len(target_pdfs)}] Processing: {target_pdf.name}")
         try:
-            subprocess.run([sys.executable, str(converter), str(target_pdf)], check=True)
+            cmd = [sys.executable, str(converter), str(target_pdf)]
+            if args.resume:
+                cmd.append("--resume")
+            
+            subprocess.run(cmd, check=True)
             success_count += 1
         except subprocess.CalledProcessError:
             print(f"\n[!] Conversion failed for {target_pdf.name}. Stopping batch.")
