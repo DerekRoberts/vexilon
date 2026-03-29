@@ -39,7 +39,7 @@ We have provided a specialized script `scripts/pdf_to_md.py` that uses a **Foren
 
 1.  **Set Environment Variable**:
     ```bash
-    export ANTHROPIC_API_KEY=sk-ant-v1-your-key-here
+    export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
     ```
 
 2.  **Run the Converter**:

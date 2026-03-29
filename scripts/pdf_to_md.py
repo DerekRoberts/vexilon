@@ -6,7 +6,7 @@ This script uses Claude (Anthropic API) to convert messy legal PDFs into
 clean, structured Markdown files optimized for RAG retrieval.
 
 Usage:
-  export ANTHROPIC_API_KEY=sk-ant-...
+  export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
   python scripts/pdf_to_md.py path/to/input.pdf [path/to/output.md]
 """
 
@@ -15,9 +15,11 @@ import sys
 import time
 import argparse
 import re
-import difflib
 from pathlib import Path
-from typing import Optional, List, Tuple
+from typing import Optional, List
+
+import anthropic
+from pypdf import PdfReader
 
 def print_banner():
     print("=" * 66)
@@ -33,26 +35,24 @@ def clean_for_integrity_check(text: str) -> str:
     # Collapse whitespace and lowercase
     return " ".join(text.lower().split())
 
-def extract_raw_text(pdf_path: Path) -> list[str]:
+def extract_raw_text(pdf_path: Path) -> List[str]:
     """Basic extraction using pypdf to get page-by-page raw content."""
-    from pypdf import PdfReader
-
     print(f"[*] Extracting raw text from {pdf_path.name}...")
     reader = PdfReader(str(pdf_path))
     pages = []
     
-    for i, page in enumerate(reader.pages):
+    for page in reader.pages:
         text = page.extract_text() or ""
         # Remove bclaws-specific web artifacts that contaminate the word count
-        text = re.sub(r"https?://www\.bclaws\.gov\.bc\.ca/\S*", "", text)
+        text = re.sub(r"https?://\www\.bclaws\.gov\.bc\.ca/\S*", "", text)
         text = re.sub(r"\d{2}/\d{2}/\d{4},?\s*\d{2}:\d{2}\s+[^\n]*", "", text)
         pages.append(text.strip())
         
     print(f"[+] Total pages extracted: {len(pages)}")
     return pages
 
-def convert_batch(client, model: str, batch_text: str, source_name: str, batch_idx: int) -> str:
-    """Individual pass for a single batch of text."""
+def convert_batch(client: anthropic.Anthropic, model: str, batch_text: str, source_name: str, batch_idx: int) -> str:
+    """Individual pass for a single batch of text with resilience and retries."""
     system_prompt = f"""You are a ZERO-REASONING legal transcription engine. 
 Your ONLY task is to add Markdown formatting to raw text from '{source_name}'.
 
@@ -64,18 +64,28 @@ STRICT INTEGRITY RULES:
 5. NO NOISE: Remove page numbers, URLs, and footers.
 6. FORMAT: Output ONLY Markdown. No preamble or 'Here is the markdown' talk."""
 
-    response = client.messages.create(
-        model=model,
-        max_tokens=4096,
-        temperature=0.0, # PARANOID DETERMINISM
-        system=system_prompt,
-        messages=[{"role": "user", "content": f"[Batch {batch_idx}] Raw text:\n\n{batch_text}"}]
-    )
-    return response.content[0].text
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = client.messages.create(
+                model=model,
+                max_tokens=4096,
+                temperature=0.0, # PARANOID DETERMINISM
+                system=system_prompt,
+                messages=[{"role": "user", "content": f"[Batch {batch_idx}] Raw text:\n\n{batch_text}"}]
+            )
+            return response.content[0].text
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise e
+            wait_time = (attempt + 1) * 2
+            print(f"    [!] API Error in Batch {batch_idx} (Attempt {attempt+1}/{max_retries}): {e}. Retrying in {wait_time}s...")
+            time.sleep(wait_time)
+    
+    return "" # Unreachable
 
-def convert_to_md(raw_pages: list[str], source_name: str, verify: bool = True) -> str:
+def convert_to_md(raw_pages: List[str], source_name: str, verify: bool = True) -> str:
     """Use Claude to restructure into clean MD with optional dual-pass verification."""
-    import anthropic
     client = anthropic.Anthropic()
     
     # Selection based on user request for "best outcome"
@@ -84,7 +94,7 @@ def convert_to_md(raw_pages: list[str], source_name: str, verify: bool = True) -
     
     print(f"[*] Primary Model:   {primary_model}")
     if verify:
-        print(f"[*] Consensus Model: {secondary_model} (Dual-Pass Enable)")
+        print(f"[*] Consensus Model: {secondary_model} (Dual-Pass Enabled)")
     
     batch_size = 3 # Smaller batches = higher precision
     full_markdown = []

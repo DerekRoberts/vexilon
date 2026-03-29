@@ -90,7 +90,7 @@ manual commit is required for Docker deployments.
 **Run the production-optimized container:**
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
 podman-compose up --build
 ```
 
@@ -114,7 +114,7 @@ Open <http://localhost:7860> in your browser.
 Check with `echo $ANTHROPIC_API_KEY` and re-export before running:
 
 ````bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
 podman-compose up
 ````
 
@@ -141,7 +141,7 @@ See [docs/MARKDOWN_CONVERSION.md](docs/MARKDOWN_CONVERSION.md) for full rational
 
 **Run the converter:**
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
 python scripts/pdf_to_md.py path/to/document.pdf
 ```
 
@@ -264,7 +264,7 @@ Vexilon uses a **Quality Gate** pattern in the `compose.yml`. By default, the ap
 
 ````bash
 # 1. Run the gated startup (Tests must pass before Vexilon launches)
-export ANTHROPIC_API_KEY=sk-ant-...
+export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
 podman-compose up
 
 # 2. Skip the gate (Useful for rapid UI iteration)
