@@ -1538,21 +1538,21 @@ def build_ui() -> "gr.Blocks":
         )
 
         # ── Reviewer Toggle & Management ──────────────────────────────────────
-        with gr.Row(variant="compact", elem_classes="unified-center-row"):
+        with gr.Row(variant="compact", elem_classes="compact-row"):
             persona_selector = gr.Radio(
                 choices=["Explore", "Direct", "Defend"],
                 value="Explore",
                 show_label=False,
                 container=False,
                 scale=3,
-                elem_classes="segmented-control",
+                elem_id="persona_selector",
             )
             reviewer_toggle = gr.Checkbox(
                 label="Reviewer",
                 value=USE_REVIEWER,
                 container=False,
                 scale=1,
-                elem_classes="checkbox-toggle",
+                elem_id="reviewer_toggle",
             )
             export_btn = gr.DownloadButton("⬇️ Save", variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
             import_btn = gr.UploadButton("⬆️ Load", file_types=[".md"], variant="secondary", size="sm", scale=1, elem_classes="sm-btn")

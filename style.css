@@ -1,5 +1,5 @@
 /* 1. Unified row alignment */
-.unified-center-row {
+.compact-row {
     align-items: center !important;
     gap: 6px !important;
     flex-wrap: nowrap !important;
@@ -7,20 +7,20 @@
 }
 
 /* 2. Persona Segmented Control (Pill style) */
-.segmented-control.block {
+#persona_selector.block {
     background: transparent !important;
     border: none !important;
     padding: 0 !important;
     margin: 0 !important;
     min-width: fit-content !important;
 }
-.segmented-control .wrap {
+#persona_selector .wrap {
     display: flex !important;
     gap: 0 !important;
     flex-wrap: nowrap !important;
     padding: 0 !important;
 }
-.segmented-control label {
+#persona_selector label {
     flex: 1 !important;
     height: 32px !important;
     line-height: 32px !important;
@@ -34,26 +34,26 @@
     align-items: center !important;
     justify-content: center !important;
 }
-.segmented-control label span {
+#persona_selector label span {
     margin: 0 !important;
     padding: 0 !important;
 }
-.segmented-control label:not(:last-child) {
+#persona_selector label:not(:last-child) {
     margin-right: -1px !important;
 }
-.segmented-control label:first-child {
+#persona_selector label:first-child {
     border-top-left-radius: 8px !important;
     border-bottom-left-radius: 8px !important;
 }
-.segmented-control label:last-child {
+#persona_selector label:last-child {
     border-top-right-radius: 8px !important;
     border-bottom-right-radius: 8px !important;
 }
-.persona-selector input[type="radio"], 
-.persona-selector .radio-circle {
+#persona_selector input[type="radio"],
+#persona_selector .radio-circle {
     display: none !important;
 }
-.persona-selector label.selected {
+#persona_selector label.selected {
     background-color: var(--primary-500) !important;
     color: white !important;
     border-color: var(--primary-600) !important;
@@ -61,7 +61,7 @@
 }
 
 /* 3. Reviewer Checkbox (Unified height) */
-.checkbox-toggle.block {
+#reviewer_toggle.block {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
@@ -70,7 +70,7 @@
     min-width: 90px !important;
     overflow: visible !important;
 }
-.reviewer-toggle label {
+#reviewer_toggle label {
     height: 32px !important;
     line-height: 32px !important;
     padding: 0 10px !important;
@@ -83,7 +83,7 @@
     background: var(--background-fill-secondary) !important;
     cursor: pointer !important;
 }
-.reviewer-toggle input {
+#reviewer_toggle input {
     margin: 0 6px 0 0 !important;
 }
 
