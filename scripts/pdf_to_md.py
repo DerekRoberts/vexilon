@@ -161,7 +161,19 @@ def convert_to_md(raw_pages: List[str], source_name: str, output_path: Path, ver
             
             # Consensus Check (P1 vs P2)
             if clean_for_integrity_check(md_p1) != clean_for_integrity_check(md_p2):
+                primary_model = os.getenv("CONVERT_MODEL", "claude-sonnet-4-6")
+                secondary_model = os.getenv("CONSENSUS_MODEL", "claude-haiku-4-5-20251001")
                 print(f"    [!] NOTICE: Structural divergence between models. Defaulting to {primary_model}.")
+                
+                # Find first divergence for terminal preview
+                lines1 = md_p1.split("\n")
+                lines2 = md_p2.split("\n")
+                for l1, l2 in zip(lines1, lines2):
+                    if clean_for_integrity_check(l1) != clean_for_integrity_check(l2):
+                        print(f"        [>] {primary_model:12}: \"{l1.strip()[:60]}\"")
+                        print(f"        [>] {secondary_model:12}: \"{l2.strip()[:60]}\"")
+                        break
+                
                 with open(audit_path, "a", encoding="utf-8") as af:
                     af.write(f"### [Batch {batch_id}] Structural Divergence Detected\n")
                     af.write(f"- Note: {secondary_model} output differed from {primary_model}.\n")
