@@ -79,7 +79,7 @@ STRICT INTEGRITY RULES:
 4. STRUCTURE: Use # for Articles, ## for Sections. Use Table format for lists of definitions or tables.
 5. NO NOISE: Remove page numbers, URLs, and footers.
 6. FORMAT: Output ONLY Markdown. No preamble, 'Here is the markdown' talk, or meta-notes.
-7. NO META-TALK: Do NOT add meta-text like 'Included for completeness', '[Batch 22]', or '(Continued)'. Your output must contain ONLY text that originated from the PDF source document. Do NOT synthesize structure that is not explicitly in the text."""
+7. NO META-TALK: Do NOT add meta-text like 'Included for completeness', '[Batch 22]', or '(Continued)'. Your output must contain ONLY text that originated from the PDF source document. Do NOT synthesize structure that is not explicitly in the text. NEVER write headings like '## Article 8 (continued)' or '# ARTICLE 13 *(continued)*' — if the source text does not contain the word 'continued', neither should your output."""
 
     max_retries = 3
     for attempt in range(max_retries):
