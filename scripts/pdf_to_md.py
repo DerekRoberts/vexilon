@@ -114,110 +114,139 @@ def convert_to_md(raw_pages: List[str], source_name: str, output_path: Path, ver
         print(f"[*] Consensus Model: {secondary_model} (Dual-Pass Enabled)")
     
     batch_size = 3 # Smaller batches = higher precision
+    BATCH_SIZE = 3
+    batches = [raw_pages[i:i + BATCH_SIZE] for i in range(0, len(raw_pages), BATCH_SIZE)]
     full_markdown = []
     integrity_failures = 0
+    pages_processed = 0
+    total_pages = len(raw_pages)
     audit_path = output_path.with_suffix(".integrity.md")
     audit_path.write_text(f"# Vexilon Forensic Integrity Audit: {source_name}\n\n", encoding="utf-8")
 
-    for i in range(0, len(raw_pages), batch_size):
-        batch = raw_pages[i:i+batch_size]
-        batch_text = "\n\n--- PAGE BREAK ---\n\n".join(batch)
-        batch_id = (i // batch_size) + 1
-        
-        print(f"    [>] Batch {batch_id}: Processing pages {i+1} to {min(i+batch_size, len(raw_pages))}...")
-        
-        # Pass 1
-        md_p1 = convert_batch(client, primary_model, batch_text, source_name, batch_id)
-        
-        if verify:
-            # Pass 2
+    try:
+        for batch_id, batch_pages in enumerate(batches, 1):
+            batch_text = "\n\n".join(batch_pages)
+            page_start = (batch_id - 1) * BATCH_SIZE + 1
+            page_end = min(batch_id * BATCH_SIZE, total_pages)
+            print(f"    [>] Batch {batch_id}: Processing pages {page_start} to {page_end}...")
+
+            # DUAL-PASS CONSENSUS (Sonnet + Haiku)
+            md_p1 = convert_batch(client, primary_model, batch_text, source_name, batch_id)
             md_p2 = convert_batch(client, secondary_model, batch_text, source_name, batch_id)
             
-        # 1. INCREMENTAL SAVE (TO FILE AND AUDIT LOG)
-        full_markdown.append(md_p1)
-        with open(output_path, "a", encoding="utf-8") as f:
-            f.write(md_p1 + "\n\n")
-            
-        # Hallucination Check
-        raw_text_lower = "".join(batch).lower()
-        md_words = set(re.findall(r'\b\w+\b', md_p1.lower()))
-        
-        true_hallucinations = [w for w in md_words if is_hallucination(w, raw_text_lower)]
-        
-        if true_hallucinations:
-            print(f"\n    [!] WARNING: Potential substantive hallucinations: {true_hallucinations[:5]}...")
-            # Expanded 5-line context preview
-            md_lines = md_p1.split("\n")
-            for h_word in true_hallucinations[:2]:
-                for idx, line in enumerate(md_lines):
-                    if h_word in line.lower():
-                        # Show 2 lines before and 2 lines after
-                        start = max(0, idx - 2)
-                        end = min(len(md_lines), idx + 3)
-                        print(f"        [>] Context for '{h_word}':")
-                        for l in md_lines[start:end]:
-                            print(f"            {l.strip()[:100]}")
-                        break
-            
-            # INTERACTIVE APPROVAL
-            print(f"    [*] BATCH PREVIEW READY: Check {output_path.name}")
-            ans = input("    [?] Approve this batch anyway? (y/n/skip): ").lower().strip()
-            if ans == 'n':
-                sys.exit(1)
-            elif ans == 'skip':
-                print("[SKIP] Batch skipped (Check file manually later).")
-                continue
+            # Write P1 to disk IMMEDIATELY (incremental save)
+            full_markdown.append(md_p1)
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write("\n\n".join(full_markdown))
+                # Add temporary "In-Progress" footer
+                f.write(f"\n\n--- [IN PROGRESS: Batch {batch_id}/{len(batches)}] ---")
 
-            integrity_failures += 1
+            # Word-Stability Check (Hallucination Detection)
+            # We check if words in P1 exist in the raw text
+            p1_words = re.findall(r'\b\w{4,}\b', md_p1.lower())
+            raw_words = set(re.findall(r'\b\w{4,}\b', batch_text.lower()))
             
-            with open(audit_path, "a", encoding="utf-8") as af:
-                af.write(f"### [Batch {batch_id}] Hallucination Flagged: {true_hallucinations}\n")
-                af.write("| Words | Context (Snippet) |\n|---|---|\n")
-                for w in true_hallucinations[:10]:
-                    af.write(f"| `{w}` | {md_p1.splitlines()[0][:60]}... |\n")
-                af.write("\n---\n")
+            # Whitelist structural commonalities
+            whitelist = {'article', 'section', 'part', 'page', 'schedule', 'appendix', 'repealed', 'topic', 'definition', 'term', 'subject'}
+            hallucinations = [w for w in p1_words if w not in raw_words and w not in whitelist]
+            
+            # Sub-word Check (PyMuPDF sometimes keeps artifacts)
+            true_hallucinations = []
+            for h in hallucinations:
+                if not any(h in rw for rw in raw_words):
+                    true_hallucinations.append(h)
+
+            if true_hallucinations:
+                print(f"    [!] WARNING: Potential substantive hallucinations: {true_hallucinations[:5]}...")
+                md_lines = md_p1.split("\n")
+                for h_word in true_hallucinations[:2]:
+                    for idx, line in enumerate(md_lines):
+                        if h_word in line.lower():
+                            start = max(0, idx - 2)
+                            end = min(len(md_lines), idx + 3)
+                            print(f"        [>] Context for '{h_word}':")
+                            for l in md_lines[start:end]:
+                                print(f"            {l.strip()[:100]}")
+                            break
+                
+                print(f"    [*] BATCH PREVIEW READY: Check {output_path.name}")
+                ans = input("    [?] Approve this batch anyway? (y/n/skip): ").lower().strip()
+                if ans == 'n':
+                    sys.exit(1)
+                elif ans == 'skip':
+                    print("[SKIP] Batch skipped (Check file manually later).")
+                    continue
+
+                integrity_failures += 1
+                with open(audit_path, "a", encoding="utf-8") as af:
+                    af.write(f"### [Batch {batch_id}] Hallucination Flagged: {true_hallucinations}\n")
+                    af.write("| Words | Context (Snippet) |\n|---|---|\n")
+                    for w in true_hallucinations[:10]:
+                        af.write(f"| `{w}` | {md_p1.splitlines()[0][:60]}... |\n")
+                    af.write("\n---\n")
             
             # Consensus Check (P1 vs P2)
             p1_clean = clean_for_integrity_check(md_p1)
             p2_clean = clean_for_integrity_check(md_p2)
 
             if p1_clean != p2_clean:
-                print(f"    [!] NOTICE: Structural divergence detected.")
-                
-                # Fuzzy Sync Diff
+                # Fuzzy match to ignore noisy footers/headers
                 lines1 = [l.strip() for l in md_p1.split("\n") if l.strip()]
                 lines2 = [l.strip() for l in md_p2.split("\n") if l.strip()]
                 
-                for i, l1 in enumerate(lines1[:10]):
-                    # Find best match in lines2 window
+                diverged = False
+                for l1 in lines1[:10]:
                     matches = difflib.get_close_matches(l1, lines2, n=1, cutoff=0.6)
                     if not matches or clean_for_integrity_check(l1) != clean_for_integrity_check(matches[0]):
-                        print(f"        [>] P1: \"{l1[:60]}\"")
-                        print(f"        [>] P2: \"{(matches[0] if matches else 'No match')[:60]}\"")
+                        diverged = True
                         break
                 
-                ans = input("    [?] Approve Sonnet's structure? (y/n): ").lower().strip()
-                if ans == 'n':
-                    sys.exit(1)
-                
-                with open(audit_path, "a", encoding="utf-8") as af:
-                    af.write(f"### [Batch {batch_id}] Structural Divergence Detected\n")
-                    af.write(f"- Note: {secondary_model} output differed from {primary_model}.\n")
-                    af.write("- Divergence usually occurs on complex headers, tables, or noisy footers.\n")
-                    af.write("\n---\n")
+                if diverged:
+                    print(f"    [!] NOTICE: Structural divergence detected.")
+                    for i, l1 in enumerate(lines1[:10]):
+                        matches = difflib.get_close_matches(l1, lines2, n=1, cutoff=0.6)
+                        if not matches or clean_for_integrity_check(l1) != clean_for_integrity_check(matches[0]):
+                            print(f"        [>] P1: \"{l1[:60]}\"")
+                            print(f"        [>] P2: \"{(matches[0] if matches else 'No match')[:60]}\"")
+                            break
+                    
+                    ans = input("    [?] Approve Sonnet's structure? (y/n): ").lower().strip()
+                    if ans == 'n':
+                        sys.exit(1)
+                    
+                    with open(audit_path, "a", encoding="utf-8") as af:
+                        af.write(f"### [Batch {batch_id}] Structural Divergence Detected\n")
+                        af.write(f"- Note: {secondary_model} output differed from {primary_model}.\n")
+                        af.write("\n---\n")
 
-        time.sleep(0.5)
+            pages_processed += (page_end - page_start + 1)
+            time.sleep(0.5)
+
+    except (KeyboardInterrupt, SystemExit, Exception) as e:
+        print(f"\n[!] INTERRUPTED: Migration stopped at Batch {batch_id}.")
+        with open(audit_path, "a", encoding="utf-8") as af:
+            af.write(f"\n\n❌ **CRITICAL FAILURE:** Migration terminated unexpectedly during Batch {batch_id}.\n")
+            af.write(f"- Error: {str(e)}\n")
+            af.write(f"- Status: Incomplete ({pages_processed}/{total_pages} pages processed).\n")
+        
+        # Mark the markdown file as truncated
+        with open(output_path, "a", encoding="utf-8") as f:
+            f.write(f"\n\n\n> [!CAUTION]\n> **TRUNCATED DOCUMENT:** Migration failed at Batch {batch_id} (Page {pages_processed}). USE WITH EXTREME CAUTION.\n")
+        raise
+
+    # Final Success Polish
+    final_md = "\n\n".join(full_markdown)
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(final_md)
 
     if integrity_failures > 0:
         print(f"\n[!] ALERT: Found {integrity_failures} batches with potential word-integrity issues.")
-        print(f"    Please audit: {output_path.with_suffix('.integrity.md')}")
     else:
         print("\n[SUCCESS] Forensic word-integrity check passed.")
-        # If everything passed, we can leave a small clean audit
         with open(audit_path, "a", encoding="utf-8") as af:
             af.write("\n\n✅ **SUCCESS:** Forensic word-integrity check passed with 100% parity.\n")
 
-    return "\n\n".join(full_markdown)
+    return final_md
 
 def main():
     parser = argparse.ArgumentParser(description="Convert PDF to RAG-optimized Markdown with Forensic Integrity")
