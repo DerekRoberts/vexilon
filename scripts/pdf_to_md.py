@@ -90,9 +90,9 @@ def convert_to_md(raw_pages: List[str], source_name: str, verify: bool = True) -
     client = anthropic.Anthropic()
     
     # Selection based on user request for "best outcome"
-    # Pull from environment or default to the '-latest' aliases to avoid 404s on missing date codes
-    primary_model = os.getenv("CONVERT_MODEL", "claude-4-6-sonnet-latest")
-    secondary_model = os.getenv("CONCENSUS_MODEL", "claude-4-6-haiku-latest") # Fast consensus model
+    # The app.py format suggests the standard is: claude-<model>-<major>-<minor>-<YYYYMMDD>
+    primary_model = os.getenv("CONVERT_MODEL", "claude-sonnet-4-6")
+    secondary_model = os.getenv("CONCENSUS_MODEL", "claude-haiku-4-5-20251001") # Fast consensus model
     
     print(f"[*] Primary Model:   {primary_model}")
     if verify:
