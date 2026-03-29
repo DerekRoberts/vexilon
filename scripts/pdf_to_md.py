@@ -243,27 +243,18 @@ def convert_to_md(input_path: Path, output_path: Path, verify: bool = True, resu
                         break
                 
                 if diverged:
-                    print(f"    [!] NOTICE: Structural divergence detected. Showing first 8 lines of each:")
+                    print(f"    [!] NOTICE: Structural divergence detected (auto-accepting Sonnet).")
                     print(f"    --- P1 (Sonnet) ---")
-                    for line in lines1[:8]:
+                    for line in lines1[:4]:
                         print(f"        {line[:100]}")
                     print(f"    --- P2 (Haiku) ---")
-                    for line in lines2[:8]:
+                    for line in lines2[:4]:
                         print(f"        {line[:100]}")
                     print(f"    -------------------")
-                    
-                    ans = input("    [?] Approve Sonnet's structure? (y/n/p2): ").lower().strip()
-                    if ans == 'n':
-                        sys.exit(1)
-                    elif ans == 'p2':
-                        md_p1 = md_p2
-                        print("    [*] Overriding P1 with P2 consensus.")
-                    
+
                     with open(audit_path, "a", encoding="utf-8") as af:
                         af.write(f"### [Batch {batch_id}] Structural Divergence Detected\n")
-                        af.write(f"- Note: {secondary_model} output differed from {primary_model}.\n")
-                        if ans == 'p2':
-                            af.write("- ACTION: Auditor overrode P1 with P2 consensus.\n")
+                        af.write(f"- Note: {secondary_model} output differed from {primary_model}. Auto-accepted P1.\n")
                         af.write("\n---\n")
 
             pages_processed += (page_end - page_start + 1)
