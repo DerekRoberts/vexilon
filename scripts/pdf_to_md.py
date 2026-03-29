@@ -157,7 +157,13 @@ def convert_to_md(input_path: Path, output_path: Path, verify: bool = True, resu
             # DUAL-PASS CONSENSUS (Sonnet + Haiku)
             md_p1 = convert_batch(client, primary_model, batch_text, source_name, batch_id)
             md_p2 = convert_batch(client, secondary_model, batch_text, source_name, batch_id)
-            
+
+            # Strip "(continued)" variants — both models hallucinate these on multi-page sections.
+            # This word never appears in the source PDFs; it's always AI-invented page-break noise.
+            _continued_pattern = re.compile(r'\s*[\(\*-]*\s*continued\s*[\)\*-]*', re.IGNORECASE)
+            md_p1 = _continued_pattern.sub('', md_p1)
+            md_p2 = _continued_pattern.sub('', md_p2)
+
             # Write P1 to disk IMMEDIATELY (incremental save)
             full_markdown.append(md_p1)
             with open(output_path, "w", encoding="utf-8") as f:
