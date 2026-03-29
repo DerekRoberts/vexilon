@@ -239,13 +239,18 @@ def convert_to_md(input_path: Path, output_path: Path, verify: bool = True, resu
                             print(f"        [>] P2: \"{(matches[0] if matches else 'No match')[:60]}\"")
                             break
                     
-                    ans = input("    [?] Approve Sonnet's structure? (y/n): ").lower().strip()
+                    ans = input("    [?] Approve Sonnet's structure? (y/n/p2): ").lower().strip()
                     if ans == 'n':
                         sys.exit(1)
+                    elif ans == 'p2':
+                        md_p1 = md_p2
+                        print("    [*] Overriding P1 with P2 consensus.")
                     
                     with open(audit_path, "a", encoding="utf-8") as af:
                         af.write(f"### [Batch {batch_id}] Structural Divergence Detected\n")
                         af.write(f"- Note: {secondary_model} output differed from {primary_model}.\n")
+                        if ans == 'p2':
+                            af.write("- ACTION: Auditor overrode P1 with P2 consensus.\n")
                         af.write("\n---\n")
 
             pages_processed += (page_end - page_start + 1)
