@@ -184,9 +184,11 @@ def main():
         
     except KeyboardInterrupt:
         print("\n[!] Interrupted by user.")
+        sys.exit(130)
     except Exception as e:
         print(f"\n[CRITICAL ERROR] {e}")
         traceback.print_exc()
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
