@@ -36,7 +36,10 @@ def clean_for_integrity_check(text: str) -> str:
     # Collapse whitespace and lowercase
     return " ".join(text.lower().split())
 
-STRUCTURAL_WORDS = {"table", "contents", "continued", "appendix", "article", "section", "part", "page", "break"}
+STRUCTURAL_WORDS = {
+    "table", "contents", "continued", "appendix", "article", "section", 
+    "part", "page", "break", "definition", "term", "title"
+}
 
 def extract_raw_text(pdf_path: Path) -> List[str]:
     """Precision extraction using PyMuPDF to preserve word integrity."""
@@ -104,6 +107,7 @@ def convert_to_md(raw_pages: List[str], source_name: str, output_path: Path, ver
     batch_size = 3 # Smaller batches = higher precision
     full_markdown = []
     integrity_failures = 0
+    audit_log = [f"# Vexilon Forensic Integrity Audit: {source_name}\n\n"]
 
     for i in range(0, len(raw_pages), batch_size):
         batch = raw_pages[i:i+batch_size]
@@ -135,10 +139,25 @@ def convert_to_md(raw_pages: List[str], source_name: str, output_path: Path, ver
             if true_hallucinations:
                 print(f"    [!] WARNING: Potential substantive hallucinations: {true_hallucinations[:5]}...")
                 integrity_failures += 1
+                
+                # Capture the 'iffier' lines for the audit report
+                audit_log.append(f"### [Batch {batch_id}] Hallucination Flagged: {true_hallucinations}\n")
+                audit_log.append("| Substantive Words Added | Contextual Line (Markdown) |\n|---|---|\n")
+                for h_word in true_hallucinations[:10]:
+                    # Find first line in MD containing this word
+                    for line in md_p1.split("\n"):
+                        if h_word in line.lower():
+                            audit_log.append(f"| `{h_word}` | {line.strip()} |\n")
+                            break
+                audit_log.append("\n---\n")
             
             # Consensus Check (P1 vs P2)
             if clean_for_integrity_check(md_p1) != clean_for_integrity_check(md_p2):
                 print(f"    [!] NOTICE: Structural divergence between models. Defaulting to {primary_model}.")
+                audit_log.append(f"### [Batch {batch_id}] Structural Divergence Detected\n")
+                audit_log.append(f"- Note: {secondary_model} output differed from {primary_model}.\n")
+                audit_log.append("- Divergence usually occurs on complex headers, tables, or noisy footers.\n")
+                audit_log.append("\n---\n")
 
         full_markdown.append(md_p1)
         
@@ -150,7 +169,11 @@ def convert_to_md(raw_pages: List[str], source_name: str, output_path: Path, ver
 
     if integrity_failures > 0:
         print(f"\n[!] ALERT: Found {integrity_failures} batches with potential word-integrity issues.")
-        print("    Please audit the final output sections where the PDF had complex formatting.")
+        print(f"    Please audit: {output_path.with_suffix('.integrity.md')}")
+        
+        # Save the audit log
+        audit_path = output_path.with_suffix(".integrity.md")
+        audit_path.write_text("".join(audit_log), encoding="utf-8")
     else:
         print("\n[SUCCESS] Forensic word-integrity check passed.")
 
