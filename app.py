@@ -306,18 +306,28 @@ def get_anthropic() -> "anthropic.AsyncAnthropic":
     return _anthropic_client
 
 
-def _get_all_source_files() -> list[Path]:
+def _get_rag_source_files() -> list[Path]:
     """
-    Recursively scan LABOUR_LAW_DIR for PDF and Markdown files and return a
-    combined list sorted by filename for consistent processing.
-    The tests/ subdirectory is excluded (used by TestRegistry, not RAG index).
+    Recursively scan LABOUR_LAW_DIR for Markdown files ONLY.
+    PDFs are completely ignored for indexing purposes.
+    The tests/ subdirectory is excluded.
+    """
+    if not LABOUR_LAW_DIR.exists():
+        return []
+    tests_dir = LABOUR_LAW_DIR / "tests"
+    mds = [p for p in LABOUR_LAW_DIR.rglob("*.md") if not p.is_relative_to(tests_dir)]
+    return sorted(mds, key=lambda p: str(p))
+
+def _get_download_source_files() -> list[Path]:
+    """
+    Recursively scan LABOUR_LAW_DIR for PDF files ONLY (for human downloads).
+    The tests/ subdirectory is excluded.
     """
     if not LABOUR_LAW_DIR.exists():
         return []
     tests_dir = LABOUR_LAW_DIR / "tests"
     pdfs = [p for p in LABOUR_LAW_DIR.rglob("*.pdf") if not p.is_relative_to(tests_dir)]
-    mds = [p for p in LABOUR_LAW_DIR.rglob("*.md") if not p.is_relative_to(tests_dir)]
-    return sorted(pdfs + mds, key=lambda p: str(p))
+    return sorted(pdfs, key=lambda p: str(p))
 
 
 def _get_source_name(stem: str) -> str:
@@ -342,7 +352,7 @@ def get_knowledge_manifest() -> str:
     Files follow the naming convention: [Index]_[Category]_[Title].pdf
     Example: 1_Primary_BCGEU 19th Main Agreement.pdf
     """
-    files = _get_all_source_files()
+    files = _get_rag_source_files()
     if not files:
         return "No documents available."
 
@@ -370,7 +380,7 @@ def build_pdf_download_links() -> str:
     """
     import html
 
-    files = _get_all_source_files()
+    files = _get_download_source_files()
     if not files:
         return ""
 
@@ -907,7 +917,7 @@ def build_index_from_sources(force: bool = False) -> None:
 
     global _chunks, _index
 
-    all_files = _get_all_source_files()
+    all_files = _get_rag_source_files()
     if not all_files:
         print("[build] No source files found to index!")
         return
