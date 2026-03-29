@@ -27,4 +27,3 @@ To justify discipline for off-duty conduct, management must demonstrate that the
 - "Which of the five Millhaven factors is management specifically relying upon for this proposed discipline?"
 - "Can management provide evidence of actual harm to the employer's reputation that has occurred as a result of this off-duty incident?"
 - "How exactly does this incident prevent the member from fulfilling the specific duties of their [Job Title] role tomorrow?"
-

@@ -5,7 +5,6 @@
 
 ---
 
-
 ## Definitions
 
 1   (1) In this Code:
@@ -54,7 +53,6 @@ and "to strike" has a similar meaning;
 (c) a lockout.
 (3) For the purposes of paragraph (b) (ii) of the definition of "strike" in subsection (1), the definitions in subsection (1) are to be read as though the definition of "person" did not exclude a person in respect of whom collective bargaining is regulated by the [Canada Labour Code](http://laws-lois.justice.gc.ca/eng/acts/L-2/index.html).
 
-
 ## Duties under this Code
 
 2   The board and other persons who exercise powers and perform duties under this Code must exercise the powers and perform the duties in a manner that
@@ -68,7 +66,6 @@ and "to strike" has a similar meaning;
 (g) ensures that the public interest is protected during labour disputes, and
 (h) encourages the use of mediation as a dispute resolution mechanism.
 
-
 ## Continuing review of the Code
 
 3   (1) The minister may appoint a committee of special advisors to undertake a continuing review of this Code and labour management relations and, without limitation, to
@@ -81,12 +78,10 @@ and "to strike" has a similar meaning;
 (5) A committee must be appointed under subsection (3) not more than 5 years after subsection (3) comes into force and thereafter not more than 5 years after a committee appointed under subsection (3) makes recommendations to the minister.
 Part 2 — Rights, Duties and Unfair Labour Practices
 
-
 ## Rights of employers and employees
 
 4   (1) Every employee is free to be a member of a trade union and to participate in its lawful activities.
 (2) Every employer is free to be a member of an employers' organization and to participate in its lawful activities.
-
 
 ## Prohibition against dismissals, etc., for exercising employee rights
 
@@ -101,7 +96,6 @@ because of a belief that the person may testify in a proceeding under this Code 
 (a) commence a hearing on the complaint within 3 days of its filing,
 (b) promptly proceed with the hearing without interruption, except for any necessary adjournments, and
 (c) render a decision on the complaint within 2 days of the completion of the hearing.
-
 
 ## Unfair labour practices
 
@@ -121,23 +115,19 @@ because of a belief that the person may testify in a proceeding under this Code 
 
 (b) make a change in the operation of the employer's business reasonably necessary for the proper conduct of that business.
 
-
 ## Limitation on activities of trade unions
 
 7   (1) Except with the employer's consent, a trade union or person acting on its behalf must not attempt, at the employer's place of employment during working hours, to persuade an employee of the employer to join or not join a trade union.
 (2) If employees reside on their employer's property or on property to which the employer or another person has the right to control access or entry, the employer or other person must on the board's direction permit a representative authorized in writing by a trade union to enter the property to attempt to persuade the employees to join a trade union and, if the trade union acquires bargaining rights, after that to enter the property to conduct business of the trade union.
 (3) If directed by the board and on request by the trade union representative, the employer must provide the representative with food and lodging at the current price and of a similar kind and quality as that provided to the employees.
 
-
 ## Right to communicate
 
 8   Nothing in this Code deprives a person of the freedom to communicate to an employee a statement of fact or opinion reasonably held with respect to the employer's business.
 
-
 ## Coercion and intimidation prohibited
 
 9   A person must not use coercion or intimidation of any kind that could reasonably have the effect of compelling or inducing a person to become or to refrain from becoming or to continue or cease to be a member of a trade union.
-
 
 ## Internal union affairs
 
@@ -150,13 +140,11 @@ because of a belief that the person may testify in a proceeding under this Code 
 (b) because that member or person has refused or failed to participate in activity prohibited by this Code.
 (3) If a trade union charges, levies or prescribes different initiation fees, dues or assessments in respect of a person according to whether the person applies or has applied for membership in the trade union before or after an application for certification by the trade union to represent the person as bargaining agent, the fees, dues or assessments are deemed to be discriminatory for the purpose of subsection (2) (a).
 
-
 ## Requirement to bargain in good faith
 
 11   (1) A trade union or employer must not fail or refuse to bargain collectively in good faith in British Columbia and to make every reasonable effort to conclude a collective agreement.
 
 (2) If a trade union and the employer have concluded a collective agreement outside British Columbia, it is invalid in British Columbia until a majority of the employees in British Columbia covered by the agreement ratify it.
-
 
 ## Duty of fair representation
 
@@ -170,7 +158,6 @@ whether or not the employees or persons are members of the trade union or a cons
 (c) an employer is permitted to hire by name persons to be engaged to perform supervisory duties.
 (3) An employers' organization must not act in a manner that is arbitrary, discriminatory or in bad faith in representing any of the employers in the group appropriate for collective bargaining.
 
-
 ## Procedure for fair representation complaint
 
 13   (1) If a written complaint is made to the board that a trade union, council of trade unions or employers' organization has contravened section 12, the following procedure must be followed:
@@ -179,7 +166,6 @@ whether or not the employees or persons are members of the trade union or a cons
 (i) serve a notice of the complaint on the trade union, council of trade unions or employers' organization against which the complaint is made and invite a reply to the complaint from the trade union, council of trade unions or employers' organization, and
 (ii) dismiss the complaint or refer it to the board for a hearing.
 (2) If the board is satisfied that the trade union, council of trade unions or employers' organization contravened section 12, the board may make an order or direction referred to in section 14 (4) (a), (b) or (d).
-
 
 ## Inquiry into unfair labour practice
 
@@ -204,14 +190,12 @@ whether or not the employees or persons are members of the trade union or a cons
 (6) If in the board's opinion a complaint under subsection (1) is without merit, it may reject the complaint at any time.
 (7) On an inquiry by the board into a complaint under section 6 (3) (a) or (b), the burden of proof that the employer did not contravene paragraph (a) or (b) lies on the employer.
 
-
 ## Collective agreement may provide for union membership
 
 15   (1) Nothing in this Code is to be construed as precluding the parties to a collective agreement from inserting in it, or carrying out, a provision
 (a) requiring membership in a specified trade union as a condition of employment, or
 (b) granting preference in employment to members of a specified trade union.
 (2) Despite subsection (1), a trade union or person acting on its behalf must not require an employer to terminate the employment of an employee due to the employee's expulsion or suspension from that trade union on the ground that the employee is or was a member of another trade union.
-
 
 ## Assignment of fees and dues
 
@@ -226,7 +210,6 @@ Until this authority is revoked by me in writing, I authorize you to deduct from
 (4) If an assignment is revoked, the employer must give a copy of the revocation to the assignee.
 (5) Despite subsections (1), (2) and (3), the employer has no financial responsibility for the fees or dues of an employee, unless the employer owes the employee sufficient unpaid wages to pay the fees and dues assigned.
 
-
 ## Religious objections
 
 17   (1) If the board is satisfied that an employee, because of the employee's religious conviction or belief
@@ -236,7 +219,6 @@ the board may order that the provisions of a collective agreement of the type re
 (2) Despite any other provision of this Code, a person exempted under subsection (1) is not entitled to participate in a vote conducted by a trade union or in a vote held for the purposes of this Code.
 Part 3 — Acquisition and Termination of Bargaining Rights
 Division 1 — Acquisition of Bargaining Rights
-
 
 ## Acquisition of bargaining rights
 
@@ -250,7 +232,6 @@ Division 1 — Acquisition of Bargaining Rights
 (a) a trade union that is a party to a collective agreement, but is not certified for the employees covered by it, may apply to be certified at any time, and
 (b) a council of trade unions comprised of trade unions that are parties to collective agreements may apply to be certified at any time in place of those trade unions.
 
-
 ## Change in union representation
 
 19   (1) Except in the case of construction,
@@ -260,19 +241,15 @@ Division 1 — Acquisition of Bargaining Rights
 (2.1) Despite subsections (1) and (2), an application for certification may not be made within 22 months of a previous application under those subsections if the previous application resulted in a decision by the board on the merits of the application.
 (3) Unless the board consents, a trade union is not permitted to make an application under this section during a strike or lockout.
 
-
 ## Joint application
 
 20   Two or more trade unions claiming to have together as members in good standing a majority of employees in a unit appropriate for collective bargaining may join in an application under this Part, and the provisions of this Code relating to an application by one trade union, and all matters or things arising from it, apply to the application and those trade unions as if one trade union were applying.
 
-
 ## Craft unions
-
 
 21   (1) If one or more employees belong to a craft or group exercising technical or professional skills that distinguish it from the employees as a whole, and they are members of one trade union pertaining to the craft or skills, the trade union may, subject to sections 18, 19, 20, 23, 24, 25 and 26, apply to the board to be certified as the bargaining agent for the group if it is otherwise an appropriate bargaining unit.
 (2) A trade union claiming to have as members in good standing a majority of the employees in a unit for which a craft or professional trade union is the bargaining agent under this section may apply to the board to have the unit included in another unit, and sections 18, 19, 20, 23, 24, 25 and 26 apply.
 (3) If an application is not made under subsection (2), the employees in the unit for which a craft or professional trade union is the bargaining agent under this section must be excluded from another unit for the purpose of collective bargaining and must not be taken into account as members of another unit for purposes of this Code.
-
 
 ## Process relating to application
 
@@ -283,13 +260,11 @@ Division 1 — Acquisition of Bargaining Rights
 (a) must decide the question on the basis of membership requirements prescribed in the regulations, and
 (b) may decide the question without regard to the constitution and bylaws of the trade union.
 
-
 ## Determination of appropriate unit
 
 22.1   If a trade union applies for certification as the bargaining agent for a unit, the board
 (a) must determine if the unit is appropriate for collective bargaining, and
 (b) may, before certification, include additional employees in or exclude employees from the unit.
-
 
 ## Certification
 
@@ -297,7 +272,6 @@ Division 1 — Acquisition of Bargaining Rights
 (a) on the date the board receives an application for certification under this Part at least 55% of the employees in the unit are members in good standing of the trade union, and
 (b) the unit is appropriate for collective bargaining,
 the board must certify the trade union as the bargaining agent for the employees in the unit.
-
 
 ## Representation vote ordered by board
 
@@ -311,7 +285,6 @@ the board must certify the trade union as the bargaining agent for the employees
 (2.2) An order under subsection (2) for a longer period in which the representation vote is to be conducted by mail must provide for the vote to be conducted as expeditiously as possible in the circumstances.
 (3) The board may direct that another representation vote be conducted if less than 55% of the employees in the unit cast ballots.
 
-
 ## Outcome of representation vote
 
 25   (1) When a representation vote is taken, a majority must be determined as the majority of the employees in the unit who cast ballots.
@@ -324,7 +297,6 @@ the board must certify the trade union as the bargaining agent for the unit.
 (b) not satisfied that the unit is appropriate for collective bargaining,
 the trade union may not be certified as bargaining agent for the unit.
 
-
 ## Request for representation vote
 
 26   (1) On an application for certification under this Part, a trade union may request that a representation vote be taken before the board's determination of the appropriate bargaining unit.
@@ -335,7 +307,6 @@ the trade union may not be certified as bargaining agent for the unit.
 
 (4) After a representation vote under this section, the board must determine the unit of employees appropriate for collective bargaining, and if it is satisfied that on the date the board receives the application for certification at least 45% of the employees in the unit are members in good standing of the trade union, the representation vote has the same effect as a representation vote under sections 24 and 25.
 
-
 ## Effect of certification
 
 27   (1) If a trade union is certified as the bargaining agent for an appropriate bargaining unit,
@@ -344,14 +315,12 @@ the trade union may not be certified as bargaining agent for the unit.
 (c) if a collective agreement binding on the unit is in force at the date of certification, the agreement remains in force.
 (2) Despite subsection (1) (c) and except if the trade union party to the collective agreement obtains the certification, the rights and obligations that were conferred or imposed by the collective agreement on the trade union party to the collective agreement cease insofar as that trade union is concerned, and are conferred or imposed on the trade union certified as the bargaining agent.
 
-
 ## Order for expiry of collective agreement
 
 27.1   (1) Despite section 27 (1) (c), if, upon application under section 19, a trade union is certified as the bargaining agent for an appropriate bargaining unit and there are 2 years or more remaining in the term of the collective agreement, the trade union may apply to the board for an order declaring that the collective agreement expires.
 (2) If an application is made under subsection (1), the board may
 (a) make an order declaring that the collective agreement expires 90 days after the date of the order, or
 (b) make other orders or determinations that the board considers appropriate.
-
 
 ## Dependent contractors
 
@@ -365,7 +334,6 @@ the trade union may not be certified as bargaining agent for the unit.
 (c) modify or restrict the operation or effect of a collective agreement in order to determine the seniority rights under it of employees or dependent contractors, and
 (d) give directions that the board considers necessary or advisable as to the interpretation and application of a collective agreement affecting the employees and dependent contractors in a unit determined under this section to be appropriate for collective bargaining.
 
-
 ## Unit partly supervisory
 
 29   If a trade union applies for certification as the bargaining agent for a unit consisting of
@@ -373,11 +341,9 @@ the trade union may not be certified as bargaining agent for the unit.
 (b) any of the other employees,
 the board may certify the trade union for the unit, for a unit consisting only of employees who supervise or for a unit composed of some or all of the other employees.
 
-
 ## Repeated applications for certification
 
 30   If the trade union is not certified as the bargaining agent under section 23 or 25, or a cancellation of certification is refused under section 33 (4) (b), the board may designate the length of time, not less than 90 days, that must elapse before a new application by the same applicant may be considered.
-
 
 ## Prohibited employee associations
 
@@ -386,13 +352,11 @@ the board may certify the trade union for the unit, for a unit consisting only o
 (b) that discriminates against a person contrary to the [Human Rights Code](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96210_01),
 must not be certified for the employees, and an agreement entered into between that organization or association of employees and the employer is deemed not to be a collective agreement.
 
-
 ## No change during certification
 
 32   (1) If an application for certification is pending, a trade union or person affected by the application must not declare or engage in a strike, an employer must not declare a lockout, and an employer must not increase or decrease rates of pay or alter a term or condition of employment of the employees affected by the application, without the board's written permission.
 (2) This section must not be construed as affecting the right of an employer to suspend, transfer, lay off, discharge or otherwise discipline an employee for proper cause.
 Division 2 — Revocation of Bargaining Rights
-
 
 ## Revocation of bargaining rights
 
@@ -423,12 +387,10 @@ Division 2 — Revocation of Bargaining Rights
 (10) If the certification of a trade union as the bargaining agent for a unit is cancelled under any provision of this Code, no other trade union may apply for certification as bargaining agent for the employees within that unit until a period of 10 months or a shorter period specified by the board has elapsed.
 (11) On receipt of an application for cancellation of certification the board may cancel the certification of a bargaining agent for a bargaining unit if it is satisfied that the bargaining agent has abandoned its bargaining rights in respect of the employees in the bargaining unit.
 
-
 ## Revocation of voluntarily recognized bargaining rights
 
 34   Section 33 applies to the revocation of bargaining rights if a trade union is a party to a collective agreement but is not certified for the employees covered by the collective agreement.
 Division 3 — Successor Rights and Obligations
-
 
 ## Successor rights and obligations
 
@@ -457,11 +419,9 @@ Division 3 — Successor Rights and Obligations
 (d) modify or restrict the operation or effect of a provision of a collective agreement in order to define the seniority rights under it of employees affected by the sale, lease, transfer or other disposition, and
 (e) give directions the board considers necessary or advisable as to the interpretation and application of a collective agreement affecting the employees in a unit determined under this section to be appropriate for collective bargaining.
 
-
 ## Federal-Provincial successorship
 
 36   If collective bargaining relating to a business is governed by the laws of Canada and that business or part of it is sold, leased, transferred or otherwise disposed of and becomes subject to the laws of British Columbia, section 35 applies and the purchaser, lessee or transferee is bound by any collective agreement in force at the time of the disposition.
-
 
 ## Merger or amalgamation
 
@@ -471,15 +431,12 @@ Division 3 — Successor Rights and Obligations
 (2) Before issuing a declaration under subsection (1), the board may make the inquiries, require the production of the evidence and hold the votes it considers necessary or advisable.
 (3) If the board makes an affirmative declaration under subsection (1), for the purposes of this Code the successor acquires the rights, privileges and duties of its predecessor, whether under a collective agreement or otherwise.
 
-
 ## Several businesses treated as one employer
 
 38   If in the board's opinion associated or related activities or businesses are carried on by or through more than one corporation, individual, firm, syndicate or association, or a combination of them under common control or direction, the board may treat them as constituting one employer for the purposes of this Code and grant such relief, by way of declaration or otherwise, as the board considers appropriate.
 Division 4 — Voting
 
-
 ## Voting requirements
-
 
 39   (1) All voting directed by the board or by the minister under this Code and other votes held by a trade union or employers' organization of their respective members on a question of whether to strike or lock out, or whether to accept or ratify a proposed collective agreement, must be by secret ballot cast in such a manner that the person expressing a choice cannot be identified with the choice expressed.
 (2) The results of a vote referred to in subsection (1), including the number of ballots cast and the number of votes for, against or spoiled, must be made available to both
@@ -490,14 +447,12 @@ Division 4 — Voting
 (a) persons who at the time an application for certification was received by the board were not employees in the proposed unit but are employees in the unit at the time of the vote;
 (b) persons who at the time an application for decertification was received by the board were employees in the unit, but are not employees in the unit at the time of the vote.
 
-
 ## Additional voting requirements
 
 40   (1) Subject to section 17 (2), all employees in a bargaining unit, whether or not they are members of the trade union or of any constituent union of a council of trade unions, may participate in votes held by a trade union of its members on a question of whether to strike or whether to accept or ratify a proposed collective agreement.
 (2) If a trade union coordinates collective bargaining on behalf of more than one bargaining unit, the results of any vote conducted by the trade union of a particular bargaining unit must not be counted until all bargaining units engaged in the bargaining have voted.
 (3) If a vote is conducted by mail, then for the purposes of this Code, the vote is deemed to have been held on the day that ballot papers are left with a post office as defined by the [Canada Post Corporation Act](http://laws-lois.justice.gc.ca/eng/acts/C-10/index.html) for transmission to the persons who are to vote or, if the ballot papers are left for that purpose with the post office on different days, on the last of those days.
 Division 5 — Councils of Trade Unions
-
 
 ## Certification of councils of trade unions
 
@@ -520,13 +475,11 @@ and must make any other examination of records, inquiry or findings including th
 (e) settle the terms and conditions of a new collective agreement based in whole or in part on one or more of the collective agreements in effect and binding on all or any of the employees, and
 (f) make other orders or determinations that may be necessary or advisable to carry out the purposes of this section.
 
-
 ## Bargaining council
 
 41.1   (1) In this section, "CLRA" means the Construction Labour Relations Association of B.C., a society under the [Societies Act](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/15018_01).
 (2) The bargaining council established under section 55.18, as that section read before its repeal by the Skills Development and Labour Statutes Amendment Act, 2001, is continued, is deemed to be a council of trade unions established under section 41 and is authorized to bargain on behalf of its constituent unions with the CLRA.
 (3) Within 6 months from the date that this section comes into force, the board must review the constitution and bylaws of the bargaining council to ensure that they are consistent with section 41.
-
 
 ## Dissolution of councils of trade unions
 
@@ -537,7 +490,6 @@ and must make any other examination of records, inquiry or findings including th
 (b) until the collective agreement ceases to operate.
 (3) If a council of trade unions is not a party to or bound by a collective agreement, no resolution, bylaw or other action by the constituent trade unions of that council of trade unions to dissolve the council of trade unions, or by a constituent trade union of that council of trade unions to withdraw from the council of trade unions, has effect until the ninetieth day after the day a copy of the resolution, bylaw or other action is delivered to the employer and, in the case of a withdrawal, to the other constituent members and to the council of trade unions.
 Division 6 — Employers' Organizations
-
 
 ## Accreditation of employers' organization
 
@@ -558,7 +510,6 @@ the board may accredit the employers' organization as bargaining agent for the e
 (b) the employer makes the application not less than 9 months before the expiry date of all collective agreements entered into by the employers' organization on the employer's behalf,
 the board must grant the application.
 
-
 ## Employers' organization membership and fees
 
 44   (1) An employers' organization must not
@@ -568,7 +519,6 @@ except for a cause that is in the board's opinion fair and reasonable.
 (2) An employers' organization must not charge or levy initiation fees, dues or assessments that are in the board's opinion unreasonable or discriminatory.
 Part 4 — Collective Bargaining Procedures
 Division 1 — General
-
 
 ## Notice to bargain collectively
 
@@ -590,14 +540,12 @@ whichever occurs first.
 
 (4) This section must not be construed as affecting the right of an employer to suspend, transfer, lay off, discharge or otherwise discipline an employee for proper cause.
 
-
 ## Notice before expiry of agreement
 
 46   (1) Either party to a collective agreement, whether entered into before or after the coming into force of this Code, may at any time within 4 months immediately preceding the expiry of the agreement, by written notice require the other party to commence collective bargaining.
 (2) A copy of the notice given under section 45 and the notice with the endorsement referred to in this section must be sent by registered mail to the associate chair of the Mediation Division within 3 days after notice is given under subsection (1) of this section.
 (3) The endorsement must state where, when and to whom the original notice was given.
 (4) If a notice is not given under subsection (1) by either party 90 days or more before the expiry of the agreement, both parties are deemed to have given notice under this section 90 days before the expiry.
-
 
 ## Collective bargaining
 
@@ -606,13 +554,11 @@ whichever occurs first.
 (b) under section 46, the parties to the collective agreement
 must, within 10 days after the date of the notice, commence to bargain collectively in good faith, and make every reasonable effort to conclude a collective agreement or a renewal or revision of it.
 
-
 ## Parties bound by collective agreement
 
 48   A collective agreement is binding on
 (a) a trade union that has entered into it or on whose behalf a council of trade unions has entered into it, and every employee of an employer who has entered into it and who is included in or affected by the agreement, and
 (b) an employer who has entered into it and on whose behalf an employers' organization authorized by that employer has entered into it.
-
 
 ## Terms of collective agreement to be carried out
 
@@ -625,22 +571,18 @@ by the provisions of the collective agreement.
 (4) Nothing in this section requires or authorizes a person to do anything that conflicts with a requirement of or under this Code.
 (5) If there is any conflict between a provision of a collective agreement and a requirement of or under this Code, the requirement of or under this Code prevails.
 
-
 ## Agreement for less than one year
-
 
 50   (1) Despite anything contained in it, a collective agreement, whether entered into before or after the coming into force of this Code, must, if for a term of less than one year, be deemed to be for a term of one year from the date it came or comes into operation, and must not, except with the minister's consent be terminated by the parties within a period of one year from that date.
 (2) Subject to subsection (4), if a collective agreement is for a term of more than one year, either party may at any time after the agreement has been in operation for 8 months apply to the minister for leave to notify the other party that the agreement will be terminated on its next anniversary date.
 (3) If the minister consents to the application under subsection (2) and the notice to terminate is served on the other party at least 3 months before the date on which the agreement is to be terminated, the agreement is terminated on that date.
 (4) At the time of making a collective agreement for more than a year, the parties may, in the agreement, specifically exclude the operation of subsections (2) and (3), and in that event subsections (2) and (3) do not apply to the agreement.
 
-
 ## Copies of collective agreements to be filed
 
 51   (1) Each of the parties to a collective agreement must, within 30 days after its execution, file a copy of it with the board.
 (2) Subsection (1) applies in relation to any renewal or revision of a collective agreement and any ancillary agreement that comes within the meaning of collective agreement.
 (3) If a collective agreement is not filed with the board in accordance with subsection (1), the board may decline to consider the collective agreement in any proceeding before the board.
-
 
 ## Extraprovincial companies
 
@@ -651,7 +593,6 @@ by the provisions of the collective agreement.
 (3) If the minister believes that no appointment has been made as required by subsection (1), the minister may make the appointment and notify the company and the trade union, and that appointment is as binding on the company as if the person were appointed by the company.
 Division 2 — Joint Consultation and Adjustment Plans
 
-
 ## Joint consultation
 
 53   (1) A collective agreement must contain a provision requiring a consultation committee to be established if a party makes a written request for one after the notice to commence collective bargaining is given or after the parties begin collective bargaining.
@@ -661,7 +602,6 @@ Division 2 — Joint Consultation and Adjustment Plans
 On the request of either party, the parties must meet at least once every 2 months until this agreement is terminated, for the purpose of discussing issues relating to the workplace that affect the parties or any employee bound by this agreement.
 (4) The purpose of the consultation committee is to promote the cooperative resolution of workplace issues, to respond and adapt to changes in the economy, to foster the development of work related skills and to promote workplace productivity.
 (5) The associate chair of the Mediation Division must on the request of either party appoint a facilitator to assist in developing a more cooperative relationship between the parties.
-
 
 ## Adjustment plan
 
@@ -684,7 +624,6 @@ On the request of either party, the parties must meet at least once every 2 mon
 (3) Subsections (1), (2) and (2.5) do not apply to the termination of the employment of employees exempted by section 65 of the [Employment Standards Act](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96113_01) from the application of section 64 of that Act.
 Division 3 — First Collective Agreement
 
-
 ## First collective agreement
 
 55   (1) If a trade union certified as bargaining agent and an employer have bargained collectively to conclude their first collective agreement and have failed to do so, either party may apply to the associate chair of the Mediation Division for the appointment of a mediator to assist the parties in negotiating a first collective agreement.
@@ -705,12 +644,10 @@ Division 3 — First Collective Agreement
 (8) If the associate chair directs a method set out in subsection (6) (b) (i) or (ii), the parties must refrain from or cease any strike or lockout activity, and the terms of the collective agreement recommended or concluded under that subsection are binding on the parties.
 Part 4.1
 
-
 ## Repealed
 
 55.1-55.26   [Repealed 2001-33-10.]
 Part 5 — Strikes, Lockouts and Picketing
-
 
 ## Definition
 
@@ -718,18 +655,15 @@ Part 5 — Strikes, Lockouts and Picketing
 (a) is imminently subject to spoilage, or
 (b) may imminently become dangerous to life, health or other property.
 
-
 ## Strikes and lockouts prohibited during term of collective agreement
 
 57   (1) An employee bound by a collective agreement entered into before or after the coming into force of this Code must not strike during the term of the collective agreement, and a person must not declare or authorize a strike of those employees during that term.
 (2) An employer bound by a collective agreement entered into before or after the coming into force of this Code must not during the term of the collective agreement lock out an employee bound by the collective agreement.
 
-
 ## Honouring of agreement
 
 58   Every collective agreement must provide that there will be no strikes or lockouts so long as the agreement continues to operate and, if a collective agreement does not contain such a provision, it is deemed to contain the following provision:
 There must be no strikes or lockouts so long as this agreement continues to operate.
-
 
 ## Strikes and lockouts prohibited before bargaining and vote
 
@@ -741,7 +675,6 @@ There must be no strikes or lockouts so long as this agreement continues to oper
 (b) in the case of an employer, either
 (i) section 61 has been complied with, or
 (ii) a lawful strike has occurred and has not been discontinued for a period longer than 72 hours.
-
 
 ## Pre-strike vote and notice
 
@@ -765,7 +698,6 @@ There must be no strikes or lockouts so long as this agreement continues to oper
 (b) may specify terms it considers necessary or advisable.
 (6) If facilities, productions or services have been designated as essential services under Part 6 and a strike that affects those facilities, productions or services does not occur on the expiry of the 72 hour period referred to in subsection (3) (b) (iii) or the longer period specified under subsection (5), the trade union must give to the employer and to the board a new strike notice of at least 72 hours before commencing a strike.
 
-
 ## Pre-lockout vote and notice
 
 61   (1) If 2 or more employers are engaged in the same dispute with their employees, a person must not declare or authorize a lockout and an employer must not lock out the employer's employees until a vote as to whether to lock out has been taken by all the employers in accordance with the regulations, and a majority of those employers who vote have voted for a lockout.
@@ -788,7 +720,6 @@ There must be no strikes or lockouts so long as this agreement continues to oper
 (b) may specify terms it considers necessary or advisable.
 (6) If facilities, productions or services have been designated as essential services under Part 6 and a lockout that affects those facilities, productions or services does not occur on the expiry of the 72 hour period referred to in subsection (3) (b) (iii) or the longer period specified under subsection (5), the employer must give to the board and the trade union a new lockout notice of at least 72 hours before commencing a lockout.
 
-
 ## Continuation of benefits
 
 62   (1) If employees are lawfully on strike or lawfully locked out, their health and welfare benefits, other than pension benefits or contributions, normally provided directly or indirectly by the employer to the employees must be continued if the trade union tenders payment to the employer or to any person who was before the strike or lockout obligated to receive the payment
@@ -800,7 +731,6 @@ There must be no strikes or lockouts so long as this agreement continues to oper
 (b) a person must not deny to an employee a benefit described in that subsection, including coverage under an insurance plan, for which the employee would otherwise be eligible, because the employee is participating in a lawful strike or is lawfully locked out.
 (3) A trade union and an employer may agree in writing to specifically exclude the operation of this section.
 
-
 ## Rights preserved
 
 63   (1) This Code must not be construed to prohibit the suspension or discontinuance by an employer of operations in the employer's establishment, in whole or in part, for a cause not constituting a lockout.
@@ -811,11 +741,9 @@ There must be no strikes or lockouts so long as this agreement continues to oper
 (i) the trade union representing the bargaining unit, or
 (ii) another trade union contemplated by the collective agreement.
 
-
 ## Information
 
 64   A trade union or other person may, at any time and in a manner that does not constitute picketing as defined in this Code, communicate information to a person, or publicly express sympathy or support for a person, as to matters or things affecting or relating to terms or conditions of employment or work done or to be done by that person.
-
 
 ## Picketing
 
@@ -836,7 +764,6 @@ but the board must not permit common site picketing unless it also makes an orde
 (7) If the picketing referred to in subsection (6) is common site picketing, the board must restrict the picketing in such a manner that it affects only the operation of the employer causing the lockout or whose employees are lawfully on strike, or an operation of an ally of that employer, unless it is not possible to do so without prohibiting picketing that is permitted by subsection (3) or (4), in which case the board may regulate the picketing as it considers appropriate.
 (8) For the purpose of this section, divisions or other parts of a corporation or firm, if they are separate and distinct operations, must be treated as separate employers.
 
-
 ## Actions
 
 66   No action or proceeding may be brought for
@@ -845,11 +772,9 @@ but the board must not permit common site picketing unless it also makes an orde
 (c) interference with the trade, business or employment of another person resulting in a reduction in trade or business, impairment of business opportunity or other economic loss
 arising out of strikes, lockouts or picketing permitted under this Code or attempts to persuade employees to join a trade union made at or near but outside entrances and exits to an employer's workplace.
 
-
 ## Picketing restricted
 
 67   Except as provided in this Code, a person must not picket in respect of a matter or dispute to which this Code applies.
-
 
 ## Replacement workers
 
@@ -870,11 +795,9 @@ to perform
 (d) intimidate or coerce or impose a pecuniary or other penalty on a person,
 because of the person's refusal to perform any or all of the work of an employee in the bargaining unit that is on strike or locked out.
 
-
 ## Other acts not actionable
 
 69   An act done by 2 or more persons acting by agreement or combination, if done in contemplation or furtherance of a labour dispute, is not actionable unless it would be wrongful without an agreement or combination.
-
 
 ## Declaratory opinion
 
@@ -888,12 +811,10 @@ because of the person's refusal to perform any or all of the work of an employee
 
 (b) the intent and purpose of this Part and the necessity for reasonable protection and advancement of a trade union or employer.
 
-
 ## Refusal of order
 
 71   The board may refuse to make an order under Part 9 in respect of a matter arising under this Part if it believes it is just and equitable to do so in view of the improper conduct of the person applying for the order.
 Part 6 — Essential Services
-
 
 ## Essential services
 
@@ -915,7 +836,6 @@ considers that a dispute poses a threat to the health, safety or welfare of the 
 (8) If the board designates facilities, productions and services as essential services, the employer and the trade union must supply, provide or maintain in full measure those facilities, productions and services and must not restrict or limit a facility, production or service so designated.
 (9) A designation made under this section may be amended, varied or revoked and another made in its place, and despite section 135 the board may, in its discretion, on application or on its own motion, decline to file its order in a Supreme Court registry.
 
-
 ## Return to work
 
 73   (1) Every employer, trade union or employee affected by a direction or designation made under section 72 with respect to the dispute must comply with the direction or designation.
@@ -923,7 +843,6 @@ considers that a dispute poses a threat to the health, safety or welfare of the 
 (3) The board may under section 72 designate facilities, productions and services supplied, provided or maintained by employees of the employer who are represented by another trade union that is not involved in a collective bargaining dispute with the employer.
 Part 7 — Mediation and Disputes Resolution
 Division 1 — Mediation and Fact Finding
-
 
 ## Mediation officer and services
 
@@ -937,13 +856,11 @@ Division 1 — Mediation and Fact Finding
 (5) If either party so requests of the associate chair, or if the minister so directs, the mediation officer must provide to the associate chair and the parties a report concerning the collective bargaining dispute, and the report may include recommended terms of settlement.
 (6) Parties conferring with a mediation officer under this section must provide the information that the mediation officer requests concerning their collective bargaining.
 
-
 ## Notice of strike or lockout
 
 75   (1) If a strike or lockout has commenced, the trade union or employer commencing the strike or lockout must immediately inform the chair in writing specifying the date the strike or lockout commenced.
 
 (2) The chair must inform the minister of strikes and lockouts that occur or are threatened.
-
 
 ## Special mediator
 
@@ -951,7 +868,6 @@ Division 1 — Mediation and Fact Finding
 (2) The minister may terminate the appointment of a special mediator.
 (3) The special mediator must keep the minister informed as to the progress of the mediation.
 (4) The special mediator, in carrying out the special mediator's duties under this Code, has the powers and protection set out in sections 145.1 to 145.4.
-
 
 ## Fact finding
 
@@ -961,7 +877,6 @@ Division 1 — Mediation and Fact Finding
 (4) It is the duty of a fact finder to confer with the parties and to inquire into, ascertain and make a report to the associate chair setting out the matters agreed on by the parties for inclusion in a collective agreement and the matters remaining in dispute between the parties.
 (5) The fact finder may include in a report any findings made by the fact finder in respect of any matter that the fact finder considers relevant to the making of a collective agreement between the parties.
 (6) The associate chair must provide a copy of the fact finder's report to the parties, and may make it public if the associate chair considers it advisable to do so.
-
 
 ## Last offer votes
 
@@ -975,7 +890,6 @@ Division 1 — Mediation and Fact Finding
 (7) If, during a strike or lockout, more than one employer is represented in the dispute by an employers' organization and the minister considers that it is in the public interest that the employers comprising the employers' organization be given the opportunity to accept or reject the offer of the bargaining agent for the employees last received by the employers' organization in respect of all matters remaining in dispute between the parties, the minister may direct that a vote of those employers to accept or reject the offer be held forthwith in a manner the minister directs.
 Division 2 — Commissions and Councils
 
-
 ## Industrial inquiry commission
 
 79   (1) The minister may, on application or on the minister's own motion, make or cause to be made inquiries considered advisable respecting labour relations matters, and subject to this Code and regulations, may do the things the minister considers necessary to maintain or secure labour relations stability and promote conditions favourable to settlement of disputes.
@@ -988,7 +902,6 @@ Division 2 — Commissions and Councils
 
 (8) If either before or after the report is made the parties agree in writing to accept the report in respect of the matters referred to the industrial inquiry commission, the parties are bound by the report in respect of those matters.
 
-
 ## Industry councils
 
 80   (1) On application by an employer, a trade union or the board, or on the minister's own motion, the minister may direct the board to assist the parties to establish an industry council.
@@ -999,7 +912,6 @@ Division 2 — Commissions and Councils
 (d) make recommendations considered necessary to advance the industry.
 Part 8 — Arbitration Procedures
 Division 1 — Definitions and Purpose
-
 
 ## Definitions
 
@@ -1012,13 +924,11 @@ Division 1 — Definitions and Purpose
 "issue" means, in respect of an award, to make and publish the award to the parties to the arbitration;
 "settlement officer" means an employee appointed under the [Public Service Act](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96385_01) who is appointed as a settlement officer by the director.
 
-
 ## Purpose of Part
 
 82   (1) It is the purpose of this Part to constitute methods and procedures for determining grievances and resolving disputes under the provisions of a collective agreement without resort to stoppages of work.
 (2) An arbitration board, to further the purpose expressed in subsection (1), must have regard to the real substance of the matters in dispute and the respective merit of the positions of the parties to it under the terms of the collective agreement, and must apply principles consistent with the industrial relations policy of this Code, and is not bound by a strict legal interpretation of the issue in dispute.
 Division 2 — Collective Agreement Arbitration Bureau
-
 
 ## Collective Agreement Arbitration Bureau
 
@@ -1036,7 +946,6 @@ Division 2 — Collective Agreement Arbitration Bureau
 (c) the establishment and maintenance of a register of arbitrators.
 Division 3 — Collective Agreement Provisions
 
-
 ## Dismissal or arbitration provision
 
 84   (1) Every collective agreement must contain a provision governing dismissal or discipline of an employee bound by the agreement, and that or another provision must require that the employer have a just and reasonable cause for dismissal or discipline of an employee, but this section does not prohibit the parties to a collective agreement from including in it a different provision for employment of certain employees on a probationary basis.
@@ -1045,19 +954,15 @@ Division 3 — Collective Agreement Provisions
 (a) the employer must not dismiss or discipline an employee bound by this agreement except for just and reasonable cause;
 (b) if a difference arises between the parties relating to the dismissal or discipline of an employee, or to the interpretation, application, operation or alleged violation of this agreement, including a question as to whether a matter is arbitrable, either of the parties, without stoppage of work, may, after exhausting any grievance procedure established by this agreement, notify the other party in writing of its desire to submit the difference to arbitration, and the parties must agree on a single arbitrator, the arbitrator must hear and determine the difference and issue a decision, which is final and binding on the parties and any person affected by it.
 
-
 ## Unworkable provision
 
 85   (1) If in the minister's opinion a part of the arbitration provision in a collective agreement, including the method of appointing the arbitration board, is inadequate, or the provision set out in section 84 (3) (b) is alleged by either party to be unsuitable, the minister may at the request of either party modify the provision so long as it conforms with section 84 (1) and (2).
 (2) Until modified under subsection (1), the arbitration provision in the collective agreement, or in section 84 (3) (b), as the case may be, applies.
 
-
 ## Failure to appoint arbitration board
-
 
 86   (1) Despite section 85, if there is a failure to appoint or constitute an arbitration board under a collective agreement or under section 84 (3), the director, at the request of either party, must make the appointments necessary to constitute an arbitration board, and a person so appointed by the director is deemed to be appointed in accordance with the collective agreement, or under section 84 (3), as the case may be.
 (2) Nothing in a collective agreement is to be construed as requiring the director to constitute an arbitration board consisting of more than a single arbitrator.
-
 
 ## Settlement officer
 
@@ -1068,13 +973,11 @@ Division 3 — Collective Agreement Provisions
 (c) report to the director on the results of the inquiry and the success of the settlement effort.
 (3) When the director receives a report under subsection (2) and the parties have not settled the difference, the director may refer the difference back to the parties.
 
-
 ## Action by Labour Relations Board
 
 88   If a difference arises during the term of a collective agreement, and in the board's opinion delay has occurred in settling it or it is a source of industrial unrest between the parties, the board may, on application by either party to the difference, or on its own motion,
 (a) inquire into the difference and make recommendations for settlement, and
 (b) if the difference is arbitrable, order that it be immediately submitted to a specified stage or step in the grievance procedure under the collective agreement or, whether or not the difference is arbitrable, request the minister to appoint a special officer.
-
 
 ## Case management conference
 
@@ -1082,7 +985,6 @@ Division 3 — Collective Agreement Provisions
 (a) schedule the exchange of information and documents,
 (b) schedule hearing dates, and
 (c) encourage settlement of the dispute.
-
 
 ## Authority of arbitration board
 
@@ -1097,7 +999,6 @@ Division 3 — Collective Agreement Provisions
 (g) interpret and apply any Act intended to regulate the employment relationship of the persons bound by a collective agreement, even though the Act's provisions conflict with the terms of the collective agreement, and
 (h) encourage settlement of the dispute and, with the agreement of the parties, the arbitration board may use mediation, conciliation or other procedures at any time during the arbitral proceedings to encourage settlement.
 
-
 ## Fees and costs
 
 90   (1) Unless the provision required under section 84 or 85 provides otherwise, each party to an arbitration under section 84, 85, 104 or 105 must bear
@@ -1107,11 +1008,9 @@ Division 3 — Collective Agreement Provisions
 (2) If the director appoints a single arbitrator or the chair of an arbitration board under section 86, each party must pay 1/2 the remuneration and expenses of the person appointed, unless the arbitration board allows another person to participate in the hearing in which case the arbitration board may direct that a portion of the fees and expenses of the chair be borne by that person.
 (3) If the director appoints a member of an arbitration board under section 86 on the failure of one of the parties to make the appointment, that party must pay the remuneration and expenses of the person appointed.
 
-
 ## Delay by arbitration board
 
 91   If a difference has been submitted to arbitration and a party to the arbitration complains to the minister that the arbitration board has failed to render a decision in a reasonable time, the minister may, after consulting the parties and the arbitration board, issue an order the minister considers necessary to ensure a decision will be rendered without further undue delay.
-
 
 ## Powers of arbitration board
 
@@ -1128,17 +1027,14 @@ and may inspect any work, material, appliance, machinery, equipment or thing in 
 (e) authorize a person to do anything the arbitration board may do under paragraph (d) and report to the arbitration board in the presence of the parties or their representatives as a witness subject to cross examination by each party.
 (2) The jurisdiction of an arbitration board to hear and determine a difference does not cease until the matters in dispute have been finally resolved.
 
-
 ## Summons to testify
 
 93   (1) An arbitration board may, at the request of a party to the arbitration or on its own motion, summon and enforce the attendance of witnesses and compel them to give oral or written evidence on oath and to produce the documents and things it considers requisite to a full consideration of matters before the arbitration board, in the same manner as a court of record in civil cases.
 (2) If an arbitration board consists of more than one person, the chair of the arbitration board may exercise all the authority of the arbitration board under subsection (1).
 
-
 ## Decision of arbitration board
 
 94   If a collective agreement provides for submission of a difference to an arbitration board consisting of more than one arbitrator, the decision of a majority of the arbitrators is the decision of the arbitration board, but if there is no majority decision, the decision of the chair of the arbitration board is the decision of the arbitration board.
-
 
 ## Effect of decision
 
@@ -1149,22 +1045,17 @@ and may inspect any work, material, appliance, machinery, equipment or thing in 
 (d) on the employees who are bound by the collective agreement and who are affected by the decision,
 and they must comply in all respects with the decision.
 
-
 ## Filing decision
 
 96   An arbitration board must, within 10 days of issuing an award, file a copy of it with the director who must make the award available for public inspection.
-
 
 ## Act not to apply
 
 97   The [Arbitration Act](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/20002) does not apply to an arbitration under this Code.
 
-
 ## Reference to Labour Relations Board
 
-
 98   An arbitration board may, at any stage of an arbitration, refer to the board for a binding opinion and decision a question of labour relations policy or interpretation of this Code arising in the course of the arbitration.
-
 
 ## Appeal jurisdiction of Labour Relations Board
 
@@ -1173,30 +1064,25 @@ and they must comply in all respects with the decision.
 (b) the decision or award of the arbitration board is inconsistent with the principles expressed or implied in this Code or another Act dealing with labour relations.
 (2) An application to the board under subsection (1) must be made in accordance with the regulations.
 
-
 ## Appeal jurisdiction of Court of Appeal
 
 100   On application by a party affected by a decision or award of an arbitration board, the Court of Appeal may review the decision or award if the basis of the decision or award is a matter or issue of the general law
 (a) unrelated to a collective agreement, labour relations or related determinations of fact, and
 (b) not included in section 99 (1).
 
-
 ## Decision final
 
 101   Except as provided in this Part, the decision or award of an arbitration board under this Code is final and conclusive and is not open to question or review in a court on any grounds whatsoever, and proceedings by or before an arbitration board must not be restrained by injunction, prohibition or other process or proceeding in a court and are not removable by certiorari or otherwise into a court.
-
 
 ## Enforcement
 
 102   (1) If a party or a person has failed or neglected to comply with the decision of an arbitration board, a party or person affected by the decision may, after the expiration of 14 days from the date of the release of the decision or the date provided in the decision for compliance, whichever is later, file in the Supreme Court registry a copy of the decision in the prescribed form.
 (2) A decision filed under subsection (1) must be entered as if it were a decision of the court, and on being entered is deemed, for all purposes except an appeal from it, to be an order of the Supreme Court and enforceable as an order of the court.
 
-
 ## Repealed
 
 103   [Repealed 1997-27-24.]
 Division 4 — Expedited Arbitration
-
 
 ## Expedited arbitration
 
@@ -1238,7 +1124,6 @@ Division 4 — Expedited Arbitration
 (9) This section applies to every party to a collective agreement and every person bound by a collective agreement, despite any provision in the collective agreement.
 (10) The other provisions of this Part apply to an arbitration under this section, with the modifications necessary to accommodate appointments and expedited processes under this section.
 
-
 ## Consensual mediation-arbitration
 
 105   (1) Despite any grievance or arbitration provision in a collective agreement or deemed to be included in a collective agreement under section 84 (3), the parties to the collective agreement may, at any time, agree to refer one or more grievances under the collective agreement to a single mediator-arbitrator for the purpose of resolving the grievances in an expeditious and informal manner.
@@ -1253,9 +1138,7 @@ Division 4 — Expedited Arbitration
 (10) Sections 89 to 102 apply in respect of a mediator-arbitrator and a settlement, determination or decision under this section.
 Division 5 — Special Officer
 
-
 ## Special officer
-
 
 106   (1) If during the term of a collective agreement there is or is a likelihood of a dispute or difference arising out of or relating to the agreement, the minister may in the interest of industrial peace appoint a special officer.
 (2) On the special officer's appointment, the special officer must investigate the dispute or difference and may
@@ -1265,16 +1148,13 @@ Division 5 — Special Officer
 (d) make orders the special officer considers necessary or advisable, including, without limitation, orders that the dispute or difference be submitted to a specified stage or step in the grievance procedure under the collective agreement, or
 (e) arbitrate the dispute or difference.
 
-
 ## Effect of order
 
 107   An order made by a special officer is binding on all persons bound by the collective agreement and all parties to the dispute or difference.
 
-
 ## Interim order
 
 108   When a special officer makes an order on a matter not provided for by the collective agreement, or which differs from the provisions of the collective agreement, the order is binding on the parties to the dispute or difference for a period not exceeding 30 days.
-
 
 ## Powers
 
@@ -1284,18 +1164,15 @@ Division 5 — Special Officer
 (c) anything is taking place or has taken place concerning a matter referred to the special officer under this Code,
 and may inspect any work, material, appliance, machinery, equipment or thing in it, or interrogate any person in relation to it.
 
-
 ## Evidence
 
 110   For the purpose of a hearing, a special officer
 (a) may receive and accept the evidence and information on oath, affidavit or otherwise that, in the special officer's discretion, the special officer considers advisable, whether or not admissible as evidence in a court of law, and
 (b) must determine the special officer's own procedure, but must give an opportunity to an interested party to present evidence and make representations.
 
-
 ## Frequency of appointment
 
 111   The minister may not appoint a special officer more than twice in connection with the same dispute or difference.
-
 
 ## Form of order
 
@@ -1304,23 +1181,19 @@ and may inspect any work, material, appliance, machinery, equipment or thing in 
 (a) deliver a copy of the special officer's order to the board, the employer and the trade union, and
 (b) take reasonable steps to communicate the provisions of the special officer's order to persons bound or affected by it.
 
-
 ## Notice of appointment to be sent to board
 
 113   The minister must send to the board a copy of every appointment of a special officer under section 106.
-
 
 ## Other provisions to apply
 
 114   The other provisions in this Part apply to matters arising under this Division.
 Part 9 — Labour Relations Board
 
-
 ## Labour Relations Board
 
 115   (1) The Labour Relations Board is continued consisting of a chair, vice chairs and as many members equal in number representative of employers and employees, respectively, as the Lieutenant Governor in Council considers proper, all of whom are to be appointed by the Lieutenant Governor in Council after a merit-based process.
 (2) For the purposes of subsection (1), the chair must be consulted before the appointment of vice chairs and members.
-
 
 ## Application of Administrative Tribunals Act
 
@@ -1343,7 +1216,6 @@ Part 9 — Labour Relations Board
 (p) section 60 (1) (g) to (i) and (2) [power to make regulations];
 (q) section 61 [application of Freedom of Information and Protection of Privacy Act].
 
-
 ## Divisions and officers of the Labour Relations Board
 
 116   (1) There are to be 2 divisions of the board called the Mediation Division and the Adjudication Division.
@@ -1351,7 +1223,6 @@ Part 9 — Labour Relations Board
 
 (3) If the associate chair of a division is absent or unable to act, or the office of an associate chair is vacant, the chair may act as associate chair or may assign a vice chair to act.
 (4) The chair may change an assignment or designation under this section.
-
 
 ## Panels
 
@@ -1368,24 +1239,20 @@ Part 9 — Labour Relations Board
 (f) the chair or a vice chair, and members, equal in number, representative of employers and employees respectively.
 (6) The chair may terminate an appointment to a panel and may fill any vacancy on a panel.
 
-
 ## Quorum
 
 118   (1) The board or a panel of the board must not proceed with a matter unless a quorum is present and remains present throughout the proceeding.
 (2) A quorum of the board consists of the chair or a vice chair, and members, equal in number, representative of employers and employees respectively.
 (3) A quorum of a panel consists of the chair or the vice chair, if appointed under section 117 (5) (a), or all members of the panel, including the chair or vice chair.
 
-
 ## Proceedings
 
 119   (1) The chair must preside at proceedings of the board and of all panels of which the chair is a member, and a vice chair must preside over all other panels.
 (2) The decision of a majority of the members of the board or of a panel present at a proceeding is the decision of the board or panel, but if there is no majority, the decision of the chair or presiding vice chair governs.
 
-
 ## Question of law
 
 120   The chair may establish a panel to which the board or another panel may refer a question of law respecting the interpretation of this Code, and its ruling is binding on the board or on the other panel.
-
 
 ## Delegation
 
@@ -1393,25 +1260,21 @@ Part 9 — Labour Relations Board
 
 (2) The chair may delegate to the associate chairs, the registrar or one or more of the other members a power, duty or function of the board or of the director, except the power under section 128 (2).
 
-
 ## Employees of the board
 
 122   (1) The board may, despite the [Public Service Act](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96385_01), employ a secretary and other officers and employees it considers necessary for the purposes of this Code, and may determine their duties, conditions of employment and remuneration.
 (2) This Code and the [Public Service Labour Relations Act](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96388_01) do not apply to the members of the board or the secretary, or the officers and employees of the board.
 (3) The chair must designate an employee employed under subsection (1) as the information officer to advise the public with respect to this Code and its application to labour relations in British Columbia.
 
-
 ## Repealed
 
 123   [Repealed 2004-45-110.]
-
 
 ## Display or provision of information
 
 123.1   (1) The board must make available to the public information about rights and obligations under this Code.
 (2) The board may direct an employer to display in the workplace, or make available or provide to employees, information about rights and obligations under this Code.
 (3) The information displayed, made available or provided under subsection (2) must be in the form provided or approved by the board.
-
 
 ## Evidence
 
@@ -1420,11 +1283,9 @@ Part 9 — Labour Relations Board
 (3) Information relating to membership or any record that may disclose whether a person is or is not a member of a trade union produced in a proceeding before the board is for the exclusive use of the board and its representatives.
 (4) Except with the consent of the board, a person must not disclose whether a person is or is not a member of a trade union.
 
-
 ## Summons and discovery of documents
 
 125   On the recommendation of an officer appointed under section 14, 87 or 104 (4) (c), or on its own motion, the board may summon and enforce the attendance of witnesses and compel them to give oral or written evidence on oath and to produce the documents and things the officer or the board considers necessary to a full investigation and consideration of matters within the board's jurisdiction in the same manner as a court of record in civil cases.
-
 
 ## Practice and procedure
 
@@ -1432,12 +1293,10 @@ Part 9 — Labour Relations Board
 
 (2) The board, subject to the minister's approval, may make rules governing its practice and procedure and the exercise of its powers and establish forms it considers advisable.
 
-
 ## Offices of the board
 
 127   (1) The principal office of the board must be at or near Vancouver, and the board and panels of the board must sit at the places the chair decides.
 (2) Documents may be filed with the board at its principal office or at other offices throughout British Columbia designated for that purpose by the chair.
-
 
 ## Timing and publication of decisions
 
@@ -1449,24 +1308,20 @@ Part 9 — Labour Relations Board
 (b) in other circumstances that the chair considers exceptional.
 (3) The board must make all its decisions in proceedings under this Code available in writing for publication.
 
-
 ## Oath of office
 
 129   A member of the board, before acting as a member, must take and sign before a notary public or commissioner for taking affidavits for British Columbia, and file with the minister, an oath or affirmation of office in the following form:
 I, __________________, do solemnly swear (affirm) that I will faithfully, truly and impartially, to the best of my judgment, skill and ability, execute and perform the office of chair (or vice chair or member) of the Labour Relations Board, and will not, except in the discharge of my duties, disclose to any person any of the evidence or other matter brought before the board.
 
-
 ## Repealed
 
 130-131   [Repealed 2003-47-38.]
-
 
 ## General guidelines
 
 132   (1) The board may formulate general guidelines to further the operation of this Code but the board is not bound by those guidelines in the exercise of its powers or the performance of its duties.
 (2) In formulating general guidelines the board may request that submissions be made to it by any person.
 (3) The board must make available in writing for publication all general guidelines formulated under this section, and their amendments and revisions.
-
 
 ## Hearing of complaint
 
@@ -1484,7 +1339,6 @@ I, __________________, do solemnly swear (affirm) that I will faithfully, truly 
 (5) If an application or complaint is made under this section or the minister makes a direction under Part 6 the board may, in its discretion, after giving each party to the matter an opportunity to be heard, make an interim order or designation pending a final resolution of the application or complaint under this section or a designation under Part 6.
 (6) If the board is satisfied in any proceedings under this Code that a mistake has been made in naming or not naming a person as a party to the proceeding the board may direct that the name of the person be substituted, added or deleted as a party to the proceeding.
 
-
 ## Conditions and undertakings
 
 134   (1) If the board makes or may make a designation, decision or order under this Code, it may require, at any time before or after or both before and after the making of the designation, decision or order, that
@@ -1493,13 +1347,11 @@ I, __________________, do solemnly swear (affirm) that I will faithfully, truly 
 
 (2) A breach of an undertaking or a refusal or neglect to observe or perform a condition specified by the board under subsection (1) is a contravention of this Code.
 
-
 ## Filing order in Supreme Court
 
 135   (1) The board must on request by any party or may on its own motion file in a Supreme Court registry at any time a copy of a decision or order made by the board under this Code or a collective agreement.
 (2) The decision or order must be filed as if it were an order of the court, and on being filed it is deemed for all purposes except appeal from it to be an order of the Supreme Court and enforceable as such.
 (3) For the purposes of this section, a designation or direction under Part 6 is deemed to be a decision or order of the board.
-
 
 ## Jurisdiction of board
 
@@ -1511,7 +1363,6 @@ I, __________________, do solemnly swear (affirm) that I will faithfully, truly 
 (ii) picketing, striking or locking out, or
 (iii) communicating information or opinion in a labour dispute by speech, writing or other means.
 
-
 ## Jurisdiction of court
 
 137   (1) Except as provided in this section, a court does not have and must not exercise any jurisdiction in respect of a matter that is, or may be, the subject of a complaint under section 133 or a matter referred to in section 136, and, without limitation, a court must not make an order enjoining or prohibiting an act or thing in respect of them.
@@ -1519,12 +1370,9 @@ I, __________________, do solemnly swear (affirm) that I will faithfully, truly 
 (3) Despite this Code or any other Act, a court must not, on an application made without notice to any other person, order an injunction to restrain a person from striking, locking out or picketing, or from doing an act or thing in respect of a strike, lockout, dispute or difference arising from or relating to a collective agreement.
 (4) A court of competent jurisdiction may award damages for injury or losses suffered as a consequence of conduct contravening Part 5 if the board has first determined that there has been a contravention of Part 5.
 
-
 ## Finality of decisions and orders
 
-
 138   A decision or order of the board under this Code or a collective agreement on a matter in respect of which the board has jurisdiction is final and conclusive and is not open to question or review in a court on any grounds.
-
 
 ## Jurisdiction of board to decide certain questions
 
@@ -1552,7 +1400,6 @@ I, __________________, do solemnly swear (affirm) that I will faithfully, truly 
 (u) a person is a professional,
 (v) a person exercises technical or professional skills, and
 (w) an activity constitutes a strike, lockout or picketing.
-
 
 ## General powers of board
 
@@ -1583,7 +1430,6 @@ and may inspect any work, material, appliance, machinery, equipment or thing in 
 (m) amend or permit amendment of a document filed in the proceeding, and
 (n) add a party to the proceeding at any stage.
 
-
 ## Reconsideration of decisions
 
 141   (1) On application by any party affected by a decision of the board, the board may grant leave to that party to apply for reconsideration of the decision.
@@ -1601,22 +1447,18 @@ whichever is longer.
 (7) On reconsideration under this section the board may vary or cancel the decision that is the subject of reconsideration or may remit the matter to the original panel.
 (8) An application under this section must be made in accordance with the regulations.
 
-
 ## Variation and continuation of certification or accreditation
 
 142   The board, on application by any party or on its own motion, may vary or cancel the certification of a trade union or the accreditation of an employers' organization.
-
 
 ## Declaratory opinion
 
 143   The board, on application by an employer or trade union, or on its own motion, may give a declaratory opinion on a matter arising under this Code if it considers it appropriate to do so.
 Part 10 — Miscellaneous
 
-
 ## Powers of minister
 
 144   For the purpose of obtaining information to which the minister is entitled under this Code, the minister or a person designated by the minister has the powers, privileges and protection of a commission under sections 22 (1), 23 (a), (b) and (d) and 32 of the [Public Inquiry Act](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/07009_01).
-
 
 ## Power to enter and inspect
 
@@ -1625,7 +1467,6 @@ Part 10 — Miscellaneous
 (b) an employer carries on business, or
 (c) anything is taking place or has taken place concerning a matter referred to the minister under this Code,
 and may inspect any work, material, appliance, machinery, equipment or thing in it, or interrogate any person in relation to it.
-
 
 ## Power to compel persons to answer questions and order disclosure
 
@@ -1637,7 +1478,6 @@ and may inspect any work, material, appliance, machinery, equipment or thing in 
 (a) directing a person to comply with an order made under subsection (1), or
 (b) directing any directors and officers of a person to cause the person to comply with an order made under subsection (1).
 
-
 ## Maintenance of order at hearings
 
 145.2   (1) At an oral hearing, a special mediator appointed under section 76, an industrial inquiry commission appointed under section 79 or a special officer may make orders or give directions as necessary for the maintenance of order at the hearing, and, if any person disobeys or fails to comply with any order or direction, the special mediator, industrial inquiry commission or special officer who made the order or gave the direction may call on the assistance of any peace officer to enforce the order or direction.
@@ -1645,7 +1485,6 @@ and may inspect any work, material, appliance, machinery, equipment or thing in 
 (3) Without limiting subsection (1), the special mediator, industrial inquiry commission or special officer, by order, may
 (a) impose restrictions on a person's continued participation in or attendance at a hearing, and
 (b) exclude a person from further participation in or attendance at a hearing until the special mediator, industrial inquiry commission or special officer, as applicable, orders otherwise.
-
 
 ## Contempt proceeding for uncooperative person
 
@@ -1657,15 +1496,12 @@ and may inspect any work, material, appliance, machinery, equipment or thing in 
 (2) The failure or refusal of a person subject to an order or direction under section 145.2 to comply with the order or direction makes the person, on application to the Supreme Court by the special mediator, industrial inquiry commission or special officer referred to in that section, liable to be committed for contempt as if in breach of an order or judgment of the Supreme Court.
 (3) Subsections (1) and (2) do not limit the conduct for which a finding of contempt may be made by the Supreme Court.
 
-
 ## Immunity protection
-
 
 145.4   (1) Subject to subsection (2), no legal proceeding for damages lies or may be commenced or maintained against the special mediator, the industrial inquiry commission, a member of the industrial inquiry commission or the special officer referred to in section 145.1, or a person acting on behalf of or under the direction of any of these, because of anything done or omitted
 (a) in the performance or intended performance of any duty under this Code, or
 (b) in the exercise or intended exercise of any power under this Code.
 (2) Subsection (1) does not apply to a person referred to in that subsection in relation to anything done or omitted by that person in bad faith.
-
 
 ## Information confidential
 
@@ -1673,11 +1509,9 @@ and may inspect any work, material, appliance, machinery, equipment or thing in 
 (2) If information relates to the business or affairs of any person, whether or not a party to a dispute, difference or other reference, the minister, if the minister believes disclosure of the information would be prejudicial to the person, may direct that the information must not be made public or that it be made public in the manner the minister directs.
 (3) Information obtained for the purpose of this Code in the course of their duties by a member of the board, an industrial inquiry commission or other tribunal under this Code, a special officer, a mediator or other person appointed under this Code, an employee of any of them or an employee under the administration of the minister is not open to inspection by a person or a court, and the member, special officer, mediator or other person appointed under this Code or employee must not be required by a court or tribunal to give evidence relative to it.
 
-
 ## Payment of members of tribunals
 
 147   A person appointed by the minister or the chair as a member of an industrial inquiry commission, committee of special advisors or other tribunal established under this Code, or as a special officer, special mediator or fact finder must be reimbursed for reasonable travelling and out of pocket expenses incurred by the person, and may be paid remuneration the minister determines for each day's attendance in carrying out the person's duties under this Code.
-
 
 ## Execution of documents
 
@@ -1687,9 +1521,7 @@ and may inspect any work, material, appliance, machinery, equipment or thing in 
 (c) by a corporation, by one of its authorized managers or by one or more of its principal executive officers, and
 (d) by a trade union, by its president and secretary, by any 2 of its officers or by a person authorized by resolution passed at a meeting of the trade union.
 
-
 ## Board may require returns
-
 
 149   (1) The board may direct a trade union or employers' organization that is a party to an application for certification or to an existing collective agreement to file with the board
 (a) a signed statement of its president, secretary or another official stating the names and addresses of its officers, and
@@ -1699,12 +1531,10 @@ and the trade union or employers' organization must comply with the direction wi
 (a) a signed statement of the president, secretary or another official stating the names and addresses of any of the employer's directors and principal administrative officers, and
 (b) a description of the nature of the employer's business and the location of the employer's business or operations.
 
-
 ## Trusteeship over local unions
 
 150   (1) A provincial, national or international trade union that assumes supervision or control over a subordinate trade union, whereby the autonomy of the subordinate trade union under the constitution or bylaws of the provincial, national or international trade union is suspended, must, within 60 days after it has assumed supervision or control over the subordinate trade union, file with the board a signed statement of its principal officers, setting out the terms under which supervision or control is to be exercised and it must, on the direction of the board, file such additional information concerning such supervision and control as the chair requires.
 (2) If a provincial, national or international trade union has assumed supervision or control over a subordinate trade union, that supervision or control must not continue for more than 12 months from the date of the assumption without the consent of the board.
-
 
 ## Financial statements
 
@@ -1713,33 +1543,27 @@ and the trade union or employers' organization must comply with the direction wi
 (3) The board, on the complaint of a member that the trade union or employers' organization has failed to comply with subsection (1), may order the trade union or employers' organization to file with the board, in the time set out in the order, a statement in a form and with particulars the board determines.
 (4) The board may order a trade union or employers' organization to furnish a copy of a statement filed under subsection (3) to the members of the trade union or employers' organization that the board in its discretion directs, and the trade union or employers' organization must comply with the order.
 
-
 ## Mailed notice presumed received
 
 152   (1) For the purpose of this Code or a proceeding under it, a notice or other communication sent by mail is presumed to have been received by the addressee in the ordinary course of mail unless the contrary is proved.
 
 (2) Every party to a dispute must give written notice to the minister, the board and the other parties of the address of its principal or other office in British Columbia to which it wishes notices to be sent.
 
-
 ## Service of documents
 
 153   A notice, order or other paper or document required to be served for the purpose of this Code may be served by delivering it to or at the residence of the person on whom it is to be served or, if that person is an employer or a trade union, by delivering it or a true copy of it to the employer's agent or to the trade union's place of business during normal business hours.
-
 
 ## Legal entity
 
 154   Every trade union and every employers' organization is a legal entity for the purposes of this Code.
 
-
 ## Evidentiary effect of documents
 
 155   A document purporting to contain or to be a copy of a regulation, rule, direction, designation, order or other matter of the minister or the board, and purporting to be signed by the minister or a member of the board, must be accepted by a court as proof of the regulation, rule, direction, order or other matter of which it purports to contain or be a copy without proof of the signature of the minister or member of the board or of the appointment of the minister or member.
 
-
 ## Technicalities not to invalidate proceedings
 
 156   A proceeding under this Code or a collective agreement must not be considered invalid because of a defect in form, a technical irregularity or an error of procedure that does not result in a denial of natural justice, and the board, arbitration board, industrial inquiry commission, special officer, court or other tribunal may relieve against those defects, irregularities or errors of procedure on just and reasonable terms.
-
 
 ## Reports
 
@@ -1750,19 +1574,16 @@ and the trade union or employers' organization must comply with the direction wi
 (c) other information the minister directs.
 (3) The report referred to in subsection (2) must be laid before the Legislative Assembly as soon as is practicable.
 
-
 ## Penalty
 
 158   A person who refuses or neglects to observe or carry out an order made under this Code is liable on conviction,
 (a) if an individual, to a fine not exceeding $5 000, or
 (b) if a corporation, trade union or employers' organization, to a fine not exceeding $50 000.
 
-
 ## Offence
 
 158.1   (1) A person who knowingly provides information that is false or misleading with respect to a material fact contained in a signed statement under section 149 or 150 commits an offence.
 (2) A person who produces or relies upon a signed statement given by another person under section 149 or 150 while knowing the signed statement to be false or misleading with respect to a material fact contained in the signed statement commits an offence.
-
 
 ## Lieutenant Governor in Council's power to make regulations
 
@@ -1779,7 +1600,6 @@ and the trade union or employers' organization must comply with the direction wi
 (a) require employers to supply information and records and to allow the use of facilities owned by the employer, and
 (b) prescribe, with respect to ballots used in votes on the question of whether to strike or on the question of whether to lock out, the form in which the question on the ballots is to be worded.
 
-
 ## Minister's power to make regulations
 
 159.1   The minister may make regulations
@@ -1789,7 +1609,6 @@ and the trade union or employers' organization must comply with the direction wi
 (iii) any other basis the minister considers reasonable, and
 (b) establishing, for the purposes of section 128 (2) (a), the circumstances in which the chair may extend a time period.
 Part 11 — Transitional Provision
-
 
 ## Transitional
 

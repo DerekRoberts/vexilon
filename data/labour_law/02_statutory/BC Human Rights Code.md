@@ -5,7 +5,6 @@
 
 ---
 
-
 ## Definitions
 
 1   In this Code:
@@ -30,11 +29,9 @@
 "trade union" means an organization of employees formed for purposes that include the regulation of relations between employees and employers;
 "tribunal" means the British Columbia Human Rights Tribunal continued under section 31.
 
-
 ## Discrimination and intent
 
 2   Discrimination in contravention of this Code does not require an intention to contravene this Code.
-
 
 ## Purposes
 
@@ -46,16 +43,13 @@
 (e) to provide a means of redress for those persons who are discriminated against contrary to this Code.
 (f) and (g) [Repealed 2002-62-2.]
 
-
 ## Code prevails
 
 4   If there is a conflict between this Code and any other enactment, this Code prevails.
 
-
 ## Repealed
 
 5-6   [Repealed 2018-48-3.]
-
 
 ## Discriminatory publication
 
@@ -64,7 +58,6 @@
 (b) is likely to expose a person or a group or class of persons to hatred or contempt
 because of the Indigenous identity, race, colour, ancestry, place of origin, religion, marital status, family status, physical or mental disability, sex, sexual orientation, gender identity or expression, or age of that person or that group or class of persons.
 (2) Subsection (1) does not apply to a private communication, a communication intended to be private or a communication related to an activity otherwise permitted by this Code.
-
 
 ## Discrimination in accommodation, service and facility
 
@@ -77,7 +70,6 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, rel
 (a) on the basis of sex, if the discrimination relates to the maintenance of public decency or to the determination of premiums or benefits under contracts of life or health insurance, or
 (b) on the basis of physical or mental disability or age, if the discrimination relates to the determination of premiums or benefits under contracts of life or health insurance.
 
-
 ## Discrimination in purchase of property
 
 9   A person must not
@@ -85,7 +77,6 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, rel
 (b) deny to a person or class of persons the opportunity to acquire land or an interest in land, or
 (c) discriminate against a person or class of persons regarding a term or condition of the purchase or other acquisition of a commercial unit, dwelling unit, land or interest in land
 because of the Indigenous identity, race, colour, ancestry, place of origin, religion, marital status, physical or mental disability, sex, sexual orientation, or gender identity or expression of that person or class of persons.
-
 
 ## Discrimination in tenancy premises
 
@@ -106,11 +97,9 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, rel
 (B) conform to the prescribed standards, and
 (iii) the rental unit is offered for rent exclusively to a person with a disability or to 2 or more persons, at least one of whom has a physical or mental disability.
 
-
 ## Discrimination in employment advertisements
 
 11   A person must not publish or cause to be published an advertisement in connection with employment or prospective employment that expresses a limitation, specification or preference as to Indigenous identity, race, colour, ancestry, place of origin, political belief, religion, marital status, family status, physical or mental disability, sex, sexual orientation, gender identity or expression, or age unless the limitation, specification or preference is based on a bona fide occupational requirement.
-
 
 ## Discrimination in wages
 
@@ -121,7 +110,6 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, rel
 (5) If an employee is paid less than the rate of pay to which the employee is entitled under this section, the employee is entitled to recover from the employer, by action, the difference between the amount paid and the amount to which the employee is entitled, together with the costs, but
 (a) the action must be commenced no later than 12 months from the termination of the employee's services, and
 (b) the action applies only to wages of an employee during the 12 month period immediately before the earlier of the date of the employee's termination or the commencement of the action.
-
 
 ## Discrimination in employment
 
@@ -136,7 +124,6 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (b) as it relates to marital status, physical or mental disability, sex or age, to the operation of a bona fide retirement, superannuation or pension plan or to a bona fide group or employee insurance plan, whether or not the plan is the subject of a contract of insurance between an insurer and an employer.
 (4) Subsections (1) and (2) do not apply with respect to a refusal, limitation, specification or preference based on a bona fide occupational requirement.
 
-
 ## Discrimination by unions and associations
 
 14   A trade union, employers' organization or occupational association must not
@@ -145,11 +132,9 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (c) discriminate against any person or member
 because of the Indigenous identity, race, colour, ancestry, place of origin, political belief, religion, marital status, family status, physical or mental disability, sex, sexual orientation, gender identity or expression, or age of that person or member, or because that person or member has been convicted of a criminal or summary conviction offence that is unrelated to the membership or intended membership.
 
-
 ## Repealed
 
 15-20   [Repealed 2002-62-5.]
-
 
 ## Complaints
 
@@ -163,7 +148,6 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (b) proceeding with the complaint is not in the interest of the group or class on behalf of which the complaint is made.
 (6) A member or panel may proceed with 2 or more complaints together if a member or panel is satisfied that it is fair and reasonable in the circumstances to do so.
 
-
 ## Time limit for filing a complaint
 
 22   (1) A complaint must be filed within one year of the alleged contravention.
@@ -173,17 +157,14 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (a) it is in the public interest to accept the complaint, and
 (b) no substantial prejudice will result to any person because of the delay.
 
-
 ## Commissioner and other intervenors
 
 22.1   (1) The commissioner may, at any time after a complaint is filed, intervene in the complaint on terms a member or panel may determine having regard to the role and mandate of the commissioner under this Code.
 (2) A member or panel may, at any time after a complaint is filed and on the terms specified by the member or panel, allow any other person or group of persons to intervene in the complaint, whether or not that person or group of persons would be affected by an order made by the member or panel under section 37.
 
-
 ## Repealed
 
 23-24   [Repealed 2002-62-10.]
-
 
 ## Deferral of a complaint
 
@@ -191,11 +172,9 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (2) If at any time after a complaint is filed a member or panel determines that another proceeding is capable of appropriately dealing with the substance of a complaint, the member or panel may defer further consideration of the complaint until the outcome of the other proceeding.
 (3) [Repealed 2002-62-11.]
 
-
 ## Repealed
 
 26   [Repealed 2002-62-12.]
-
 
 ## Dismissal of a complaint
 
@@ -216,7 +195,6 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (c) any other party;
 (d) an intervenor.
 
-
 ## Assignment of complaints
 
 27.1   (1) For the purposes of making a decision or order in respect of a complaint, the chair may assign the complaint to
@@ -225,14 +203,12 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (2) If a panel is designated under subsection (1) (b), the chair must designate one of the members of the panel to preside.
 (3) [Repealed 2004-45-104.]
 
-
 ## Evidence
 
 27.2   (1) A member or panel may receive and accept on oath, by affidavit or otherwise, evidence and information that the member or panel considers necessary and appropriate, whether or not the evidence or information would be admissible in a court of law.
 (2) Nothing is admissible in evidence before a member or panel that is inadmissible in a court because of a privilege under the law of evidence.
 (3) Despite section 4, subsection (1) of this section does not override an Act expressly limiting the extent to which or purposes for which evidence may be admitted or used in any proceeding.
 (4) A member or panel may direct that all or part of the evidence of a witness be heard in private.
-
 
 ## Powers to make rules and orders respecting practice and procedure
 
@@ -254,26 +230,21 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (m) requiring or allowing that a process be conducted electronically, with or without conditions.
 (3) In order to facilitate the just and timely resolution of a complaint, a member or panel, on their own initiative or on application of a party or an intervenor, may make any order for which a rule could be made under subsection (1) or (2).
 
-
 ## Repealed
 
 27.4   [Repealed 2004-45-104.]
-
 
 ## Dismissal for failure to pursue complaint
 
 27.5   If, under the rules, a party has been given notice requiring the party to diligently pursue a complaint and the party fails to act on the notice within the time allowed, then on the request of another party or on its own initiative, a member or panel may dismiss the complaint.
 
-
 ## Assisting parties to settle
 
 27.6   A member or a person appointed, engaged or retained under section 33 may assist the parties to a complaint, through mediation or any other dispute resolution process, to achieve a settlement.
 
-
 ## Repealed
 
 28-29   [Repealed 2002-62-12.]
-
 
 ## Enforcement of settlement agreements
 
@@ -281,18 +252,15 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (2) The right to enforce a settlement agreement under subsection (1) cannot be waived.
 (3) A provision of a settlement agreement that purports to waive the right to enforce the agreement under subsection (1) is void.
 
-
 ## Human Rights Tribunal
 
 31   The British Columbia Human Rights Tribunal is continued consisting of the following individuals appointed by the Lieutenant Governor in Council after a merit-based process:
 (a) a member designated as the chair;
 (b) other members appointed after consultation with the chair.
 
-
 ## Repealed
 
 31.1   [Repealed 2003-47-35.]
-
 
 ## Application of Administrative Tribunals Act to tribunal
 
@@ -320,28 +288,23 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (t) section 60 (1) (g) to (i) and (2) [power to make regulations];
 (u) section 61 [application of Freedom of Information and Protection of Privacy Act].
 
-
 ## Staff of the tribunal
 
 33   (1) Employees necessary to carry out the powers and duties of the tribunal may be appointed under the [Public Service Act](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96385_01).
 (2) The tribunal may engage or retain consultants or specialists that the tribunal considers necessary to carry out the powers and duties of the tribunal and may determine their remuneration.
 (3) The [Public Service Act](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96385_01) does not apply to the retention, remuneration or engagement of consultants or specialists under subsection (2).
 
-
 ## Repealed
 
 34   [Repealed 2002-62-17.]
-
 
 ## Repealed
 
 34.1   [Repealed 2004-45-106.]
 
-
 ## Repealed
 
 35-36   [Repealed 2002-62-17.]
-
 
 ## Remedies
 
@@ -364,7 +327,6 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (5) A decision or order of a member or panel is a decision or order of the tribunal for the purposes of this Code.
 (6) The member or panel must inform the parties and any intervenor in writing of the decision made under this section and give reasons for the decision.
 
-
 ## Modification of orders
 
 38   (1) Until an order made under section 37 (2) (c) or (d) (i) has been fully implemented, any party or a person designated in the order may apply to the member or panel that made the order, or to a member or panel designated by the chair, for a modification of that order on the grounds that the order is no longer appropriate because of unforeseen circumstances.
@@ -374,17 +336,14 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (b) is no longer appropriate because of unforeseen circumstances.
 (3) In varying an order under subsection (2), the member or panel may exercise any of the powers under section 37 (2) (a), (c) or (d).
 
-
 ## Repealed
 
 38.1   [Repealed 2002-62-20.]
-
 
 ## Enforcement of remedies
 
 39   (1) If an order is made under section 37 (2) (a), (c) or (d) or (4) or 38 (2), the party in whose favour the order is made or a person designated in the order may file a certified copy of the order with the Supreme Court.
 (2) An order filed under subsection (1) has the same force and effect, and all proceedings may be taken on it, as if it were a judgment of the Supreme Court.
-
 
 ## Annual report
 
@@ -393,19 +352,16 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (a) if the Legislative Assembly is in session, promptly lay the annual report under subsection (1) before the Legislative Assembly, or
 (b) if the Legislative Assembly is not in session when the annual report is submitted, file the report with the Clerk of the Legislative Assembly.
 
-
 ## Disclosure
 
 40   (1) [Repealed 2004-45-106.]
 (2) Any information received by any person in the course of attempting to reach a settlement of a complaint is confidential and may not be disclosed or admitted in evidence except with the consent of the person who gave the information.
 (3) and (4) [Repealed 2004-45-106.]
 
-
 ## Exemptions
 
 41   (1) If a charitable, philanthropic, educational, fraternal, religious or social organization or corporation that is not operated for profit has as a primary purpose the promotion of the interests and welfare of an identifiable group or class of persons characterized by a physical or mental disability or by a common Indigenous identity, race, religion, age, sex, sexual orientation, gender identity or expression, marital status, political belief, colour, ancestry or place of origin, that organization or corporation must not be considered to be contravening this Code because it is granting a preference to members of the identifiable group or class of persons.
 (2) Nothing in this Code prohibits a distinction on the basis of age if that distinction is permitted or required by any Act or regulation.
-
 
 ## Special programs
 
@@ -417,22 +373,18 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (3) On application by any person, with or without notice to any other person, the commissioner may approve any program or activity that has as its objective the amelioration of conditions of disadvantaged individuals or groups.
 (4) Any program or activity approved under subsection (3) is not in contravention of this Code.
 
-
 ## Protection
 
 43   A person must not evict, discharge, suspend, expel, intimidate, coerce, impose any pecuniary or other penalty on, deny a right or benefit to or otherwise discriminate against a person because that person complains or is named in a complaint, might complain or be named in a complaint, gives evidence, might give evidence or otherwise assists or might assist in a complaint or other proceeding under this Code.
-
 
 ## Style of cause for proceedings
 
 44   (1) A proceeding under this Code in respect of a trade union, employers' organization or occupational association may be taken in its name.
 (2) An act or thing done or omitted by an employee, officer, director, official or agent of any person within the scope of the person's authority is deemed to be an act or thing done or omitted by that person.
 
-
 ## Technical defects
 
 45   A proceeding under this Code is not invalid because of any defect in form or any technical irregularity.
-
 
 ## Delegation of powers
 
@@ -443,13 +395,11 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (7) If the person who delegated the power ceases to hold office, the delegation continues in effect so long as the delegate continues in office or until the delegation is revoked by the person who succeeds the person who delegated the power.
 (8) A person purporting to exercise a power because of a delegation made under this section must, when requested to do so, produce evidence of the person's authority to exercise the power.
 
-
 ## Time limits
 
 47   Despite the fact that a period prescribed under section 49 (2) (b) has expired and the period has not been extended in accordance with the regulations, this Code continues to apply to the complaint to which the period relates, and
 (a) all proceedings taken under this Code with respect to the complaint may continue, and
 (b) all proceedings available under this Code with respect to the complaint may be taken.
-
 
 ## Human Rights Commissioner
 
@@ -459,14 +409,12 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (3) Subject to section 47.02, the commissioner holds office for a term of 5 years.
 (4) The commissioner may be reappointed, in the manner referred to in subsection (1) of this section, for one additional term of up to 5 years as specified in the reappointment resolution.
 
-
 ## Resignation, suspension or removal of commissioner
 
 47.02   (1) In this section, "standing committee" means the select standing committee of the Legislative Assembly that has been designated for the purposes of subsection (4).
 (2) The commissioner may resign at any time by giving written notice to the Speaker of the Legislative Assembly or, if there is no Speaker or the Speaker is absent from British Columbia, to the Clerk of the Legislative Assembly.
 (3) By a resolution passed by at least 2/3 of the members present, the Legislative Assembly may, for cause or incapacity, suspend the commissioner, with or without salary, or remove the commissioner from office.
 (4) If the Legislative Assembly is not sitting and will not be sitting within 5 days, the standing committee, by unanimous resolution, may, for cause or incapacity, suspend the commissioner, with or without salary, for a period that must be set by the standing committee to end not later than on the expiry of a further 20 sitting days of the Legislative Assembly.
-
 
 ## Acting commissioner
 
@@ -481,7 +429,6 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (c) a person is appointed under section 47.01.
 (4) If the commissioner is suspended or temporarily absent because of illness or another reason, or if the office of commissioner is vacant, and the Legislative Assembly is not sitting and will not be sitting within 5 days and the standing committee has not been established, the Lieutenant Governor in Council may make the appointment referred to in subsection (3) of this section.
 
-
 ## Salary, expenses and benefits of commissioner
 
 47.04   (1) A commissioner appointed under section 47.01 or 47.03 is entitled
@@ -489,18 +436,15 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (b) to be reimbursed for reasonable travel and out-of-pocket expenses personally incurred in exercising the powers and performing the duties of the office.
 (2) The public service plan as defined in section 1 (1) of the [Public Sector Pension Plans Act](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/00_99044_01) applies to the commissioner.
 
-
 ## Oath of commissioner
 
 47.05   Before taking office, a commissioner appointed under section 47.01 or 47.03 must make an oath or solemn affirmation before the Clerk of the Legislative Assembly to faithfully and impartially exercise the powers and perform the duties of the office.
-
 
 ## Staff of commissioner
 
 47.06   (1) The commissioner may appoint, in accordance with the [Public Service Act](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96385_01), employees necessary to enable the commissioner to exercise the powers and perform the duties of the office.
 (2) The commissioner may engage or retain consultants or specialists the commissioner considers necessary to exercise the powers and perform the duties of the office and may determine their remuneration and other terms and conditions of their engagement or retainers.
 (3) The [Public Service Act](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96385_01) does not apply in respect of a person engaged or retained under subsection (2) of this section.
-
 
 ## Delegation by commissioner
 
@@ -512,7 +456,6 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (4) If the person who delegated the power or duty ceases to hold office, the delegation continues in effect so long as the delegate continues in office or until the delegation is revoked by the person who succeeds the person who delegated the power or duty.
 (5) A person purporting to exercise a power or perform a duty through a delegation must, when requested to do so, produce evidence of the delegation.
 
-
 ## Advisory council
 
 47.08   (1) The human rights advisory council is established.
@@ -520,17 +463,14 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 
 (3) The role of the human rights advisory council is to advise the commissioner on issues respecting human rights and to perform any other function specified by the commissioner.
 
-
 ## Restrictions on disclosure by commissioner and staff
 
 47.09   Except in the proper exercise of powers or performance of duties under this Code, the commissioner, and anyone acting for or under the direction of the commissioner, must not disclose any information received in the course of exercising those powers or performing those duties.
-
 
 ## Non-compellability of commissioner and staff
 
 47.10   (1) Subject to subsection (2), the commissioner, and anyone acting for or under the direction of the commissioner, must not be compelled to give evidence in court or in any other proceedings respecting any information received in the course of exercising powers or performing duties under this Code.
 (2) The commissioner, and anyone acting for or under the direction of the commissioner, may be compelled to give evidence in a prosecution of an offence under this Code.
-
 
 ## Personal liability protection of commissioner and staff
 
@@ -538,7 +478,6 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (a) in the exercise or intended exercise of any power under this Code, or
 (b) in the performance or intended performance of any duty under this Code.
 (2) Subsection (1) does not apply to a person referred to in that subsection in relation to anything done or omitted by that person in bad faith.
-
 
 ## Powers of commissioner
 
@@ -558,11 +497,9 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (l) initiating inquiries under sections 47.14 and 47.15.
 (2) The commissioner may not file a complaint with the tribunal under section 21 but may assist a person or group of persons with any aspect of a complaint.
 
-
 ## Provision of tribunal records to commissioner
 
 47.13   On request by the commissioner, the tribunal must provide to the commissioner copies of complaints and responses filed with the tribunal and may provide to the commissioner other records in its custody or control.
-
 
 ## Referrals
 
@@ -572,12 +509,10 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (b) make a written report to the Legislative Assembly.
 (3) If the commissioner does not accept a referral, the commissioner must provide written reasons to the Legislative Assembly for not accepting the referral.
 
-
 ## Commissioner's inquiry
 
 47.15   (1) If the commissioner is of the opinion that an inquiry into a matter would promote or protect human rights, the commissioner may inquire into the matter.
 (2) An inquiry may be conducted in public.
-
 
 ## Commissioner's order powers for inquiries
 
@@ -597,11 +532,9 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (8) An order under subsection (1), (3) or (6) is not suspended during the period of the commissioner's consideration of a request under subsection (4) unless the commissioner, in writing, suspends it.
 (9) At the conclusion of an inquiry, the commissioner must return any record or other thing produced in the inquiry to the person who produced it.
 
-
 ## Expenses reimbursement
 
 47.17   If a person incurs expenses in complying with an order of the commissioner under section 47.16, the commissioner may reimburse the person for reasonable expenses.
-
 
 ## Cabinet information protected
 
@@ -611,12 +544,10 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (c) result in or involve the disclosure of proceedings of the Executive Council or a committee of it, relating to matters of a secret or confidential nature, and that the disclosure would be contrary or prejudicial to the public interest.
 (2) The commissioner must report each certificate of the Attorney General to the Legislative Assembly not later than in the commissioner's next annual report.
 
-
 ## Enforcement of commissioner's orders
 
 47.19   (1) The commissioner may file a copy of an order made under section 47.16 (1), (3) or (6) with the Supreme Court.
 (2) An order filed under subsection (1) of this section has the same force and effect, and all proceedings may be taken on it, as if it were a judgment of the Supreme Court.
-
 
 ## Commissioner's inquiry reports
 
@@ -629,11 +560,9 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (6) The commissioner may publish a report referred to in subsection (5) and provide the report to the Speaker of the Legislative Assembly.
 (7) If the commissioner provides a report to the Speaker under subsection (2) or (6), the Speaker must lay the report before the Legislative Assembly as soon as practicable.
 
-
 ## Protection
 
 47.21   A person must not evict, discharge, suspend, expel, intimidate, coerce, impose any pecuniary or other penalty on, deny a right or benefit to or otherwise discriminate against a person because that person participates in or might participate in an inquiry under this Code.
-
 
 ## Offences
 
@@ -644,12 +573,10 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (a) for a first offence, to a fine of not more than $25 000, and
 (b) for a second or subsequent offence, to a fine of not more than $100 000.
 
-
 ## Annual report of commissioner
 
 47.23   (1) The commissioner must submit to the Speaker of the Legislative Assembly an annual report on the activities of the commissioner's office.
 (2) The Speaker must lay the report before the Legislative Assembly as soon as practicable.
-
 
 ## Special reports of commissioner
 
@@ -659,11 +586,9 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (c) human rights in British Columbia.
 (2) The Speaker must lay a report made under subsection (1) before the Legislative Assembly as soon as practicable.
 
-
 ## Offence Act
 
 48   Section 5 of the [Offence Act](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96338_01) does not apply to this Code or the regulations.
-
 
 ## Power to make regulations
 
@@ -690,11 +615,9 @@ because of the Indigenous identity, race, colour, ancestry, place of origin, pol
 (c) the holding of prehearing conferences, and
 (d) procedures for formal offers to settle a complaint.
 
-
 ## Repealed
 
 50   [Repealed 2002-62-26.]
-
 
 ## Review of sections 47.01 to 47.24
 
