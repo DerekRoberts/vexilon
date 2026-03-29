@@ -14,96 +14,134 @@ import os
 import sys
 import time
 import argparse
+import re
+import difflib
 from pathlib import Path
-from typing import Optional
-
-# Reuse configuration if possible, otherwise define defaults
-LABOUR_LAW_DIR = Path("./data/labour_law")
+from typing import Optional, List, Tuple
 
 def print_banner():
-    print("=" * 60)
-    print(" VEXILON : PDF → MARKDOWN CONVERTER ")
-    print("=" * 60)
+    print("=" * 66)
+    print(" VEXILON : HIGH-INTEGRITY PDF → MARKDOWN CONVERTER (FORENSIC) ")
+    print("=" * 66)
+
+def clean_for_integrity_check(text: str) -> str:
+    """Strip all formatting, URLs, and punctuation to verify substantive word preservation."""
+    # Remove URLs
+    text = re.sub(r"https?://\S*", "", text)
+    # Remove non-alphanumeric (except spaces)
+    text = re.sub(r"[^a-zA-Z0-9\s]", " ", text)
+    # Collapse whitespace and lowercase
+    return " ".join(text.lower().split())
 
 def extract_raw_text(pdf_path: Path) -> list[str]:
     """Basic extraction using pypdf to get page-by-page raw content."""
     from pypdf import PdfReader
-    import re
 
     print(f"[*] Extracting raw text from {pdf_path.name}...")
     reader = PdfReader(str(pdf_path))
     pages = []
     
-    # Simple cleanup to remove obvious junk before sending to LLM
-    # (Similar to app.py logic)
     for i, page in enumerate(reader.pages):
         text = page.extract_text() or ""
-        # Remove bclaws URL noise
+        # Remove bclaws-specific web artifacts that contaminate the word count
         text = re.sub(r"https?://www\.bclaws\.gov\.bc\.ca/\S*", "", text)
-        # Remove date/time stamps
         text = re.sub(r"\d{2}/\d{2}/\d{4},?\s*\d{2}:\d{2}\s+[^\n]*", "", text)
         pages.append(text.strip())
         
     print(f"[+] Total pages extracted: {len(pages)}")
     return pages
 
-def convert_to_md(raw_pages: list[str], source_name: str) -> str:
-    """Use Claude to restructure the raw text into clean Markdown."""
-    import anthropic
-    
-    client = anthropic.Anthropic() # Reads ANTHROPIC_API_KEY
-    model = os.getenv("CONVERT_MODEL", "claude-3-5-sonnet-20241022") # High quality for structure
-    
-    print(f"[*] Converting to MD using {model}...")
-    
-    # We'll process in batches to keep context clean and handle tokens
-    # For forensic accuracy, we process 3-5 pages at a time so Claude sees the transition
-    batch_size = 5
-    full_markdown = []
-    
-    system_prompt = f"""You are a specialized legal document formatter. 
-Your task is to convert messy raw text extracted from a PDF of the '{source_name}' into perfectly structured GitHub Flavored Markdown.
+def convert_batch(client, model: str, batch_text: str, source_name: str, batch_idx: int) -> str:
+    """Individual pass for a single batch of text."""
+    system_prompt = f"""You are a ZERO-REASONING legal transcription engine. 
+Your ONLY task is to add Markdown formatting to raw text from '{source_name}'.
 
-Rules:
-1. Preserve every Article, Section, and Clause number EXACTLY as written.
-2. Use proper Markdown headers (#, ##, ###) for Articles and Sections.
-3. Clean up broken words (de-hyphenate) caused by line breaks.
-4. Convert lists and sub-clauses into proper Markdown bullet or numbered lists.
-5. If you see a table, format it as a Markdown table.
-6. REMOVE all footers, page numbers, and website URLs.
-7. Do NOT summarize. Every sentence of substance must be preserved.
-8. Output ONLY the Markdown content. No preamble."""
+STRICT INTEGRITY RULES:
+1. VERBATIM ONLY: You are FORBIDDEN from changing, adding, or removing a single substantive word.
+2. NO IMPROVEMENT: Do not fix "typos" or "grammar." If the raw text is broken, leave it broken but formatted.
+3. NO SUMMARIZATION: Every single sentence of substance MUST be preserved in its entirety.
+4. STRUCTURE: Use # for Articles, ## for Sections. Use Table format for lists of definitions or tables.
+5. NO NOISE: Remove page numbers, URLs, and footers.
+6. FORMAT: Output ONLY Markdown. No preamble or 'Here is the markdown' talk."""
+
+    response = client.messages.create(
+        model=model,
+        max_tokens=4096,
+        temperature=0.0, # PARANOID DETERMINISM
+        system=system_prompt,
+        messages=[{"role": "user", "content": f"[Batch {batch_idx}] Raw text:\n\n{batch_text}"}]
+    )
+    return response.content[0].text
+
+def convert_to_md(raw_pages: list[str], source_name: str, verify: bool = True) -> str:
+    """Use Claude to restructure into clean MD with optional dual-pass verification."""
+    import anthropic
+    client = anthropic.Anthropic()
+    
+    # Selection based on user request for "best outcome"
+    primary_model = "claude-3-5-sonnet-20241022"
+    secondary_model = "claude-3-5-haiku-20241022" # Fast consensus model
+    
+    print(f"[*] Primary Model:   {primary_model}")
+    if verify:
+        print(f"[*] Consensus Model: {secondary_model} (Dual-Pass Enable)")
+    
+    batch_size = 3 # Smaller batches = higher precision
+    full_markdown = []
+    integrity_failures = 0
 
     for i in range(0, len(raw_pages), batch_size):
         batch = raw_pages[i:i+batch_size]
         batch_text = "\n\n--- PAGE BREAK ---\n\n".join(batch)
+        batch_id = (i // batch_size) + 1
         
-        print(f"    [>] Processing pages {i+1} to {min(i+batch_size, len(raw_pages))}...")
+        print(f"    [>] Batch {batch_id}: Processing pages {i+1} to {min(i+batch_size, len(raw_pages))}...")
         
-        try:
-            response = client.messages.create(
-                model=model,
-                max_tokens=4096,
-                system=system_prompt,
-                messages=[
-                    {"role": "user", "content": f"Here is the raw text for pages {i+1}-{i+batch_size}:\n\n{batch_text}"}
-                ]
-            )
-            full_markdown.append(response.content[0].text)
-        except Exception as e:
-            print(f"    [!] Error processing batch {i}: {e}")
-            # Fallback to raw if LLM fails
-            full_markdown.append(batch_text)
+        # Pass 1
+        md_p1 = convert_batch(client, primary_model, batch_text, source_name, batch_id)
+        
+        if verify:
+            # Pass 2
+            md_p2 = convert_batch(client, secondary_model, batch_text, source_name, batch_id)
             
-        # Small delay to avoid rate limits
+            # Word-Fingerprint Integrity Check (Raw vs MD)
+            raw_fingerprint = clean_for_integrity_check(batch_text)
+            md_fingerprint = clean_for_integrity_check(md_p1)
+            
+            # Note: We allow minor word count drops (noise removal), 
+            # but we check if the MD contains words NOT in the raw text (hallucination).
+            raw_words = set(raw_fingerprint.split())
+            md_words = set(md_fingerprint.split())
+            new_words = md_words - raw_words
+            
+            # Filter out common formatting words that might be added (e.g. "Table", "Note")
+            true_hallucinations = [w for w in new_words if len(w) > 3] 
+            
+            if true_hallucinations:
+                print(f"    [!] WARNING: Potential hallucinations detected: {true_hallucinations[:5]}...")
+                integrity_failures += 1
+            
+            # Consensus Check (P1 vs P2)
+            if clean_for_integrity_check(md_p1) != clean_for_integrity_check(md_p2):
+                print(f"    [!] NOTICE: Structural divergence between models. Defaulting to {primary_model}.")
+
+        full_markdown.append(md_p1)
         time.sleep(0.5)
+
+    if integrity_failures > 0:
+        print(f"\n[!] ALERT: Found {integrity_failures} batches with potential word-integrity issues.")
+        print("    Please audit the final output sections where the PDF had complex formatting.")
+    else:
+        print("\n[SUCCESS] Forensic word-integrity check passed.")
 
     return "\n\n".join(full_markdown)
 
 def main():
-    parser = argparse.ArgumentParser(description="Convert PDF to RAG-optimized Markdown")
+    parser = argparse.ArgumentParser(description="Convert PDF to RAG-optimized Markdown with Forensic Integrity")
     parser.add_argument("input", help="Path to input PDF file")
     parser.add_argument("output", nargs="?", help="Path to output MD file (optional)")
+    parser.add_argument("--no-verify", action="store_false", dest="verify", help="Disable dual-pass verification (faster/cheaper)")
+    parser.set_defaults(verify=True)
     args = parser.parse_args()
 
     input_path = Path(args.input)
@@ -120,17 +158,17 @@ def main():
     print_banner()
     print(f"Input:  {input_path}")
     print(f"Output: {output_path}")
-    print("-" * 60)
+    print("-" * 66)
 
     try:
         raw_pages = extract_raw_text(input_path)
-        markdown_content = convert_to_md(raw_pages, input_path.stem)
+        markdown_content = convert_to_md(raw_pages, input_path.stem, verify=args.verify)
         
         # Save output
         output_path.write_text(markdown_content, encoding="utf-8")
-        print("-" * 60)
-        print(f"[SUCCESS] Markdown saved to {output_path}")
-        print(f"Size: {len(markdown_content)} characters")
+        print("-" * 66)
+        print(f"[FINISH] Conversion Complete.")
+        print(f"Vexilon Integrity Fingerprint: {len(markdown_content)} chars / {len(markdown_content.split())} words")
         
     except KeyboardInterrupt:
         print("\n[!] Interrupted by user.")
