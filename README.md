@@ -132,6 +132,19 @@ The app is ready immediately on page load — no dropdown, no Load button.
 
 > **Note:** Informational purposes only. Consult your BCGEU representative or a legal advisor as appropriate.
 
+## Maintenance & Tools
+
+### PDF to Markdown Conversion
+For optimal RAG performance, we recommend converting core PDFs into high-fidelity Markdown. This improves header-aware chunking and removes "noise" like web-to-PDF artifacts.
+
+See [docs/MARKDOWN_CONVERSION.md](docs/MARKDOWN_CONVERSION.md) for full rationale and instructions.
+
+**Run the converter:**
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+python scripts/pdf_to_md.py path/to/document.pdf
+```
+
 ## Configuration
 
 All settings are optional — defaults match the product specification.
