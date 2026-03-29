@@ -55,7 +55,7 @@ We have provided a specialized script `scripts/pdf_to_md.py` that uses a **Foren
     After adding the `.md` file, force a rebuild of the vector index:
     ```bash
     # From project root
-    python -c "from app import startup; startup(force_rebuild=True)"
+    python app.py --rebuild-index
     ```
 
 ## 4. Operational Best Practices

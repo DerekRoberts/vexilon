@@ -25,7 +25,7 @@ of labour law and contract documents.
 | LLM | Anthropic Claude (`claude-haiku-4-5-20251001`) |
 | Embeddings | `sentence-transformers/all-MiniLM-L6-v2` — local CPU, no API key |
 | Vector Store | FAISS (in-memory, rebuilt at startup) |
-| PDF Parsing | pypdf — preserves page numbers |
+| PDF Parsing | PyMuPDF — high-precision forensic extraction |
 | Web UI | Gradio 6 — `http://localhost:7860` |
 | Knowledge Base | Multi-source PDFs in `data/labour_law/` |
 | Deployment | Hugging Face Spaces + GitHub Actions |
@@ -58,7 +58,7 @@ Drop PDFs into `data/labour_law/` using our **Smart Renaming** convention to ens
 Then rebuild and commit the index:
 
 ```bash
-python -c "from app import build_index_from_sources; build_index_from_sources()"
+python app.py --rebuild-index
 ```
 
 When done, commit `.pdf_cache/index.faiss` and `.pdf_cache/chunks.json` if you want to update
@@ -224,7 +224,7 @@ Those files are **not** committed by default (`.pdf_cache/` is gitignored).
 To publish an updated fallback after rebuilding the index locally:
 
 ```bash
-python -c "from app import build_index_from_sources; build_index_from_sources()"
+python app.py --rebuild-index
 git add -f .pdf_cache/index.faiss .pdf_cache/chunks.json
 git commit -m "chore(index): rebuild fallback cache"
 git push
