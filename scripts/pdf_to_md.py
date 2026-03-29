@@ -90,8 +90,8 @@ def convert_to_md(raw_pages: List[str], source_name: str, verify: bool = True) -
     client = anthropic.Anthropic()
     
     # Selection based on user request for "best outcome"
-    primary_model = "claude-3-5-sonnet-20241022"
-    secondary_model = "claude-3-5-haiku-20241022" # Fast consensus model
+    primary_model = "claude-4-6-sonnet"
+    secondary_model = "claude-4-6-haiku" # Fast consensus model
     
     print(f"[*] Primary Model:   {primary_model}")
     if verify:
