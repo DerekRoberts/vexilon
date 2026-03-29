@@ -15,6 +15,7 @@ import sys
 import time
 import argparse
 import re
+import traceback
 from pathlib import Path
 from typing import Optional, List
 
@@ -184,7 +185,6 @@ def main():
         print("\n[!] Interrupted by user.")
     except Exception as e:
         print(f"\n[CRITICAL ERROR] {e}")
-        import traceback
         traceback.print_exc()
 
 if __name__ == "__main__":
