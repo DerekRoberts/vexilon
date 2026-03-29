@@ -171,7 +171,7 @@ def convert_to_md(input_path: Path, output_path: Path, verify: bool = True, resu
             raw_words = set(re.findall(r'\b\w{4,}\b', batch_text.lower()))
             
             # Whitelist structural commonalities
-            whitelist = {'article', 'section', 'part', 'page', 'schedule', 'appendix', 'repealed', 'topic', 'definition', 'term', 'subject'}
+            whitelist = {'article', 'section', 'part', 'page', 'schedule', 'appendix', 'repealed', 'topic', 'definition', 'term', 'subject', 'table', 'contents'}
             hallucinations = [w for w in p1_words if w not in raw_words and w not in whitelist]
             
             # Sub-word Check (PyMuPDF sometimes keeps artifacts)
