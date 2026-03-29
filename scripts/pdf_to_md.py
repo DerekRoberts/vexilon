@@ -133,42 +133,49 @@ def convert_to_md(raw_pages: List[str], source_name: str, output_path: Path, ver
             # Pass 2
             md_p2 = convert_batch(client, secondary_model, batch_text, source_name, batch_id)
             
-            # Hallucination Check
-            raw_text_lower = "".join(batch).lower()
-            md_words = set(re.findall(r'\b\w+\b', md_p1.lower()))
+        # 1. INCREMENTAL SAVE (TO FILE AND AUDIT LOG)
+        full_markdown.append(md_p1)
+        with open(output_path, "a", encoding="utf-8") as f:
+            f.write(md_p1 + "\n\n")
             
-            true_hallucinations = [w for w in md_words if is_hallucination(w, raw_text_lower)]
+        # Hallucination Check
+        raw_text_lower = "".join(batch).lower()
+        md_words = set(re.findall(r'\b\w+\b', md_p1.lower()))
+        
+        true_hallucinations = [w for w in md_words if is_hallucination(w, raw_text_lower)]
+        
+        if true_hallucinations:
+            print(f"\n    [!] WARNING: Potential substantive hallucinations: {true_hallucinations[:5]}...")
+            # Expanded 5-line context preview
+            md_lines = md_p1.split("\n")
+            for h_word in true_hallucinations[:2]:
+                for idx, line in enumerate(md_lines):
+                    if h_word in line.lower():
+                        # Show 2 lines before and 2 lines after
+                        start = max(0, idx - 2)
+                        end = min(len(md_lines), idx + 3)
+                        print(f"        [>] Context for '{h_word}':")
+                        for l in md_lines[start:end]:
+                            print(f"            {l.strip()[:100]}")
+                        break
             
-            if true_hallucinations:
-                print(f"\n    [!] WARNING: Potential substantive hallucinations: {true_hallucinations[:5]}...")
-                for h_word in true_hallucinations[:2]:
-                    for line in md_p1.split("\n"):
-                        if h_word in line.lower():
-                            print(f"        [>] Line: \"{line.strip()[:100]}\"")
-                            break
-                
-                # INTERACTIVE APPROVAL
-                ans = input("    [?] Approve this batch anyway? (y/n/skip): ").lower().strip()
-                if ans == 'n':
-                    print("[ABORT] Use ^C to exit or fix the source.")
-                    sys.exit(1)
-                elif ans == 'skip':
-                    print("[SKIP] Skipping this batch.")
-                    continue
+            # INTERACTIVE APPROVAL
+            print(f"    [*] BATCH PREVIEW READY: Check {output_path.name}")
+            ans = input("    [?] Approve this batch anyway? (y/n/skip): ").lower().strip()
+            if ans == 'n':
+                sys.exit(1)
+            elif ans == 'skip':
+                print("[SKIP] Batch skipped (Check file manually later).")
+                continue
 
-                integrity_failures += 1
-                
-                # Capture the 'iffier' lines for the audit report
-                with open(audit_path, "a", encoding="utf-8") as af:
-                    af.write(f"### [Batch {batch_id}] Hallucination Flagged: {true_hallucinations}\n")
-                    af.write("| Substantive Words Added | Contextual Line (Markdown) |\n|---|---|\n")
-                    for h_word in true_hallucinations[:10]:
-                        # Find first line in MD containing this word
-                        for line in md_p1.split("\n"):
-                            if h_word in line.lower():
-                                af.write(f"| `{h_word}` | {line.strip()} |\n")
-                                break
-                    af.write("\n---\n")
+            integrity_failures += 1
+            
+            with open(audit_path, "a", encoding="utf-8") as af:
+                af.write(f"### [Batch {batch_id}] Hallucination Flagged: {true_hallucinations}\n")
+                af.write("| Words | Context (Snippet) |\n|---|---|\n")
+                for w in true_hallucinations[:10]:
+                    af.write(f"| `{w}` | {md_p1.splitlines()[0][:60]}... |\n")
+                af.write("\n---\n")
             
             # Consensus Check (P1 vs P2)
             p1_clean = clean_for_integrity_check(md_p1)
@@ -199,12 +206,6 @@ def convert_to_md(raw_pages: List[str], source_name: str, output_path: Path, ver
                     af.write("- Divergence usually occurs on complex headers, tables, or noisy footers.\n")
                     af.write("\n---\n")
 
-        full_markdown.append(md_p1)
-        
-        # Incremental save to prevent data loss
-        with open(output_path, "a", encoding="utf-8") as f:
-            f.write(md_p1 + "\n\n")
-            
         time.sleep(0.5)
 
     if integrity_failures > 0:
