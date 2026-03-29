@@ -231,13 +231,14 @@ def convert_to_md(input_path: Path, output_path: Path, verify: bool = True, resu
                         break
                 
                 if diverged:
-                    print(f"    [!] NOTICE: Structural divergence detected.")
-                    for i, l1 in enumerate(lines1[:10]):
-                        matches = difflib.get_close_matches(l1, lines2, n=1, cutoff=0.6)
-                        if not matches or clean_for_integrity_check(l1) != clean_for_integrity_check(matches[0]):
-                            print(f"        [>] P1: \"{l1[:60]}\"")
-                            print(f"        [>] P2: \"{(matches[0] if matches else 'No match')[:60]}\"")
-                            break
+                    print(f"    [!] NOTICE: Structural divergence detected. Showing first 8 lines of each:")
+                    print(f"    --- P1 (Sonnet) ---")
+                    for line in lines1[:8]:
+                        print(f"        {line[:100]}")
+                    print(f"    --- P2 (Haiku) ---")
+                    for line in lines2[:8]:
+                        print(f"        {line[:100]}")
+                    print(f"    -------------------")
                     
                     ans = input("    [?] Approve Sonnet's structure? (y/n/p2): ").lower().strip()
                     if ans == 'n':
