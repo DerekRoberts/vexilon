@@ -25,6 +25,16 @@ def test_readme_metadata_sync():
     # Plus a warning comment to prevent drift
     assert re.search(r"^app_port: 7860.*drift", content, re.MULTILINE), \
         "README.md MUST have 'app_port: 7860' AND the sync-drift warning comment."
+    
+    # 3. Must NOT have Gradio-specific fields that confuse Docker mode
+    assert not re.search(r"^sdk_version:", content, re.MULTILINE), \
+        "README.md must NOT have 'sdk_version' — that's a Gradio SDK field, not Docker."
+    assert not re.search(r"^app_file:", content, re.MULTILINE), \
+        "README.md must NOT have 'app_file' — that's a Gradio SDK field, not Docker."
+    
+    # 4. Must have startup_duration_timeout to prevent HF from killing slow model loads
+    assert re.search(r"^startup_duration_timeout:", content, re.MULTILINE), \
+        "README.md MUST have 'startup_duration_timeout' to prevent HF from killing the container during model loading."
 
 
 def test_app_py_build_safety():
