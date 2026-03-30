@@ -106,6 +106,7 @@ def test_load_md_chunks_tracks_headers(tmp_path, monkeypatch):
 def test_md_toc_blocks_skipped(tmp_path, monkeypatch):
     """load_md_chunks must skip Markdown blocks that look like TOC dot-leaders."""
     monkeypatch.setattr(app, "CHUNK_SIZE", 100)
+    monkeypatch.setattr(app, "CHUNK_OVERLAP", 25)
 
     md_file = tmp_path / "agreement.md"
     md_file.write_text("# TOC\nArticle 1 .......... 5\nArticle 2 .......... 10\n\n# CONTENT\n## Article 1\nActual policy text is here.")

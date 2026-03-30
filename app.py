@@ -584,6 +584,10 @@ def chunk_text(
     if not token_data:
         return chunks
 
+    # Safety guard: Ensure the loop always advances. If configuration is
+    # invalid (size <= overlap), we force a minimum step of 1 token.
+    step = max(1, CHUNK_SIZE - CHUNK_OVERLAP)
+
     idx = 0
     start = 0
     while start < len(token_data):
@@ -608,7 +612,7 @@ def chunk_text(
             }
         )
         idx += 1
-        start += CHUNK_SIZE - CHUNK_OVERLAP
+        start += step
     return chunks
 
 
