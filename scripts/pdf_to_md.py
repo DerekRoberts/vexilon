@@ -37,19 +37,6 @@ def clean_for_integrity_check(text: str) -> str:
     # Merge into single string and normalize
     return " ".join(text.lower().split())
 
-def is_hallucination(word: str, raw_text_lower: str) -> bool:
-    """True if word is substantive (>3 chars) and NOT found as a whole or sub-word in raw text."""
-    w = word.lower()
-    if len(w) <= 3: return False
-    if w in STRUCTURAL_WORDS: return False
-    # Check if this word exists anywhere in the raw text (including as a subsection/sub-word)
-    if w in raw_text_lower: return False
-    return True
-
-STRUCTURAL_WORDS = {
-    "table", "contents", "appendix", "article", "section", 
-    "part", "page", "break", "definition", "term", "title", "subject"
-}
 
 def extract_raw_text(pdf_path: Path) -> List[str]:
     """Precision extraction using PyMuPDF to preserve word integrity."""

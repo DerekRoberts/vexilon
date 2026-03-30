@@ -310,7 +310,7 @@ Each response must follow this structure:
 | Component | Choice | Rationale |
 |---|---|---|
 | **LLM** | Anthropic Claude (`claude-haiku-4-5-20251001`) | Best-in-class instruction following; reliable citation behaviour; pay-per-use; Haiku sufficient for citation-grounded retrieval |
-| **Embeddings** | `all-MiniLM-L6-v2` via `sentence-transformers` (local CPU) | No API key; no per-query cost; 80 MB model; runs on CPU; index pre-computed and committed to repo for fast cold starts |
+| **Embeddings** | `BAAI/bge-small-en-v1.5` via `sentence-transformers` (local CPU) | No API key; no per-query cost; ~90 MB model; runs on CPU; index pre-computed and committed to repo for fast cold starts |
 | **Vector Store** | FAISS (in-memory, pre-computed index on disk) | No server process; index loaded from disk at startup (<1s); pre-computed once per agreement update |
 | **PDF Parsing** | `PyMuPDF` (pymupdf) | High-precision extraction; geometric word-reconstruction prevents "word-splitting" errors seen in government PDFs. |
 | **Forensic Pipeline** | `pdf_to_md.py` | Markdown-First architecture: PDFs are pre-converted to structured Markdown with dual-pass AI verification and integrity auditing. |
@@ -326,7 +326,7 @@ Each response must follow this structure:
 | Ollama | Replaced by Anthropic API |
 | `llama3.2:3b` / `llama3.1:8b` | Replaced by Claude |
 | `nomic-embed-text` (Ollama) | Replaced by `sentence-transformers` local model |
-| OpenAI `text-embedding-3-small` | Replaced by local `all-MiniLM-L6-v2` — eliminates second API dependency |
+| OpenAI `text-embedding-3-small` | Replaced by local `BAAI/bge-small-en-v1.5` — eliminates second API dependency |
 | LlamaIndex | Replaced by direct RAG implementation |
 | ChromaDB | Replaced by FAISS for MVP |
 | Hardcoded phone number lookup | Not a requested feature; removed entirely |
@@ -343,14 +343,14 @@ App startup
   └── (CI Gate: Ensures every .pdf has a validated .md partner)
   └── Parse Markdown with source metadata and page-tags
   └── Chunk text (256 tokens, 50 token overlap)
-  └── Embed all chunks with all-MiniLM-L6-v2
+  └── Embed all chunks with BAAI/bge-small-en-v1.5
   └── Build FAISS index in memory
   └── Ready
 
 User sends message
   └── Condense Query (Claude)
         └── [conversation history + new message] → standalone search query
-  └── Embed condensed query with all-MiniLM-L6-v2
+  └── Embed condensed query with BAAI/bge-small-en-v1.5
   └── FAISS similarity search → top-5 chunks (with page numbers)
   └── Build final prompt:
         system: [citation-rules + agreement context + continuity rule]
@@ -391,7 +391,7 @@ The system prompt will enforce:
 | Component | Rate | Estimated Monthly (moderate use) |
 |---|---|---|
 | `claude-haiku-4-5-20251001` | $0.80/M input tokens, $4.00/M output | ~$6–18 CAD |
-| `all-MiniLM-L6-v2` embeddings | $0 — runs locally on CPU | $0 |
+| `BAAI/bge-small-en-v1.5` embeddings | $0 — runs locally on CPU | $0 |
 | **Total** | | **~$6–18 CAD/month** |
 
 Note: The "Query Condenser" adds one extra fast LLM call per multi-turn message, increasing costs by ~10% compared to single-turn RAG.
@@ -464,11 +464,11 @@ Open `http://localhost:7860`.
 | `VEXILON_PASSWORD` | *(optional)* | Password for basic authentication. If unset, auth is disabled. |
 | `ANTHROPIC_API_KEY` | *(required)* | Anthropic API key |
 | `CLAUDE_MODEL` | `claude-haiku-4-5-20251001` | Claude model for responses |
-| `EMBED_MODEL` | `all-MiniLM-L6-v2` | Local sentence-transformers embedding model |
+| `EMBED_MODEL` | `BAAI/bge-small-en-v1.5` | Local sentence-transformers embedding model |
 | `PORT` | `7860` | Gradio listen port |
 | `SIMILARITY_TOP_K` | `40` | Chunks retrieved per query |
-| `CHUNK_SIZE` | `256` | Tokens per chunk (optimized for all-MiniLM-L6-v2) |
-| `CHUNK_OVERLAP` | `50` | Token overlap between chunks (~20%) |
+| `CHUNK_SIZE` | `450` | Tokens per chunk |
+| `CHUNK_OVERLAP` | `100` | Token overlap between chunks (~22%) |
 | `CONDENSE_QUERY_HISTORY_TURNS` | `3` | Number of previous turns used for context condensation |
 | `CONDENSE_QUERY_CONTENT_MAX_LEN` | `200` | Max character length of historical messages in condensation prompt |
 | `VERIFY_ENABLED` | `true` | Enable verification bot |
