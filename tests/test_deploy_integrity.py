@@ -22,8 +22,9 @@ def test_readme_metadata_sync():
         "README.md MUST have 'sdk: docker' for the current deployment strategy."
     
     # 2. Must have app_port: 7860 (prevents 'Still Building' status ghost)
-    assert re.search(r"^app_port: 7860", content, re.MULTILINE), \
-        "README.md MUST have 'app_port: 7860' so Hugging Face can perform healthchecks."
+    # Plus a warning comment to prevent drift
+    assert re.search(r"^app_port: 7860.*drift", content, re.MULTILINE), \
+        "README.md MUST have 'app_port: 7860' AND the sync-drift warning comment."
 
 
 def test_app_py_build_safety():

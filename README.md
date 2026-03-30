@@ -4,7 +4,7 @@ emoji: 📋
 colorFrom: blue
 colorTo: indigo
 sdk: docker
-app_port: 7860
+app_port: 7860 # Must match PORT=7860 in app.py to prevent status-sync drift
 sdk_version: "6.9.0"
 app_file: app.py
 pinned: false
