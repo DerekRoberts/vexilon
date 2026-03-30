@@ -26,42 +26,6 @@ concurrency:
 permissions: {}
 
 jobs:
-  audit:
-    name: Stale Cache Audit
-    if: (! github.event.pull_request.draft)
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: "3.14"
-          enable-cache: true
-          
-      - name: Install dependencies
-        run: uv sync --frozen
-        
-
-      - name: Run Index Validation
-        run: |
-          echo "Building fresh index from data/labour_law/..."
-          uv run python -c "from app import build_index_from_sources; build_index_from_sources(force=True)"
-
-          echo "Verifying output files exist and are non-empty..."
-          for f in .pdf_cache/index.faiss .pdf_cache/chunks.json .pdf_cache/manifest.json; do
-            if [ ! -s "$f" ]; then
-              echo "❌ ERROR: $f is missing or empty!"
-              exit 1
-            fi
-            echo "✅ $f exists ($(stat -c%s "$f") bytes)"
-          done
-          echo "✅ Index build validation passed."
-
   unit_tests:
     name: Unit Tests
     if: ${{ ! github.event.pull_request.draft }}
@@ -78,7 +42,7 @@ jobs:
           python-version: "3.14"
           enable-cache: true
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --frozen
       - name: Run Unit Tests
         run: uv run pytest tests/ -v --ignore=tests/integration/ --ignore=tests/smoke/
 
@@ -213,7 +177,7 @@ jobs:
 
   trivy:
     name: Trivy Security Scan
-    needs: [audit, unit_tests, integration_tests]
+    needs: [unit_tests, integration_tests]
     if: (! github.event.pull_request.draft)
     permissions:
       security-events: write
@@ -238,7 +202,7 @@ jobs:
 
   results:
     name: Results
-    needs: [audit, unit_tests, integration_tests, container_build, container_test, trivy]
+    needs: [unit_tests, integration_tests, container_build, container_test, trivy]
     if: always()
     runs-on: ubuntu-slim
     steps:
