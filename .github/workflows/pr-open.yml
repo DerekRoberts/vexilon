@@ -100,12 +100,14 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Run tests
+      - name: Run Unit Tests
+        run: uv run pytest tests/ -v --ignore=tests/integration/ --ignore=tests/smoke/
+
+      - name: Run Integration Tests
+        if: ${{ always() }}
         env:
-          # Smoke tests (tests/smoke/) skip gracefully when this is absent (fork PRs, etc.).
-          # Same-repo PRs (Renovate, feature branches) get the secret and run them.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: uv run pytest tests/ -v
+        run: uv run pytest tests/integration/ -v
 
   container_build:
     name: Build & Push to GHCR

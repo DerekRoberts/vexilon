@@ -15,14 +15,21 @@ async def test_full_rag_flow_integration(monkeypatch, mock_anthropic, tmp_path):
     Tests the system from Markdown loading to streaming response.
     Uses the real MD agreement and real embedding model.
     """
-    # 1. Setup: Ensure we use the real MD and a temporary index path to avoid clobbering prod
-    test_md = Path("data/labour_law/01_primary/BCGEU 19th Main Agreement.md")
-    if not test_md.exists():
-        pytest.skip(f"Agreement Markdown missing at {test_md}; cannot run full integration test.")
+    # 1. Setup: Use a smaller document for isolation to save memory/time in CI
+    source_md = Path("data/labour_law/04_jurisprudence/Nexus Test and Off-Duty Conduct.md")
+    if not source_md.exists():
+        pytest.skip(f"Agreement Markdown missing at {source_md}; cannot run full integration test.")
 
-    # Redirect pdf_cache to a temp dir so save_index() doesn't fail on missing directory
+    # Create a minimal test knowledge base in a temporary directory
+    test_data_dir = tmp_path / "data/labour_law"
+    test_data_dir.mkdir(parents=True)
+    import shutil
+    shutil.copy(source_md, test_data_dir / source_md.name)
+
+    # Redirect app paths to the temp dir
     cache_dir = tmp_path / "pdf_cache"
     cache_dir.mkdir()
+    monkeypatch.setattr(app, "LABOUR_LAW_DIR", test_data_dir)
     monkeypatch.setattr(app, "PDF_CACHE_DIR", cache_dir)
     monkeypatch.setattr(app, "INDEX_PATH", cache_dir / "index.faiss")
     monkeypatch.setattr(app, "CHUNKS_PATH", cache_dir / "chunks.json")
@@ -37,7 +44,7 @@ async def test_full_rag_flow_integration(monkeypatch, mock_anthropic, tmp_path):
     assert len(app._chunks) > 0
     
     # 3. Query: Run a real RAG query
-    message = "What are the rules for overtime?"
+    message = "Tell me about the nexus test?"
     history = []
     
     tokens = []
@@ -51,7 +58,7 @@ async def test_full_rag_flow_integration(monkeypatch, mock_anthropic, tmp_path):
     assert app._index.ntotal > 0
     
     # Check that search actually found something
-    query = "overtime rate"
+    query = "millhaven factors"
     results = app.search_index(app._index, app._chunks, query, top_k=1)
     assert len(results) == 1
-    assert "overtime" in results[0]["text"].lower()
+    assert "millhaven" in results[0]["text"].lower()
