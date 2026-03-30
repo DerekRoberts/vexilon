@@ -289,10 +289,8 @@ def get_embed_model() -> "SentenceTransformer":
         # Stabilize CPU usage in shared-resource environments (HF Spaces/CI)
         # We only do this at RUNTIME. Doing this during BUILD causes infinite hangs.
         if os.getenv("HF_SPACE_ID") or os.getenv("EXTERNAL_CI"):
-            if "OMP_NUM_THREADS" not in os.environ:
-                os.environ["OMP_NUM_THREADS"] = "1"
-            if "MKL_NUM_THREADS" not in os.environ:
-                os.environ["MKL_NUM_THREADS"] = "1"
+            for var in ("OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+                os.environ.setdefault(var, "1")
 
         print(f"[embed] Loading local embedding model '{EMBED_MODEL}'…")
         
