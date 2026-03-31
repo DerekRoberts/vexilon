@@ -1228,9 +1228,9 @@ def log_review(query: str, raw_response: str, review_output: str, score: int) ->
         writer.writerow(
             [
                 datetime.datetime.now().isoformat(),
-                query[:1000],  # Truncate long queries
-                raw_response[:2000],  # Truncate long responses
-                review_output[:4000],
+                query[:10000],  # Truncate long queries
+                raw_response[:16000],  # Truncate long responses
+                review_output[:16000],
                 score,
                 VEXILON_USERNAME,
             ]
