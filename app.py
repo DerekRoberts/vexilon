@@ -1506,30 +1506,10 @@ EXAMPLE_QUESTIONS = [
     "What happens if I'm disciplined for off-duty behavior?",
 ]
 
-# Disclaimer rendered entirely with inline styles so Gradio theme cannot override text colour.
-DISCLAIMER_HTML = (
-    '<div style="'
-    "background-color:#fff8e1;"
-    "border-left:4px solid #f59e0b;"
-    "color:#7c4a00;"
-    "padding:10px 14px;"
-    "border-radius:4px;"
-    "font-size:0.85rem;"
-    "margin-bottom:12px;"
-    '">'
-    "This project is not affiliated with the BCGEU. AI-generated responses may contain errors."
-    "</div>"
-)
-
-DIRECT_MODE_HTML = """
-<div style="background-color:#e0f2fe; border-left:4px solid #0ea5e9; color:#075985; padding:10px 14px; border-radius:4px; font-size:0.85rem; margin-bottom:12px;">
-    <b>⚡ Direct Advice Mode Active:</b> Responses focus on operational steps and scripts.
-</div>
-"""
-
-CASE_BUILDER_HTML = """
-<div style="background-color:#f0fdf4; border-left:4px solid #22c55e; color:#14532d; padding:10px 14px; border-radius:4px; font-size:0.85rem; margin-bottom:12px;">
-    <b>📝 Case Builder Mode Active:</b> Responses focus on drafting formal rebuttals and grievances.
+# Persistent disclaimer about unofficial status and privacy.
+DISCLAIMER_HTML = """
+<div style="background-color:#fff8e1; border-left:4px solid #f59e0b; color:#7c4a00; padding:10px 14px; border-radius:4px; font-size:0.85rem; margin-top:4px; margin-bottom:12px; line-height:1.4;">
+    Not affiliated with BCGEU. AI-generated responses may contain errors.  This chat is not saved.
 </div>
 """
 
@@ -1626,12 +1606,7 @@ def build_ui() -> "gr.Blocks":
         ) -> AsyncIterator[tuple[list[dict], str, dict, dict]]:
             import gradio as gr
             
-            # 1. Identify Banner
-            top_banner = DISCLAIMER_HTML
-            if persona_mode == "Direct":
-                top_banner = DIRECT_MODE_HTML
-            elif persona_mode == "Defend":
-                top_banner = CASE_BUILDER_HTML
+            # Onboarding visibility logic
 
 
 
@@ -1668,7 +1643,7 @@ def build_ui() -> "gr.Blocks":
                 {"role": "user", "content": message},
                 {"role": "assistant", "content": ""},
             ]
-            yield history, "", hide, gr.update(value=top_banner)
+            yield history, "", hide, gr.update()
             # Stream tokens from RAG; accumulate into the assistant bubble
             accumulated = ""
             async for chunk in rag_review_stream(
@@ -1676,7 +1651,7 @@ def build_ui() -> "gr.Blocks":
             ):
                 accumulated += chunk
                 history[-1]["content"] = accumulated
-                yield history, "", hide, gr.update(value=top_banner)
+                yield history, "", hide, gr.update()
 
 
 
