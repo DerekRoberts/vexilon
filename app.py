@@ -73,8 +73,8 @@ VERIFY_MODEL = os.getenv("VEXILON_VERIFY_MODEL", DEFAULT_MODEL_LLM)
 
 
 # Generation Limits (Tokens)
-RAG_MAX_TOKENS = 1536
-REVIEWER_MAX_TOKENS = 1536
+RAG_MAX_TOKENS = 4096
+REVIEWER_MAX_TOKENS = 4096
 
 # Brain: Local Embeddings (Search) + Cloud LLM (Claude)
 EMBED_MODEL = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5")  # 512-token window
@@ -91,7 +91,7 @@ import re
 import logging
 
 # Input Sanitization (for prompt injection prevention)
-MAX_INPUT_LENGTH = int(os.getenv("MAX_INPUT_LENGTH", 2000))
+MAX_INPUT_LENGTH = int(os.getenv("MAX_INPUT_LENGTH", 10000))
 LOG_SUSPICIOUS_INPUTS = os.getenv("LOG_SUSPICIOUS_INPUTS", "true").lower() == "true"
 
 PROMPT_INJECTION_PATTERNS = [
@@ -131,7 +131,7 @@ def sanitize_input(user_input: str) -> tuple[str, bool]:
             injection_found = True
             if LOG_SUSPICIOUS_INPUTS:
                 logging.warning(
-                    f"[security] Prompt injection pattern detected: {pattern.pattern[:30]}..."
+                    f"[security] Prompt injection pattern detected: {pattern.pattern[:100]}..."
                 )
             break
 
@@ -1148,6 +1148,8 @@ async def rag_stream(
                 f"cache_create: {cache_created}, cache_read: {cache_read}, "
                 f"output: {usage.output_tokens}"
             )
+            if final.stop_reason == "max_tokens":
+                yield ("\n\n⚠️ Response truncated. Please ask for the rest of the answer.", "")
     except Exception as exc:
         yield (f"\n\n⚠️ API error: {exc}", "")
 
@@ -1226,9 +1228,9 @@ def log_review(query: str, raw_response: str, review_output: str, score: int) ->
         writer.writerow(
             [
                 datetime.datetime.now().isoformat(),
-                query[:500],  # Truncate long queries
-                raw_response[:1000],  # Truncate long responses
-                review_output[:2000],
+                query[:10000],  # Truncate long queries
+                raw_response[:16000],  # Truncate long responses
+                review_output[:16000],
                 score,
                 VEXILON_USERNAME,
             ]
@@ -1457,6 +1459,8 @@ async def rag_review_stream(
                 f"[rag] Tokens — input: {usage.input_tokens}, "
                 f"output: {usage.output_tokens}"
             )
+            if final.stop_reason == "max_tokens":
+                yield "\n\n⚠️ Response truncated. Please ask for the rest of the answer."
 
         # Bot B: Review the response if enabled
         if use_reviewer:

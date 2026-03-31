@@ -199,7 +199,7 @@ Input sanitization prevents prompt injection attacks by detecting and blocking m
 
 | Variable | Default | Description |
 |---|---|---|
-| `MAX_INPUT_LENGTH` | `2000` | Maximum characters per message |
+| `MAX_INPUT_LENGTH` | `10000` | Maximum characters per message |
 | `LOG_SUSPICIOUS_INPUTS` | `true` | Log flagged inputs for security review |
 
 The sanitization checks for 16+ prompt injection patterns including:
