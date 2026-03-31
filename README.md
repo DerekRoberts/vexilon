@@ -215,7 +215,7 @@ Vexilon is a "content-blind" application. Conversations are ephemeral and tied o
 
 We only track the following minimal "lite" metadata for system health:
 - Interaction timestamp
-- Bot quality score (1-10)
+- Bot quality score (1-10; only if **Senior Rep Review** is enabled)
 - Authenticated username (if enabled)
 - Token usage counts (for API billing)
 

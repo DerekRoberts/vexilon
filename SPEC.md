@@ -230,7 +230,7 @@ Vexilon is a "content-blind" application designed to protect the privacy of BCGE
 - **NO Content Logging**: User queries, condensed search queries, and bot responses are **never** written to disk or any persistent database. 
 - **Minimal Metadata Tracking**: For the purpose of monitoring system health and API costs, Vexilon only logs the following "lite" metadata:
     - **Timestamp**: When the interaction occurred.
-    - **Score**: The 1-10 "Quality Score" assigned by the internal Reviewer Bot.
+    - **Score**: The 1-10 "Quality Score" (only recorded when **Senior Rep Review** is enabled).
     - **Steward ID**: The authenticated username (if `VEXILON_PASSWORD` is set).
     - **Token Counts**: Input, output, and cache effectiveness tokens (for billing/performance).
 - **Transparency**: These metrics are stored in an ephemeral CSV file (`./.pdf_cache/review_log.csv`) and are **completely wiped** every time the application redeploys or restarts.
