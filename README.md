@@ -213,13 +213,7 @@ The sanitization checks for 16+ prompt injection patterns including:
 
 Vexilon is a "content-blind" application. Conversations are ephemeral and tied only to your current browser session. **We do not log user queries, bot responses, or internal reasoning.** 
 
-We only track the following minimal "lite" metadata for system health:
-- Interaction timestamp
-- Bot quality score (1-10; only if **Senior Rep Review** is enabled)
-- Authenticated username (if enabled)
-- Token usage counts (for API billing)
-
-These metrics are stored temporarily in the application container and are **wiped clean** on every restart or deployment. 
+Minimal, non-sensitive metadata (such as token counts and quality scores) is tracked for system health monitoring, but no content data ever reaches persistent storage. For a full technical disclosure of exactly what we track and why, see the [Privacy & Data Retention](SPEC.md#privacy--data-retention-updated-215) section of the project specification. 
 
 ## Hugging Face Spaces Deployment
 
