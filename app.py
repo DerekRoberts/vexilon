@@ -1413,7 +1413,7 @@ async def rag_review_stream(
             for test in matched_tests:
                 formatted_prompt += f"\n\n--- MANDATORY LOGIC CHECK: {test.name.upper()} ---\n"
                 formatted_prompt += f"This case involves potential {test.name}. You MUST follow these criteria and apply them to the facts:\n{test.content}\n"
-                formatted_prompt += f"In your response, follow the strategic guidance and referral instructions in the {test.name} module."
+                formatted_prompt += f"In your response, follow the strategic guidance and instructions in the {test.name} module, specifically identifying any criteria or factors that have not been met or proven."
 
             # 2. Legacy Millhaven Fallback (if registry doesn't catch it)
             if not matched_tests and MILLHAVEN_FACTORS:
