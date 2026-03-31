@@ -1058,7 +1058,7 @@ async def condense_query(message: str, history: list[dict]) -> str:
             messages=[{"role": "user", "content": prompt}],
         )
         condensed = response.content[0].text.strip().strip('"')
-        print(f"[rag] Condensed query: '{message}' -> '{condensed}'")
+        # print(f"[rag] Condensed query: '{message}' -> '{condensed}'") # Removed for privacy
         return condensed
     except Exception as exc:
         # We catch generic Exception here since anthropic is deferredly imported
@@ -1202,39 +1202,10 @@ SOURCE CITATIONS AND CONTEXT:
 
 
 # ─── Review Logging ───────────────────────────────────────────────────────────────
-REVIEW_LOG_PATH = Path("./.pdf_cache/review_log.csv")
+# ─── Review Log — DEPRECATED (Issue #215) ──────────────────────────────────────────
 
 
-def log_review(query: str, raw_response: str, review_output: str, score: int) -> None:
-    """Append a review record to the audit log CSV."""
-    import csv
-    import datetime
-
-    REVIEW_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    write_header = not REVIEW_LOG_PATH.exists()
-    with open(REVIEW_LOG_PATH, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        if write_header:
-            writer.writerow(
-                [
-                    "timestamp",
-                    "query",
-                    "raw_response",
-                    "review_output",
-                    "score",
-                    "steward",
-                ]
-            )
-        writer.writerow(
-            [
-                datetime.datetime.now().isoformat(),
-                query[:10000],  # Truncate long queries
-                raw_response[:16000],  # Truncate long responses
-                review_output[:16000],
-                score,
-                VEXILON_USERNAME,
-            ]
-        )
+# log_review() was removed to prevent sensitive data collection.
 
 
 def get_ground_truth_for_review(response: str, all_chunks: list[dict]) -> str:
@@ -1348,8 +1319,8 @@ GROUND TRUTH CONTEXT (FOR VERIFICATION):
                 score = int(score_match.group(1))
 
             # Log the review
-            log_review(query, raw_response, review_text, score)
-            print(f"[review] Score: {score}/10 for query: '{query[:50]}...'")
+            # log_review(query, raw_response, review_text, score)  # Removed for privacy
+            print(f"[review] Score: {score}/10")
     except Exception as exc:
         yield f"\n\n⚠️ Review error: {exc}"
 
