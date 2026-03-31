@@ -1058,7 +1058,6 @@ async def condense_query(message: str, history: list[dict]) -> str:
             messages=[{"role": "user", "content": prompt}],
         )
         condensed = response.content[0].text.strip().strip('"')
-        # print(f"[rag] Condensed query: '{message}' -> '{condensed}'") # Removed for privacy
         return condensed
     except Exception as exc:
         # We catch generic Exception here since anthropic is deferredly imported
@@ -1201,11 +1200,7 @@ SOURCE CITATIONS AND CONTEXT:
         return f"⚠️ Verification unavailable: {exc}"
 
 
-# ─── Review Logging ───────────────────────────────────────────────────────────────
-# ─── Review Log — DEPRECATED (Issue #215) ──────────────────────────────────────────
-
-
-# log_review() was removed to prevent sensitive data collection.
+# ─── Verification Bot (for reducing hallucinations) ───────────────────────────
 
 
 def get_ground_truth_for_review(response: str, all_chunks: list[dict]) -> str:
@@ -1319,7 +1314,6 @@ GROUND TRUTH CONTEXT (FOR VERIFICATION):
                 score = int(score_match.group(1))
 
             # Log the review
-            # log_review(query, raw_response, review_text, score)  # Removed for privacy
             print(f"[review] Score: {score}/10")
     except Exception as exc:
         yield f"\n\n⚠️ Review error: {exc}"
