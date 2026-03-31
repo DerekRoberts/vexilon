@@ -1506,31 +1506,30 @@ EXAMPLE_QUESTIONS = [
     "What happens if I'm disciplined for off-duty behavior?",
 ]
 
-# Disclaimer rendered entirely with inline styles so Gradio theme cannot override text colour.
-DISCLAIMER_HTML = (
-    '<div style="'
-    "background-color:#fff8e1;"
-    "border-left:4px solid #f59e0b;"
-    "color:#7c4a00;"
-    "padding:10px 14px;"
-    "border-radius:4px;"
-    "font-size:0.85rem;"
-    "margin-bottom:12px;"
-    '">'
+# Disclaimer components used across mode-specific banners
+_DISCLAIMER_TEXT = (
     "This project is not affiliated with the BCGEU. AI-generated responses may contain errors. "
     "This chat is not saved; download as Markdown to preserve your history."
-    "</div>"
 )
 
-DIRECT_MODE_HTML = """
-<div style="background-color:#e0f2fe; border-left:4px solid #0ea5e9; color:#075985; padding:10px 14px; border-radius:4px; font-size:0.85rem; margin-bottom:12px;">
-    <b>⚡ Direct Advice Mode Active:</b> Responses focus on operational steps and scripts.
+# Disclaimer rendered entirely with inline styles so Gradio theme cannot override text colour.
+DISCLAIMER_HTML = f"""
+<div style="background-color:#fff8e1; border-left:4px solid #f59e0b; color:#7c4a00; padding:10px 14px; border-radius:4px; font-size:0.85rem; margin-bottom:12px;">
+    {_DISCLAIMER_TEXT}
 </div>
 """
 
-CASE_BUILDER_HTML = """
+DIRECT_MODE_HTML = f"""
+<div style="background-color:#e0f2fe; border-left:4px solid #0ea5e9; color:#075985; padding:10px 14px; border-radius:4px; font-size:0.85rem; margin-bottom:12px;">
+    <b>⚡ Direct Advice Mode Active:</b> Responses focus on operational steps and scripts.<br>
+    <span style='opacity: 0.8;'>{_DISCLAIMER_TEXT}</span>
+</div>
+"""
+
+CASE_BUILDER_HTML = f"""
 <div style="background-color:#f0fdf4; border-left:4px solid #22c55e; color:#14532d; padding:10px 14px; border-radius:4px; font-size:0.85rem; margin-bottom:12px;">
-    <b>📝 Case Builder Mode Active:</b> Responses focus on drafting formal rebuttals and grievances.
+    <b>📝 Case Builder Mode Active:</b> Responses focus on drafting formal rebuttals and grievances.<br>
+    <span style='opacity: 0.8;'>{_DISCLAIMER_TEXT}</span>
 </div>
 """
 
