@@ -222,6 +222,19 @@ To prevent unintended public access while running on Hugging Face Spaces or othe
   - If unset, the app remains public (intended for local development).
   - Credentials are checked on every session start.
 
+### Privacy & Data Retention (Updated: #215)
+
+Vexilon is a "content-blind" application designed to protect the privacy of BCGEU stewards and their members. 
+
+- **NO Conversation History**: Conversations are ephemeral. Once a browser tab is refreshed or closed, all history is permanently deleted. No conversation data is persisted across sessions.
+- **NO Content Logging**: User queries, condensed search queries, and bot responses are **never** written to disk or any persistent database. 
+- **Minimal Metadata Tracking**: For the purpose of monitoring system health and API costs, Vexilon only logs the following "lite" metadata:
+    - **Timestamp**: When the interaction occurred.
+    - **Score**: The 1-10 "Quality Score" assigned by the internal Reviewer Bot.
+    - **Steward ID**: The authenticated username (if `VEXILON_PASSWORD` is set).
+    - **Token Counts**: Input, output, and cache effectiveness tokens (for billing/performance).
+- **Transparency**: These metrics are stored in an ephemeral CSV file (`./.pdf_cache/review_log.csv`) and are **completely wiped** every time the application redeploys or restarts.
+
 ### Input Sanitization
 
 To prevent prompt injection attacks, Vexilon implements input sanitization:
