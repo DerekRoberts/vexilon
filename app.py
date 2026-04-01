@@ -530,7 +530,6 @@ class TestRegistry:
                 except Exception as e:
                     print(f"[registry] Failed to load {f.name}: {e}")
             print(f"[registry] Loaded {len(self.tests)} tests from {directory.name}")
-            print(f"[debug] Registry Names: {[t.name for t in self.tests]}")
 
     def find_matches(self, query: str) -> list[TestDoctrine]:
         """Find all tests whose keywords appear in the lowercased query."""
@@ -955,7 +954,6 @@ async def rag_review_stream(
         if persona_mode != "Explore":
             test_query = message + " " + query
             matched_tests = _test_registry.find_matches(test_query)
-            print(f"[debug] Query: {test_query} | Matched: {[t.name for t in matched_tests]}")
             
             # 1. New Registry Tests
             for test in matched_tests:

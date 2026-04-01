@@ -6,6 +6,7 @@ using the real embedding model but a mocked Anthropic API.
 """
 
 import pytest
+import src.indexing as indexing
 import app
 from pathlib import Path
 
@@ -29,12 +30,12 @@ async def test_full_rag_flow_integration(monkeypatch, mock_anthropic, tmp_path):
     # Redirect app paths to the temp dir
     cache_dir = tmp_path / "pdf_cache"
     cache_dir.mkdir()
-    monkeypatch.setattr(app, "LABOUR_LAW_DIR", test_data_dir)
+    monkeypatch.setattr(indexing, "LABOUR_LAW_DIR", test_data_dir)
     monkeypatch.setattr(app, "TESTS_DIR", test_data_dir / "tests")
-    monkeypatch.setattr(app, "PDF_CACHE_DIR", cache_dir)
-    monkeypatch.setattr(app, "INDEX_PATH", cache_dir / "index.faiss")
-    monkeypatch.setattr(app, "CHUNKS_PATH", cache_dir / "chunks.json")
-    monkeypatch.setattr(app, "MANIFEST_PATH", cache_dir / "manifest.json")
+    monkeypatch.setattr(indexing, "PDF_CACHE_DIR", cache_dir)
+    monkeypatch.setattr(indexing, "INDEX_PATH", cache_dir / "index.faiss")
+    monkeypatch.setattr(indexing, "CHUNKS_PATH", cache_dir / "chunks.json")
+    monkeypatch.setattr(indexing, "MANIFEST_PATH", cache_dir / "manifest.json")
 
     # Mock the anthropic client globally for the app
     monkeypatch.setattr(app, "get_anthropic", lambda: mock_anthropic)
@@ -61,6 +62,6 @@ async def test_full_rag_flow_integration(monkeypatch, mock_anthropic, tmp_path):
     
     # Check that search actually found something
     query = "millhaven factors"
-    results = app.search_index(app._index, app._chunks, query, top_k=1)
+    results = indexing.search_index(app._index, app._chunks, query, top_k=1)
     assert len(results) == 1
     assert "millhaven" in results[0]["text"].lower()
