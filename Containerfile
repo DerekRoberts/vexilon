@@ -38,6 +38,7 @@ COPY --from=builder /app/hf_cache /app/hf_cache
 
 # 2. Copy application code and PDF assets
 COPY data/ ./data/
+COPY docs/ ./docs/
 COPY scripts/ ./scripts/
 COPY prompts/ ./prompts/
 COPY app.py style.css ./

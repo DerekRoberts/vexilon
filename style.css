@@ -97,8 +97,17 @@
     min-width: 60px !important;
 }
 
-/* 5. Mobile: collapse Reviewer to checkbox-only */
+/* 5. Mobile improvements & Chatbot sizing */
+#chatbot {
+    height: calc(100vh - 417px) !important;
+    min-height: 300px !important;
+    margin-bottom: 5px !important;
+}
+
 @media (max-width: 540px) {
+    #chatbot {
+        height: calc(100vh - 457px) !important;
+    }
     #reviewer_toggle.block {
         min-width: unset !important;
     }
@@ -115,4 +124,34 @@
         width: 18px !important;
         height: 18px !important;
     }
+}
+
+/* 7. Input Row Alignment - Align Textbox and Button heights */
+#input_row {
+    align-items: center !important;
+}
+
+#msg_input textarea {
+    min-height: 60px !important;
+    height: 60px !important;
+}
+
+#send_btn {
+    height: 60px !important;
+    min-height: 60px !important;
+}
+
+/* 6. Clean UI - Hide Gradio Boilerplate */
+footer {
+    display: none !important;
+}
+
+/* Hide floating header elements (Settings/API) if present */
+header {
+    display: none !important;
+}
+
+/* If the header is actually needed for layout, just hide the buttons inside it */
+.show-api, .built-with {
+    display: none !important;
 }

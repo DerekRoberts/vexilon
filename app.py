@@ -433,48 +433,21 @@ def build_pdf_download_links() -> str:
     return "\n".join(lines)
 
 
-# ─── System Prompts ───────────────────────────────────────────────────────────
-SYSTEM_PROMPT = """You are Vexilon, a highly authoritative professional assistant for BCGEU union stewards.
+DEVELOPER_MODE = os.getenv("DEVELOPER_MODE", "false").lower() == "true"
 
---- HOW YOUR SEARCH WORKS ---
-Your library contains the COMPLETE, full text of these documents:
-{manifest}
+PROMPTS_DIR = Path(__file__).parent / "prompts"
 
-IMPORTANT: For each question you receive, a semantic search retrieves the most relevant \
-excerpts from this library. You see a SUBSET of the library per query — not the whole thing. \
-Content that does not appear in the excerpts below may still exist in the library; it simply \
-was not retrieved for THIS particular question. \
-NEVER claim that an Article, section, or document is "missing" or "not in my documents" \
-just because it is not in the current excerpts. Instead, say: \
-"The specific text was not retrieved for this search. Try asking about [topic] directly."
---------------------------
-
-Rules you must follow without exception:
-
-1. ANSWER FROM EXCERPTS ONLY: Base your answer strictly on the excerpts provided below. \
-If the excerpts contain only a reference to a section (e.g., "See Section 10.4") but not the \
-actual text, say the specific language was not retrieved for this search and suggest the user \
-ask about that section directly. NEVER guess or fabricate contract language.
-2. Every claim must be supported by a verbatim quote from the provided excerpts, formatted as a markdown blockquote (> "...") followed by its citation: — [Document Name], Article/Section [X], [Title if available], p. [N]
-3. Plain-language explanation comes BEFORE the verbatim quote, not after.
-4. AUTHORITY HIERARCHY: ALWAYS lead with the Collective Agreement (Main Agreement) as your first-tier authority. Use Primary Statutes (e.g. BC Labour Relations Code) to reinforce the legal foundation or framework of your argument, but never as a replacement for contract language.
-5. If consecutive sections appear with a gap (e.g., you see 10.1 and 10.3 but not 10.2), note the gap and suggest the user ask about the missing section specifically.
-6. Do not predict outcomes or give legal opinions.
-7. Tone: professional, forensic, and confident. Do NOT be apologetic about retrieval limitations — the library is comprehensive; the search just needs more specific queries.
-8. Cite every relevant clause separately.
-9. Maintain conversational continuity. Use the previous conversation context and the provided excerpts.
-10. If the search results are contradictory or unclear, flag this ambiguity to the user immediately.
-11. Every chunk is tagged with its Article or Appendix name for context.
-12. If asked about your capabilities, knowledge gaps, or what documents you have: describe the library manifest above. Do NOT audit or list "missing" articles — you have the complete text of everything listed above.
-13. GRIEVANCE FILING: If a steward asks for resolution steps or once the facts of a potential violation are gathered, you MUST proactively recommend filing a grievance. Provide a direct download link to the form: [Download BCGEU Grievance Form](/gradio_api/file=data/labour_law/forms/BCGEU%20Grievance%20Form.pdf) and advise them to consult 'BCGEU Grievance Form Guide.md' (also available in the manifest) for step-by-step instructions. Do NOT judge the merit or viability of the grievance; instead, include this disclaimer: "Note: Viability of this grievance will be assessed by the staff representative and/or arbitrator, not by the steward."
-
-Response format:
-
-[Plain-language explanation]
-
-> "[Verbatim quote]"
-— [Document Name], Article/Section [X], p. [N]
-"""
+def get_system_prompt(developer_mode: bool = False) -> str:
+    """Load the default system prompt, optionally with developer extensions."""
+    path = PROMPTS_DIR / ("developer.txt" if developer_mode else "steward.txt")
+    if path.is_file():
+        return path.read_text(encoding="utf-8")
+    # Robust fallback including required formatting placeholders
+    return (
+        "You are Vexilon, a professional assistant for BCGEU union stewards.\n\n"
+        "Knowledge Base:\n{manifest}\n\n"
+        "{verify_message}"
+    )
 
 GLOBAL_MANDATORY_RULES = """--- MANDATORY OPERATIONAL RULES (OVERRIDING) ---
 1. ANSWER FROM EXCERPTS ONLY: Base your answer strictly on the provided excerpts. If the specific text was not retrieved, suggest the user ask about that section directly. NEVER fabricate contract language.
@@ -494,16 +467,16 @@ GLOBAL_MANDATORY_RULES = """--- MANDATORY OPERATIONAL RULES (OVERRIDING) ---
 def get_persona_prompt(mode_name: str) -> str:
     """Helper to load system prompts for different operational modes."""
     paths = {
-        "Direct": Path("./prompts/direct_staff_rep.txt"),
-        "Defend": Path("./prompts/case_builder.txt"),
+        "Direct": PROMPTS_DIR / "direct_staff_rep.txt",
+        "Defend": PROMPTS_DIR / "case_builder.txt",
     }
     fallbacks = {
-        "Direct": "You are a BCGEU Staff Rep providing DIRECT OPERATIONAL GUIDANCE.",
-        "Defend": "You are a BCGEU Staff Rep specializing in Grievance Drafting.",
+        "Direct": "You are a BCGEU Staff Rep providing DIRECT OPERATIONAL GUIDANCE.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
+        "Defend": "You are a BCGEU Staff Rep specializing in Grievance Drafting.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
     }
     
     path = paths.get(mode_name)
-    content = path.read_text(encoding="utf-8") if path and path.is_file() else fallbacks.get(mode_name, SYSTEM_PROMPT)
+    content = path.read_text(encoding="utf-8") if path and path.is_file() else fallbacks.get(mode_name, get_system_prompt(DEVELOPER_MODE))
         
     return f"{GLOBAL_MANDATORY_RULES}\n\n{content}"
 
@@ -988,6 +961,8 @@ def startup(force_rebuild: bool = False) -> None:
     # Try to fetch pre-computed index from GitHub if not present locally
     # (Needed for HuggingFace Spaces where PDFs aren't bundled)
     print(f"[startup] Starting Vexilon {VEXILON_VERSION}…")
+    if DEVELOPER_MODE:
+        print("[startup] DEVELOPER_MODE is ACTIVE. Proactive suggestions enabled.")
     _fetch_pdf_cache_if_missing()
     _test_registry.load(TESTS_DIR)
 
@@ -1120,7 +1095,10 @@ async def rag_stream(
             system=[
                 {
                     "type": "text",
-                    "text": SYSTEM_PROMPT.replace("{manifest}", get_knowledge_manifest()).replace("{verify_message}", VERIFY_STEWARD_MESSAGE),
+                    "text": get_system_prompt(DEVELOPER_MODE).format(
+                        manifest=get_knowledge_manifest(),
+                        verify_message=VERIFY_STEWARD_MESSAGE,
+                    ),
                     "cache_control": {"type": "ephemeral"},
                 },
                 {
@@ -1362,9 +1340,13 @@ async def rag_review_stream(
 
     try:
         # 1. Resolve System Prompt based on Persona
-        base_prompt = persona_mode if persona_mode != "Explore" else SYSTEM_PROMPT
-        if persona_mode in ["Direct", "Defend"]:
+        if persona_mode == "Explore":
+            base_prompt = get_system_prompt(DEVELOPER_MODE)
+        elif persona_mode in ["Direct", "Defend"]:
             base_prompt = get_persona_prompt(persona_mode)
+        else:
+            # Catch-all fallback to prevent crashes from unexpected persona_mode values
+            base_prompt = get_system_prompt(DEVELOPER_MODE)
 
         # Standardized formatting for all personas (Issue #216 feedback: use .replace for safety)
         formatted_prompt = base_prompt.replace("{manifest}", get_knowledge_manifest()).replace("{verify_message}", VERIFY_STEWARD_MESSAGE)
@@ -1500,17 +1482,10 @@ def markdown_to_history(file_path: str) -> list[dict]:
 EXAMPLE_QUESTIONS = [
     "What are the just cause requirements for discipline?",
     "What rights do stewards have in investigation meetings?",
-    "What is the nexus test for off-duty conduct?",
+    "What is the nexus test for establishing a link in off-duty conduct cases?",
     "Does my employer have a social media policy?",
-    "What happens if I'm disciplined for off-duty behavior?",
 ]
 
-# Persistent disclaimer about unofficial status and privacy.
-DISCLAIMER_HTML = """
-<div style="background-color:#fff8e1; border-left:4px solid #f59e0b; color:#7c4a00; padding:10px 14px; border-radius:4px; font-size:0.85rem; margin-top:4px; margin-bottom:12px; line-height:1.4;">
-    Not affiliated with BCGEU. AI-generated responses may contain errors. This chat is ephemeral and not saved. Aligned with PIPA (Privacy Act).
-</div>
-"""
 
 
 
@@ -1518,7 +1493,7 @@ ATTRIBUTION_HTML = f"""
 <div style='text-align: center; color: #6b7280; font-size: 0.85rem; margin-top: 1rem;'>
     <a href='{VEXILON_REPO_URL}' target='_blank' style='color: #005691; text-decoration: none;'>View code on GitHub</a>
     <span style='margin-left: 0.5rem; opacity: 0.7;'>•</span>
-    <a href='/gradio_api/file=docs/PRIVACY.md' target='_blank' style='color: #008542; text-decoration: none;'>Privacy Policy (PIPA)</a>
+    <a href='{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md' target='_blank' style='color: #008542; text-decoration: none;'>Privacy Policy (PIPA)</a>
     <span style='margin-left: 0.5rem; opacity: 0.7;'>•</span>
     <a href='{VEXILON_REPO_URL}/pkgs/container/vexilon' target='_blank' style='color: #005691; text-decoration: none;'>{VEXILON_VERSION}</a>
 </div>
@@ -1531,10 +1506,26 @@ def build_ui() -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
     import gradio as gr
 
-    with gr.Blocks(title="Collective Agreement Explorer") as demo:
+    with gr.Blocks(
+        title="Collective Agreement Explorer",
+        js="""
+        function() {
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    const textarea = document.querySelector('#msg_input textarea');
+                    if (textarea && document.activeElement === textarea) {
+                        e.preventDefault();
+                        const sendBtn = document.querySelector('#send_btn');
+                        if (sendBtn) sendBtn.click();
+                    }
+                }
+            });
+        }
+        """,
+    ) as demo:
         # ── Header ────────────────────────────────────────────────────────────
         # ── Header ────────────────────────────────────────────────────────────
-        gr.Markdown("## BCGEU Steward Assistant")
+        gr.Markdown("## Unofficial Ephemeral BCGEU Steward Assistant")
 
         with gr.Accordion("Knowledge Base & Priority", open=False):
             gr.Markdown(
@@ -1546,20 +1537,16 @@ def build_ui() -> "gr.Blocks":
                 f"[📁 Browse Knowledge Base on GitHub]({GITHUB_LABOUR_LAW_URL})"
             )
 
-
-
-        # ── Disclaimer (persistent, non-dismissible) ──────────────────────────
-        disclaimer_box = gr.HTML(DISCLAIMER_HTML)
-
         with gr.Row(visible=True) as chip_row:
             chip_btns = [gr.Button(q, size="sm") for q in EXAMPLE_QUESTIONS]
 
         # ── Chat interface ────────────────────────────────────────────────────
         chatbot = gr.Chatbot(
-            height=480,
+            height=600,
             buttons=["copy"],
             render_markdown=True,
             show_label=False,
+            elem_id="chatbot",
         )
 
         # ── Reviewer Toggle & Management ──────────────────────────────────────
@@ -1585,7 +1572,7 @@ def build_ui() -> "gr.Blocks":
 
 
         # ── Input row ─────────────────────────────────────────────────────────
-        with gr.Row():
+        with gr.Row(elem_id="input_row"):
             msg_input = gr.Textbox(
                 placeholder="Ask about the collective agreement…",
                 label="",
@@ -1594,8 +1581,9 @@ def build_ui() -> "gr.Blocks":
                 scale=5,
                 show_label=False,
                 container=False,
+                elem_id="msg_input",
             )
-            send_btn = gr.Button("Send ➤", scale=1, variant="primary")
+            send_btn = gr.Button("Send ➤", scale=1, variant="primary", elem_id="send_btn")
 
         # ── Submit handlers ───────────────────────────────────────────────────
         async def submit(
@@ -1625,7 +1613,7 @@ def build_ui() -> "gr.Blocks":
                     {"role": "user", "content": message},
                     {"role": "assistant", "content": rate_msg},
                 ]
-                yield history, "", show, gr.update()
+                yield history, "", show
                 return
 
             message, was_flagged = sanitize_input(message)
@@ -1634,7 +1622,6 @@ def build_ui() -> "gr.Blocks":
                     history,
                     "Your input was flagged for security review. Please try a different question.",
                     show,
-                    gr.update(),
                 )
                 return
             prior_history = list(history)
@@ -1644,7 +1631,7 @@ def build_ui() -> "gr.Blocks":
                 {"role": "user", "content": message},
                 {"role": "assistant", "content": ""},
             ]
-            yield history, "", hide, gr.update()
+            yield history, "", hide
             # Stream tokens from RAG; accumulate into the assistant bubble
             accumulated = ""
             async for chunk in rag_review_stream(
@@ -1652,12 +1639,12 @@ def build_ui() -> "gr.Blocks":
             ):
                 accumulated += chunk
                 history[-1]["content"] = accumulated
-                yield history, "", hide, gr.update()
+                yield history, gr.update(), hide
 
 
 
         submit_inputs = [msg_input, chatbot, reviewer_toggle, persona_selector]
-        submit_outputs = [chatbot, msg_input, chip_row, disclaimer_box]
+        submit_outputs = [chatbot, msg_input, chip_row]
 
         send_btn.click(fn=submit, inputs=submit_inputs, outputs=submit_outputs)
         msg_input.submit(fn=submit, inputs=submit_inputs, outputs=submit_outputs)
