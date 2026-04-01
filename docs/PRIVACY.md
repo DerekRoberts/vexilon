@@ -29,7 +29,7 @@ Vexilon is built with a "Privacy-by-Design" architecture, specifically aligned w
 *   **Log Sanitization**: Technical logs (for debugging) do not include the content of user queries.
 
 ### 6. Accuracy
-*   **Source Integrity**: Vexilon uses a "Forensic Markdown Pipeline" to ensure that the collective agreements used for grounding are accurate representations of the official PDFs.
+*   **Source Integrity**: Vexilon uses a "Forensic Markdown Pipeline" to ensure that the collective agreements used for grounding are accurate representations of the official source documents (PDFs and HTML).
 *   **Verification Bot**: An optional reviewer bot checks responses against source text to prevent hallucinations.
 
 ### 7. Safeguards
