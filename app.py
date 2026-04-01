@@ -1614,7 +1614,7 @@ def build_ui() -> "gr.Blocks":
                     {"role": "user", "content": message},
                     {"role": "assistant", "content": rate_msg},
                 ]
-                yield history, "", show, gr.update()
+                yield history, "", show
                 return
 
             message, was_flagged = sanitize_input(message)
@@ -1623,7 +1623,6 @@ def build_ui() -> "gr.Blocks":
                     history,
                     "Your input was flagged for security review. Please try a different question.",
                     show,
-                    gr.update(),
                 )
                 return
             prior_history = list(history)
@@ -1633,7 +1632,7 @@ def build_ui() -> "gr.Blocks":
                 {"role": "user", "content": message},
                 {"role": "assistant", "content": ""},
             ]
-            yield history, "", hide, gr.update()
+            yield history, "", hide
             # Stream tokens from RAG; accumulate into the assistant bubble
             accumulated = ""
             async for chunk in rag_review_stream(
@@ -1641,12 +1640,12 @@ def build_ui() -> "gr.Blocks":
             ):
                 accumulated += chunk
                 history[-1]["content"] = accumulated
-                yield history, gr.update(), hide, gr.update()
+                yield history, gr.update(), hide
 
 
 
         submit_inputs = [msg_input, chatbot, reviewer_toggle, persona_selector]
-        submit_outputs = [chatbot, msg_input, chip_row, disclaimer_box]
+        submit_outputs = [chatbot, msg_input, chip_row]
 
         send_btn.click(fn=submit, inputs=submit_inputs, outputs=submit_outputs)
         msg_input.submit(fn=submit, inputs=submit_inputs, outputs=submit_outputs)
