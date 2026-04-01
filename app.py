@@ -1487,12 +1487,6 @@ EXAMPLE_QUESTIONS = [
     "What happens if I'm disciplined for off-duty behavior?",
 ]
 
-# Persistent disclaimer about unofficial status and privacy.
-DISCLAIMER_HTML = """
-<div style="background-color:#fff8e1; border-left:4px solid #f59e0b; color:#7c4a00; padding:10px 14px; border-radius:4px; font-size:0.85rem; margin-top:4px; margin-bottom:12px; line-height:1.4;">
-    Not affiliated with BCGEU. AI-generated responses may contain errors. This chat is ephemeral and not saved. Aligned with PIPA (Privacy Act).
-</div>
-"""
 
 
 
@@ -1532,7 +1526,7 @@ def build_ui() -> "gr.Blocks":
     ) as demo:
         # ── Header ────────────────────────────────────────────────────────────
         # ── Header ────────────────────────────────────────────────────────────
-        gr.Markdown("## BCGEU Steward Assistant")
+        gr.Markdown("## Unofficial Ephemeral BCGEU Steward Assistant")
 
         with gr.Accordion("Knowledge Base & Priority", open=False):
             gr.Markdown(
@@ -1543,11 +1537,6 @@ def build_ui() -> "gr.Blocks":
             gr.Markdown(
                 f"[📁 Browse Knowledge Base on GitHub]({GITHUB_LABOUR_LAW_URL})"
             )
-
-
-
-        # ── Disclaimer (persistent, non-dismissible) ──────────────────────────
-        disclaimer_box = gr.HTML(DISCLAIMER_HTML)
 
         with gr.Row(visible=True) as chip_row:
             chip_btns = [gr.Button(q, size="sm") for q in EXAMPLE_QUESTIONS]
