@@ -6,9 +6,9 @@ using the real embedding model but a mocked Anthropic API.
 """
 
 import pytest
-import src.indexing as indexing
 import app
 from pathlib import Path
+import src.indexing as indexing
 
 @pytest.mark.asyncio
 async def test_full_rag_flow_integration(monkeypatch, mock_anthropic, tmp_path):

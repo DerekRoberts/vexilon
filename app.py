@@ -2,7 +2,7 @@
 app.py — BCGEU Steward Assistant
 --------------------------------------------
 Tech stack:
-  - Markdown-First      : Structured MD for highest grounding accuracy
+  - pymupdf             : PDF extraction for Markdown conversion
   - sentence-transformers: Local CPU embeddings (BAAI/bge-small-en-v1.5, no API key)
   - FAISS                : In-memory vector index (no server process)
   - Anthropic            : Claude (claude-haiku-4-5-20251001) for responses
@@ -21,6 +21,29 @@ Index pre-computation (run once after updating the PDF):
 # ─── Standard Library ────────────────────────────────────────────────────────
 import sys
 import threading
+from src.indexing import (
+    build_index_from_sources,
+    load_precomputed_index,
+    search_index,
+    _fetch_pdf_cache_if_missing,
+    embed_texts,
+    build_index,
+    chunk_text,
+    get_embed_model,
+    PDF_CACHE_DIR,
+    LABOUR_LAW_DIR,
+    INDEX_PATH,
+    CHUNKS_PATH,
+    MANIFEST_PATH,
+    EMBED_MODEL,
+    MAX_EMBED_TOKENS,
+    CHUNK_SIZE,
+    CHUNK_OVERLAP,
+    EMBED_DIM,
+)
+TESTS_DIR = LABOUR_LAW_DIR / "tests"
+_chunks: list[dict] = []
+_index: "faiss.IndexFlatIP | None" = None
 
 print("[boot] Python started, importing stdlib...", flush=True)
 import json
@@ -54,17 +77,7 @@ GITHUB_LABOUR_LAW_URL = os.getenv(
     "VEXILON_KNOWLEDGE_URL", f"{VEXILON_REPO_URL}/tree/main/data/labour_law"
 )
 
-# ─── Data & Indexing ─────────────────────────────────────────────────────────
-from src.indexing import (
-    PDF_CACHE_DIR, LABOUR_LAW_DIR, INDEX_PATH, CHUNKS_PATH, MANIFEST_PATH,
-    EMBED_MODEL, MAX_EMBED_TOKENS, CHUNK_SIZE, CHUNK_OVERLAP, EMBED_DIM,
-    get_embed_model, _get_rag_source_files, _get_source_name, 
-    load_md_chunks, build_index, save_index, build_index_from_sources,
-    embed_texts, search_index, load_precomputed_index, _fetch_pdf_cache_if_missing,
-    chunk_text, _is_toc_or_index_page, _clean_page_text
-)
-_anthropic_client: "anthropic.AsyncAnthropic | None" = None
-TESTS_DIR = LABOUR_LAW_DIR / "tests"
+# Raw URL base for downloading pre-computed index from GitHub.
 _CSS_PATH = Path(__file__).parent / "style.css"
 
 # Models
@@ -79,8 +92,6 @@ VERIFY_MODEL = os.getenv("VEXILON_VERIFY_MODEL", DEFAULT_MODEL_LLM)
 RAG_MAX_TOKENS = 4096
 REVIEWER_MAX_TOKENS = 4096
 
-# Similarity Top-K
-SIMILARITY_TOP_K = int(os.getenv("SIMILARITY_TOP_K", 40))  # More context depth
 
 # Memory / Context Condensation
 CONDENSE_QUERY_HISTORY_TURNS = int(os.getenv("CONDENSE_QUERY_HISTORY_TURNS", 3))
@@ -238,9 +249,15 @@ def get_vexilon_info():
     source = "External/CI"
 
     if not version:
-        # Priority 3: Fallback (Never dev!)
-        version = "unspecified-local"
-        source = "fallback"
+        # Priority 2: Baked-in Build File
+        try:
+            with open("/app/build_version.txt", "r") as f:
+                version = f.read().strip()
+                source = "Local Build"
+        except FileNotFoundError:
+            # Priority 3: Fallback (Never dev!)
+            version = "unspecified-local"
+            source = "fallback"
 
     py_ver = sys.version.split()[0]
     os_info = platform.system()
@@ -268,22 +285,72 @@ if TYPE_CHECKING:
     import anthropic
     import numpy as np
     from sentence_transformers import SentenceTransformer
+    import faiss
+    import gradio as gr
+
 # ─── Clients ─────────────────────────────────────────────────────────────────
+_embed_model: "SentenceTransformer | None" = None
+_anthropic_client: "anthropic.AsyncAnthropic | None" = None
+
+
+def get_embed_model() -> "SentenceTransformer":
+    global _embed_model
+    if _embed_model is None:
+        # Stabilize CPU usage in shared-resource environments (HF Spaces/CI)
+        # We only do this at RUNTIME. Doing this during BUILD causes infinite hangs.
+        if os.getenv("HF_SPACE_ID") or os.getenv("EXTERNAL_CI"):
+            for var in ("OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+                os.environ.setdefault(var, "1")
+
+        print(f"[embed] Loading local embedding model '{EMBED_MODEL}'…")
+        
+        # Ensure we are truly offline to avoid lock-file permission errors 
+        # in the root-owned (read-only) hf_cache.
+        if os.getenv("TRANSFORMERS_OFFLINE") == "1":
+             os.environ["HF_HUB_OFFLINE"] = "1"
+
+        from sentence_transformers import SentenceTransformer
+
+        # Use the requested device (cpu) to avoid CUDA detection overhead.
+        _embed_model = SentenceTransformer(EMBED_MODEL, device="cpu")
+
+        # Sane limit for offset mapping (4096 is plenty for any single page).
+        _embed_model.max_seq_length = MAX_EMBED_TOKENS
+        if hasattr(_embed_model, "tokenizer"):
+            _embed_model.tokenizer.model_max_length = MAX_EMBED_TOKENS
+        print("[embed] Embedding model ready.")
+    return _embed_model
+
+
+# Embedding dimension (derived from model to prevent FAISS mismatch)
+# Default is 384 for BAAI/bge-small-en-v1.5
+EMBED_DIM = int(os.getenv("EMBED_DIM", "384"))
+
+
 def get_anthropic() -> "anthropic.AsyncAnthropic":
     global _anthropic_client
     if _anthropic_client is None:
         import anthropic
+
+        # Reads ANTHROPIC_API_KEY from environment automatically; raises AuthenticationError if missing
         _anthropic_client = anthropic.AsyncAnthropic()
     return _anthropic_client
 
-# get_embed_model is imported from src.indexing.
-# It handles its own lazy-loading and OMP_NUM_THREADS tuning.
 
-# (Imported from src.indexing)
-
-
-# get_anthropic is defined above
-
+def _get_rag_source_files() -> list[Path]:
+    """
+    Recursively scan LABOUR_LAW_DIR for Markdown files ONLY.
+    PDFs and Forensic Integrity Audits are completely ignored for indexing.
+    The tests/ subdirectory is excluded.
+    """
+    if not LABOUR_LAW_DIR.exists():
+        return []
+    tests_dir = LABOUR_LAW_DIR / "tests"
+    mds = [
+        p for p in LABOUR_LAW_DIR.rglob("*.md") 
+        if not p.is_relative_to(tests_dir) and not p.name.endswith(".integrity.md")
+    ]
+    return sorted(mds, key=lambda p: str(p))
 
 def _get_download_source_files() -> list[Path]:
     """
@@ -297,7 +364,20 @@ def _get_download_source_files() -> list[Path]:
     return sorted(pdfs, key=lambda p: str(p))
 
 
-# _get_source_name is imported from src.indexing
+def _get_source_name(stem: str) -> str:
+    """
+    Parse source_name from internal filename convention: [Index]_[Category]_[Title].
+    Also handles [Index]_[Title] and fallback to title-cased filename.
+    """
+    parts = stem.split("_", 2)
+    if len(parts) == 3:
+        # Index_Category_Title
+        return parts[2]
+    elif len(parts) == 2:
+        # Index_Title
+        return parts[1]
+    # Fallback / No underscores
+    return stem.replace("_", " ").title()
 
 
 def get_knowledge_manifest() -> str:
@@ -507,42 +587,21 @@ class TestRegistry:
 
 _test_registry = TestRegistry()
 
-# (RAG app state is now managed via src.indexing)
-_chunks: list[dict] = []
-_index: Any = None
+# ─── Chunking ─────────────────────────────────────────────────────────────────
+
 
 
 def startup(force_rebuild: bool = False) -> None:
-    """
-    Initialise the vector index and load document chunks.
-
-    If force_rebuild=False (default), we try to load a pre-computed index
-    from .pdf_cache/. If missing, we fall back to build_index_from_sources()
-    which embeds documents from scratch.
-    """
+    """Initialise the vector index and load document chunks."""
     global _chunks, _index
-    get_anthropic()  # Ping early to catch missing ANTHROPIC_API_KEY
-
-    # Try to fetch pre-computed index from GitHub if not present locally
-    # (Needed for HuggingFace Spaces where PDFs aren't bundled)
+    get_anthropic()
     print(f"[startup] Starting Vexilon {VEXILON_VERSION}…")
     if DEVELOPER_MODE:
         print("[startup] DEVELOPER_MODE is ACTIVE. Proactive suggestions enabled.")
     _fetch_pdf_cache_if_missing()
     _test_registry.load(TESTS_DIR)
-    # ── Try fast path: load pre-computed index ──────────────────
-    index, chunks = load_precomputed_index()
-    if not force_rebuild and index is not None and chunks is not None:
-        print(f"[startup] Pre-computed index loaded — {index.ntotal} vectors, {len(chunks)} chunks.")
-    else:
-        # ── Slow path: delegate to the build function ────────────
-        index, chunks = build_index_from_sources(force=force_rebuild)
-
-    if index is not None and chunks is not None:
-        _index = index
-        _chunks = chunks
-    
-    get_embed_model() # Warm model
+    # Delegate to src.indexing
+    _index, _chunks = build_index_from_sources(force=force_rebuild)
     print("[startup] Ready.")
 
 
@@ -869,7 +928,7 @@ async def rag_review_stream(
     message: str,
     history: list[dict],
     use_reviewer: bool = False,
-    persona_mode: str = "Explore",
+    persona_mode: str = "Explorer",
 ) -> AsyncIterator[str]:
     """
     Retrieve relevant chunks, build the prompt, stream from Bot A (RAG),
@@ -890,7 +949,7 @@ async def rag_review_stream(
     context_parts = []
     for chunk in relevant_chunks:
         context_parts.append(
-            f"[Source: {chunk.get('source', 'Unknown')}, Page: {chunk['page']}]\n{chunk['text']}"
+            f"[Source: {chunk.get("source", "Unknown")}, Page: {chunk["page"]}]\n{chunk["text"]}"
         )
     context = "\n\n---\n\n".join(context_parts)
 
@@ -912,7 +971,6 @@ async def rag_review_stream(
         else:
             # Catch-all fallback to prevent crashes from unexpected persona_mode values
             base_prompt = get_system_prompt(DEVELOPER_MODE)
-
         # Standardized formatting for all personas (Issue #216 feedback: use .replace for safety)
         formatted_prompt = base_prompt.replace("{manifest}", get_knowledge_manifest()).replace("{verify_message}", VERIFY_STEWARD_MESSAGE)
 
@@ -920,8 +978,7 @@ async def rag_review_stream(
 
         # 2. Audit Logic (Issue #161 Refactor)
         if persona_mode != "Explore":
-            test_query = message + " " + query
-            matched_tests = _test_registry.find_matches(test_query)
+            matched_tests = _test_registry.find_matches(message + " " + query)
             
             # 1. New Registry Tests
             for test in matched_tests:

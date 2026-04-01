@@ -8,8 +8,8 @@ import faiss
 import numpy as np
 import pytest
 
-import src.indexing as indexing
 import app
+import src.indexing as indexing
 
 
 def _make_chunks(n: int) -> list[dict]:
