@@ -1484,7 +1484,6 @@ EXAMPLE_QUESTIONS = [
     "What rights do stewards have in investigation meetings?",
     "What is the nexus test for off-duty conduct?",
     "Does my employer have a social media policy?",
-    "What happens if I'm disciplined for off-duty behavior?",
 ]
 
 
