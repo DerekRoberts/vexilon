@@ -1508,7 +1508,7 @@ EXAMPLE_QUESTIONS = [
 # Persistent disclaimer about unofficial status and privacy.
 DISCLAIMER_HTML = """
 <div style="background-color:#fff8e1; border-left:4px solid #f59e0b; color:#7c4a00; padding:10px 14px; border-radius:4px; font-size:0.85rem; margin-top:4px; margin-bottom:12px; line-height:1.4;">
-    Not affiliated with BCGEU. AI-generated responses may contain errors. This chat is ephemeral and not saved. Compliant with PIPA (Privacy Act).
+    Not affiliated with BCGEU. AI-generated responses may contain errors. This chat is ephemeral and not saved. Aligned with PIPA (Privacy Act).
 </div>
 """
 

@@ -211,7 +211,7 @@ The sanitization checks for 16+ prompt injection patterns including:
 
 ### Privacy & Data Retention
 
-Vexilon is a "content-blind" application designed for maximum privacy and compliance with the British Columbia **Personal Information Protection Act (PIPA)**.
+Vexilon is a "content-blind" application designed for maximum privacy and to support compliance with the British Columbia **Personal Information Protection Act (PIPA)**.
 
 - **Ephemeral Conversations**: Chats are tied only to your current browser session and are permanently deleted upon refresh or closure.
 - **No Content Logging**: We **never** log user queries, bot responses, or search reasoning.
