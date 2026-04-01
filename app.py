@@ -512,12 +512,12 @@ class TestRegistry:
                     lines = text.split("\n")
                     
                     # Simple parser for "Keywords: k1, k2"
-                    keywords = []
+                    keywords = set()
                     content_start = 0
                     for i, line in enumerate(lines):
                         if line.startswith("**Keywords:**"):
                             kw_line = line.replace("**Keywords:**", "").strip()
-                            keywords = [k.strip().lower() for k in kw_line.split(",")]
+                            keywords = {k.strip().lower() for k in kw_line.split(",") if k.strip()}
                             content_start = i + 1
                             break
                     
