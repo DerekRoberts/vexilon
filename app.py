@@ -63,8 +63,7 @@ from src.indexing import (
     embed_texts, search_index, load_precomputed_index, _fetch_pdf_cache_if_missing,
     chunk_text, _is_toc_or_index_page, _clean_page_text
 )
-_embed_model = None
-_anthropic_client = None
+_anthropic_client: "anthropic.AsyncAnthropic | None" = None
 TESTS_DIR = LABOUR_LAW_DIR / "tests"
 _CSS_PATH = Path(__file__).parent / "style.css"
 
@@ -269,9 +268,6 @@ if TYPE_CHECKING:
     import anthropic
     import numpy as np
     from sentence_transformers import SentenceTransformer
-    import faiss
-    import gradio as gr
-
 # ─── Clients ─────────────────────────────────────────────────────────────────
 def get_anthropic() -> "anthropic.AsyncAnthropic":
     global _anthropic_client
@@ -280,37 +276,9 @@ def get_anthropic() -> "anthropic.AsyncAnthropic":
         _anthropic_client = anthropic.AsyncAnthropic()
     return _anthropic_client
 
+# get_embed_model is imported from src.indexing.
+# It handles its own lazy-loading and OMP_NUM_THREADS tuning.
 
-def get_embed_model() -> "SentenceTransformer":
-    global _embed_model
-    if _embed_model is None:
-        # Stabilize CPU usage in shared-resource environments (HF Spaces/CI)
-        # We only do this at RUNTIME. Doing this during BUILD causes infinite hangs.
-        if os.getenv("HF_SPACE_ID") or os.getenv("EXTERNAL_CI"):
-            for var in ("OMP_NUM_THREADS", "MKL_NUM_THREADS"):
-                os.environ.setdefault(var, "1")
-
-        print(f"[embed] Loading local embedding model '{EMBED_MODEL}'…")
-        
-        # Ensure we are truly offline to avoid lock-file permission errors 
-        # in the root-owned (read-only) hf_cache.
-        if os.getenv("TRANSFORMERS_OFFLINE") == "1":
-             os.environ["HF_HUB_OFFLINE"] = "1"
-
-        from sentence_transformers import SentenceTransformer
-
-        # Use the requested device (cpu) to avoid CUDA detection overhead.
-        _embed_model = SentenceTransformer(EMBED_MODEL, device="cpu")
-
-        # Sane limit for offset mapping (4096 is plenty for any single page).
-        _embed_model.max_seq_length = MAX_EMBED_TOKENS
-        if hasattr(_embed_model, "tokenizer"):
-            _embed_model.tokenizer.model_max_length = MAX_EMBED_TOKENS
-        print("[embed] Embedding model ready.")
-    return _embed_model
-
-
-# Embedding Dimension
 # (Imported from src.indexing)
 
 
