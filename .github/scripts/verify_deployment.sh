@@ -21,54 +21,52 @@ START_TIME=$(date +%s)
 END_TIME=$((START_TIME + TIMEOUT_SECONDS))
 
 while [ $(date +%s) -lt $END_TIME ]; do
-  # We use -H "Authorization: Bearer $HF_TOKEN" if it's set
-  AUTH_HEADER=""
+  # Use Bash array for safer argument handling
+  CURL_ARGS=( -s )
   if [ -n "${HF_TOKEN:-}" ]; then
-      AUTH_HEADER="-H \"Authorization: Bearer $HF_TOKEN\""
+      CURL_ARGS+=( -H "Authorization: Bearer $HF_TOKEN" )
   fi
 
-  STATUS_JSON=$(curl -s $AUTH_HEADER "https://huggingface.co/api/spaces/$SPACE_ID")
-  
-  # Check if we got a valid response (not empty or error)
-  if [ -z "$STATUS_JSON" ] || [[ "$STATUS_JSON" == *"\"error\":\""* ]]; then
-      echo "[verify] API error or empty response. Retrying in $INTERVAL seconds..."
+  # Temporarily disable -e to handle network errors during polling
+  set +e
+  STATUS_JSON=$(curl "${CURL_ARGS[@]}" "https://huggingface.co/api/spaces/$SPACE_ID")
+  CURL_EXIT=$?
+  set -e
+
+  if [ $CURL_EXIT -ne 0 ]; then
+      echo "[verify] curl command failed (exit code $CURL_EXIT). This might be a network glitch. Retrying in $INTERVAL seconds..."
       sleep $INTERVAL
       continue
   fi
 
-  CURRENT_STATUS=$(echo "$STATUS_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('runtime', {}).get('stage', 'unknown'))")
+  # Check if we got a valid response (not empty or error)
+  if [ -z "$STATUS_JSON" ] || [[ "$STATUS_JSON" == *"\"error\":\""* ]]; then
+      echo "[verify] API returned error or empty response. Body: $STATUS_JSON. Retrying in $INTERVAL seconds..."
+      sleep $INTERVAL
+      continue
+  fi
+
+  # Robust status extraction using python (already available in GH Actions)
+  CURRENT_STATUS=$(echo "$STATUS_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('runtime', {}).get('stage', 'unknown'))")
   
   echo "[verify] Current status: $CURRENT_STATUS ($(($(date +%s) - START_TIME))s)"
   
   if [ "$CURRENT_STATUS" == "running" ]; then
     echo "✅ Success: Space $SPACE_ID is running!"
-    
-    # Optional: Smoke test the URL
-    # SUBDOMAIN=$(echo "$SPACE_ID" | sed 's/\//-/g' | tr '[:upper:]' '[:lower:]')
-    # URL="https://${SUBDOMAIN}.hf.space"
-    # echo "[verify] Performing smoke test on $URL..."
-    # if curl -s --fail "$URL" > /dev/null; then
-    #     echo "✅ Smoke test passed!"
-    # else
-    #     echo "⚠️ Smoke test failed (URL not reachable yet), but HF says it's running."
-    # fi
-    
     exit 0
   fi
   
-  if [[ "$CURRENT_STATUS" == *"crashed"* ]]; then
-    echo "❌ Error: Space $SPACE_ID has CRASHED (status: $CURRENT_STATUS)"
-    echo "Check logs at: https://huggingface.co/spaces/$SPACE_ID"
-    exit 1
-  fi
-
-  if [[ "$CURRENT_STATUS" == "no_container_error" ]]; then
-    echo "❌ Error: Space $SPACE_ID reports no_container_error."
-    exit 1
-  fi
+  # Fail immediately on terminal error states
+  case "$CURRENT_STATUS" in
+      *crashed*|*error*|*failed*|*deleted*)
+          echo "❌ Error: Space $SPACE_ID state is '$CURRENT_STATUS'."
+          echo "Check logs at: https://huggingface.co/spaces/$SPACE_ID"
+          exit 1
+          ;;
+  esac
   
   sleep $INTERVAL
 done
 
-echo "❌ Error: Timeout waiting for Space $SPACE_ID to become ready."
+echo "❌ Error: Timeout waiting for Space $SPACE_ID to become ready after $TIMEOUT_SECONDS seconds."
 exit 1
