@@ -119,11 +119,12 @@ services:
       HF_HOME: /app/hf_cache
       PATH: "/app/.venv/bin:$PATH"
     volumes:
-      - ./app.py:/app/app.py:ro,Z
-      - ./style.css:/app/style.css:ro,Z
-      - ./scripts:/app/scripts:ro,Z
+      - ./app.py:/app/app.py:ro,z
+      - ./style.css:/app/style.css:ro,z
+      - ./scripts:/app/scripts:ro,z
       - ./data:/app/data:ro,z
-      - ./src:/app/src:ro,Z
+      - ./src:/app/src:ro,z
       - ./.pdf_cache:/app/.pdf_cache:z
-      - ./pyproject.toml:/app/pyproject.toml:ro,Z
+      - ./pyproject.toml:/app/pyproject.toml:ro,z
+      - ./uv.lock:/app/uv.lock:ro,z
     command: sh -c "uv sync --frozen && uv run gradio app.py --watch-dirs ."
