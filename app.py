@@ -1048,7 +1048,7 @@ EXAMPLE_QUESTIONS = [
 
 
 UI_JS = """
-function() {
+(function() {
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             const textarea = document.querySelector('#msg_input textarea');
@@ -1059,7 +1059,7 @@ function() {
             }
         }
     });
-}
+})();
 """
 
 
