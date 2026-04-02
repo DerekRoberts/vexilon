@@ -97,17 +97,11 @@
     min-width: 60px !important;
 }
 
-/* 5. Mobile improvements & Chatbot sizing */
 #chatbot {
-    height: 600px !important;
-    overflow-y: auto !important;
     margin-bottom: 5px !important;
 }
 
 @media (max-width: 540px) {
-    #chatbot {
-        height: 400px !important;
-    }
     #reviewer_toggle.block {
         min-width: unset !important;
     }
