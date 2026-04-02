@@ -1047,6 +1047,22 @@ EXAMPLE_QUESTIONS = [
 
 
 
+UI_JS = """
+(function() {
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            const textarea = document.querySelector('#msg_input textarea');
+            if (textarea && document.activeElement === textarea) {
+                e.preventDefault();
+                const sendBtn = document.querySelector('#send_btn');
+                if (sendBtn) sendBtn.click();
+            }
+        }
+    });
+})();
+"""
+
+
 ATTRIBUTION_HTML = f"""
 <div style='text-align: center; color: #6b7280; font-size: 0.85rem; margin-top: 1rem;'>
     <a href='{VEXILON_REPO_URL}' target='_blank' style='color: #005691; text-decoration: none;'>View code on GitHub</a>
@@ -1066,20 +1082,6 @@ def build_ui() -> "gr.Blocks":
 
     with gr.Blocks(
         title="Collective Agreement Explorer",
-        js="""
-        function() {
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    const textarea = document.querySelector('#msg_input textarea');
-                    if (textarea && document.activeElement === textarea) {
-                        e.preventDefault();
-                        const sendBtn = document.querySelector('#send_btn');
-                        if (sendBtn) sendBtn.click();
-                    }
-                }
-            });
-        }
-        """,
     ) as demo:
         # ── Header ────────────────────────────────────────────────────────────
         # ── Header ────────────────────────────────────────────────────────────
@@ -1295,4 +1297,5 @@ if __name__ == "__main__":
         allowed_paths=allowed_paths,
         css=_CSS_PATH.read_text() if _CSS_PATH.exists() else "",
         auth=auth_creds,
+        js=UI_JS,
     )
