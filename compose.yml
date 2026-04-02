@@ -63,6 +63,8 @@ services:
       - ./compose.yml:/app/compose.yml:ro,z
       - ./README.md:/app/README.md:ro,z
       - ./Containerfile:/app/Containerfile:ro,z
+      - ./src:/app/src:ro,z
+      - ./scripts:/app/scripts:ro,z
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       HF_HOME: /app/hf_cache
@@ -86,6 +88,8 @@ services:
     memswap_limit: 2g
     volumes:
       - ./app.py:/app/app.py:ro,z
+      - ./src:/app/src:ro,z
+      - ./scripts:/app/scripts:ro,z
       - ./data:/app/data:ro,z
       - ./.pdf_cache:/app/.pdf_cache:z
     environment:
@@ -118,7 +122,8 @@ services:
       - ./app.py:/app/app.py:ro,Z
       - ./style.css:/app/style.css:ro,Z
       - ./scripts:/app/scripts:ro,Z
-      - ./data:/app/data:ro,Z
+      - ./data:/app/data:ro,z
+      - ./src:/app/src:ro,Z
       - ./.pdf_cache:/app/.pdf_cache:z
       - ./pyproject.toml:/app/pyproject.toml:ro,Z
     command: sh -c "uv sync --frozen && uv run gradio app.py --watch-dirs ."

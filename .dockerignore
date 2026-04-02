@@ -10,3 +10,7 @@ __pycache__/
 .venv/
 .pytest_cache/
 .coverage
+
+# Exclude local scratchpads and workspaces
+.workspaces/
+.tmp/
