@@ -47,7 +47,7 @@ while [ $(date +%s) -lt $END_TIME ]; do
   fi
 
   # Robust status extraction using python (already available in GH Actions)
-  CURRENT_STATUS=$(echo "$STATUS_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('runtime', {}).get('stage', 'unknown'))")
+  CURRENT_STATUS=$(echo "$STATUS_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); stage=data.get('runtime', {}).get('stage', 'unknown'); print(str(stage).lower())")
   
   echo "[verify] Current status: $CURRENT_STATUS ($(($(date +%s) - START_TIME))s)"
   
