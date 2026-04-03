@@ -1,3 +1,4 @@
+# Vexilon RAG App: Cache Performance Check commit
 """
 app.py — BCGEU Steward Assistant
 --------------------------------------------
