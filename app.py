@@ -1048,20 +1048,7 @@ EXAMPLE_QUESTIONS = [
 
 
 
-UI_JS = """
-(function() {
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            const textarea = document.querySelector('#msg_input textarea');
-            if (textarea && document.activeElement === textarea) {
-                e.preventDefault();
-                const sendBtn = document.querySelector('#send_btn');
-                if (sendBtn) sendBtn.click();
-            }
-        }
-    });
-})();
-"""
+
 
 
 ATTRIBUTION_HTML = f"""
@@ -1083,6 +1070,20 @@ def build_ui() -> "gr.Blocks":
 
     with gr.Blocks(
         title="Collective Agreement Explorer",
+        js="""
+        function() {
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    const textarea = document.querySelector('#msg_input textarea');
+                    if (textarea && document.activeElement === textarea) {
+                        e.preventDefault();
+                        const sendBtn = document.querySelector('#send_btn');
+                        if (sendBtn) sendBtn.click();
+                    }
+                }
+            });
+        }
+        """,
     ) as demo:
         # ── Header ────────────────────────────────────────────────────────────
         # ── Header ────────────────────────────────────────────────────────────
@@ -1298,5 +1299,4 @@ if __name__ == "__main__":
         allowed_paths=allowed_paths,
         css=_CSS_PATH.read_text() if _CSS_PATH.exists() else "",
         auth=auth_creds,
-        js=UI_JS,
     )
