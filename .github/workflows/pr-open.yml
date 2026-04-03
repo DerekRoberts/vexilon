@@ -78,6 +78,9 @@ jobs:
       id-token: write
       attestations: write
 
+    outputs:
+      triggered: ${{ steps.builder.outputs.triggered }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -101,8 +104,8 @@ jobs:
 
   container_test:
     name: Container Smoke Test
-    needs: container_build
-    if: ${{ ! github.event.pull_request.draft }}
+    needs: [container_build, unit_tests]
+    if: needs.container_build.outputs.triggered == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
 
@@ -142,8 +145,8 @@ jobs:
 
   trivy:
     name: Trivy Security Scan
-    needs: [unit_tests]
-    if: (! github.event.pull_request.draft)
+    needs: [container_build, unit_tests]
+    if: needs.container_build.outputs.triggered == 'true'
     permissions:
       security-events: write
     runs-on: ubuntu-slim
@@ -171,6 +174,6 @@ jobs:
     if: always()
     runs-on: ubuntu-slim
     steps:
-      - if: contains(needs.*.result, 'failure')||contains(needs.*.result, 'canceled')
+      - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
         run: echo "At least one job has failed." && exit 1
       - run: echo "Success!"
