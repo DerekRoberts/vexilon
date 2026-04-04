@@ -96,7 +96,7 @@ jobs:
         run: ./.github/scripts/verify_deployment.sh "DerekRoberts/landru"
       - name: Notify Owners on Failure
         if: failure()
-        uses: bcgov/actions/workflow-notifier@main
+        uses: bcgov/action-workflow-notifier@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: "TEST Deployment Failure: Vexilon"

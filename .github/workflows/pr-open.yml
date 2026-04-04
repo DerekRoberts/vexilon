@@ -93,7 +93,7 @@ jobs:
 
       - name: Build and Push (Mono-repo)
         id: builder
-        uses: bcgov/actions/builder-ghcr@main
+        uses: bcgov/action-builder-ghcr@v1
         with:
           package: vexilon
           build_context: .
