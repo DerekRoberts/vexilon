@@ -28,7 +28,7 @@ jobs:
       - id: diff
         uses: bcgov/actions/diff-triggers@main
         with:
-          triggers: ('./Containerfile' './pyproject.toml' './src/' './scripts/')
+          triggers: '["./Containerfile", "./pyproject.toml", "./src/", "./scripts/"]'
 
   unit_tests:
     name: Unit Tests
@@ -85,6 +85,8 @@ jobs:
     name: Build & Push to GHCR
     needs: [check, unit_tests]
     if: needs.check.outputs.triggered == 'true'
+    env:
+      IMAGE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -103,6 +105,7 @@ jobs:
           package: vexilon
           build_context: .
           build_file: Containerfile
+          tag: sha-${{ env.IMAGE_SHA }}
 
   container_test:
     name: Container Smoke Test
