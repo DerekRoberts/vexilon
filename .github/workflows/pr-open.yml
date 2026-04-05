@@ -33,7 +33,7 @@ jobs:
   unit_tests:
     name: Unit Tests
     needs: [check]
-    if: needs.check.outputs.triggered
+    if: needs.check.outputs.triggered == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -54,7 +54,7 @@ jobs:
   integration_tests:
     name: Integration Tests
     needs: [check, unit_tests]
-    if: needs.check.outputs.triggered
+    if: needs.check.outputs.triggered == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -84,7 +84,7 @@ jobs:
   container_build:
     name: Build & Push to GHCR
     needs: [check, unit_tests]
-    if: needs.check.outputs.triggered
+    if: needs.check.outputs.triggered == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -107,7 +107,7 @@ jobs:
   container_test:
     name: Container Smoke Test
     needs: container_build
-    if: needs.container_build.outputs.triggered
+    if: needs.check.outputs.triggered == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
 
@@ -148,7 +148,7 @@ jobs:
   trivy:
     name: Trivy Security Scan
     needs: [check, unit_tests]
-    if: needs.check.outputs.triggered
+    if: needs.check.outputs.triggered == 'true'
     permissions:
       security-events: write
     runs-on: ubuntu-slim
