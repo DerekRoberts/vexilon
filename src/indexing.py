@@ -57,7 +57,9 @@ def _get_rag_source_files() -> list[Path]:
     for pattern in ["*.md", "*.pdf"]:
         for p in LABOUR_LAW_DIR.rglob(pattern):
             # Skip hidden files, tests, and integrity files
+            # CRITICAL: Skip any paths that may exist in sibling worktrees if context is shared
             if (not p.name.startswith(".") 
+                and ".workspaces" not in p.parts
                 and not p.is_relative_to(tests_dir) 
                 and not p.name.endswith(".integrity.md")):
                 files.append(p)
