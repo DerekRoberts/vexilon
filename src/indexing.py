@@ -2,6 +2,7 @@ import os
 import json
 import time
 import hashlib
+import pypdf
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -51,8 +52,10 @@ def _get_rag_source_files() -> list[Path]:
         return []
     tests_dir = LABOUR_LAW_DIR / "tests"
     mds = [
-        p for p in LABOUR_LAW_DIR.rglob("*.md") 
-        if not p.is_relative_to(tests_dir) and not p.name.endswith(".integrity.md")
+        p for p in LABOUR_LAW_DIR.rglob("*") 
+        if p.suffix.lower() in [".md", ".pdf"]
+        and not p.is_relative_to(tests_dir) 
+        and not p.name.endswith(".integrity.md")
     ]
     return sorted(mds, key=lambda p: str(p))
 
@@ -172,6 +175,46 @@ def load_md_chunks(md_path: Path) -> list[dict]:
 
     return chunk_text(filtered_content, token_metadata, source_name)
 
+def load_pdf_chunks(pdf_path: Path) -> list[dict]:
+    source_name = _get_source_name(pdf_path.stem)
+    print(f"[loader] Parsing PDF '{source_name}'...")
+    
+    chunks = []
+    try:
+        reader = pypdf.PdfReader(str(pdf_path))
+        tokenizer = get_embed_model().tokenizer
+        
+        full_text = ""
+        token_metadata = []
+        char_offset = 0
+        
+        for i, page in enumerate(reader.pages):
+            page_text = page.extract_text() or ""
+            page_text = _clean_page_text(page_text)
+            if not page_text.strip() or _is_toc_or_index_page(page_text):
+                continue
+            
+            page_num = i + 1
+            full_text += page_text + "\n"
+            
+            # Simple token attribution to pages
+            encoding = tokenizer(
+                page_text,
+                add_special_tokens=False,
+                return_offsets_mapping=True,
+                truncation=False,
+            )
+            for start_off, end_off in encoding.offset_mapping:
+                token_metadata.append(
+                    (char_offset + start_off, char_offset + end_off, page_num, "")
+                )
+            char_offset += len(page_text) + 1
+            
+        return chunk_text(full_text, token_metadata, source_name)
+    except Exception as e:
+        print(f"[loader] Error reading PDF {pdf_path}: {e}")
+        return []
+
 def embed_texts(texts: list[str]) -> "np.ndarray":
     import numpy as np
     model = get_embed_model()
@@ -235,6 +278,8 @@ def build_index_from_sources(force: bool = False) -> tuple[Any, Any] | tuple[Non
     for f in all_files:
         if f.suffix.lower() == ".md":
             chunks.extend(load_md_chunks(f))
+        elif f.suffix.lower() == ".pdf":
+            chunks.extend(load_pdf_chunks(f))
     
     if not chunks:
         print("[build] No chunks found in source files!")
