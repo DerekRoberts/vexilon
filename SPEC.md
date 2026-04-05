@@ -329,6 +329,8 @@ Each response must follow this structure:
 | **Markdown-First RAG** | Native Markdown | High-precision extraction via `pdf_to_md.py`; structured MD ensures the highest grounding accuracy and eliminates runtime PDF parsing overhead. |
 | **Forensic Pipeline** | `pdf_to_md.py` | Markdown-First architecture: PDFs are pre-converted to structured Markdown with dual-pass AI verification and integrity auditing. |
 | **Web UI** | Gradio 6.x | HF Spaces native; supports asynchronous handlers for high concurrency |
+| **Telegram Bot** | `python-telegram-bot` | Native mobile experience; supports streaming message updates |
+| **WhatsApp Bot** | `FastAPI` + `twilio` | Professional mobile reach via Twilio Webhooks |
 | **Hosting** | Hugging Face Spaces | Free tier; Gradio-native; public URL with no infrastructure to manage |
 | **Local Dev** | Podman + `compose.yml` | Existing setup retained |
 | **Language** | Python 3.11+ | Existing codebase language |
@@ -371,8 +373,8 @@ User sends message
         user: [conversation history + new query]
         context: [retrieved chunks with page numbers]
   └── Send to Claude API (claude-haiku-4-5-20251001) via AsyncAnthropic
-  └── Stream response to Gradio chat interface (asynchronous generator)
-  └── Append to conversation history
+  └── Stream response to UI (Gradio, Telegram, or WhatsApp)
+  └── Append to conversation history (Session-local for Gradio; Chat ID-local for Messaging)
 ```
 
 ### Concurrency and Asynchrony

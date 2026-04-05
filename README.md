@@ -26,6 +26,8 @@ of labour law and contract documents.
 | Embeddings | `BAAI/bge-small-en-v1.5` — local CPU, no API key |
 | Vector Store | FAISS (in-memory, rebuilt at startup) |
 | Web UI | Gradio 6 — `http://localhost:7860` |
+| Telegram Bot | `python-telegram-bot` |
+| WhatsApp Bot | `FastAPI` + `twilio` |
 | Knowledge Base | Multi-source Markdown in `data/labour_law/` |
 | Deployment | Hugging Face Spaces + GitHub Actions |
 
@@ -106,6 +108,26 @@ The container uses a multi-stage build and pre-indexes the agreement at build ti
 uv run --with-requirements requirements.txt python app.py
 ```
 
+### Messaging Bots (Telegram & WhatsApp)
+
+Vexilon can also be run as a Telegram or WhatsApp bot.
+
+**Telegram:**
+```bash
+export ANTHROPIC_API_KEY=<YOUR_KEY>
+export TELEGRAM_BOT_TOKEN=<YOUR_BOT_TOKEN>
+python telegram_bot.py
+```
+
+**WhatsApp (via Twilio):**
+```bash
+export ANTHROPIC_API_KEY=<YOUR_KEY>
+export TWILIO_ACCOUNT_SID=<YOUR_SID>
+export TWILIO_AUTH_TOKEN=<YOUR_TOKEN>
+python whatsapp_bot.py
+```
+*(Requires a Twilio webhook pointed at your server's `/whatsapp` endpoint)*
+
 Open <http://localhost:7860> in your browser.
 
 > ✅ **Startup is fast** — the embedding model and FAISS index are both baked into the
@@ -127,7 +149,8 @@ The app is ready immediately on page load — no dropdown, no Load button.
 
 1. Type a question in the input field and press **Enter** or tap **Send**
 2. Or click one of the suggested question chips on the welcome screen
-3. Responses include a plain-language explanation followed by verbatim quotes with citations
+3. **Telegram/WhatsApp**: Just send a message to the bot. It maintains a 20-turn conversation history.
+4. Responses include a plain-language explanation followed by verbatim quotes with citations
 4. **Direct Advice Mode**: Toggle this to receive tactical, operational guidance from a "Senior Staff Rep" persona. This includes:
    - **Immediate Action Steps**: Numbered instructions for your next moves.
    - **Meeting Scripts**: Verbatim language to use with management.

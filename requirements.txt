@@ -5,3 +5,7 @@ anthropic
 torch
 sentence-transformers
 faiss-cpu
+python-telegram-bot
+fastapi
+uvicorn
+twilio
