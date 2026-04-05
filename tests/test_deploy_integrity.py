@@ -78,3 +78,30 @@ def test_hf_cache_security_lock():
     # Safe version: COPY --from=builder /app/hf_cache /app/hf_cache
     assert "--chown=1001:1001 /app/hf_cache" not in content, \
         "Security Breach: hf_cache MUST NOT be owned by the app user. Revert the chown to root."
+
+
+def test_enter_key_uses_capture_phase():
+    """
+    Regression guard for issue #276: Enter must submit the chat, not insert a newline.
+
+    The fix is to pass `true` (capture phase) as the third argument to
+    addEventListener so our handler fires BEFORE Gradio's element-level textarea
+    handler. Without capture phase, Gradio swallows the keydown event first and
+    inserts a newline, making Shift+Enter the only way to submit — opposite of
+    standard chat UX (MS Teams, Slack, etc.).
+    """
+    app_path = REPO_ROOT / "app.py"
+    content = app_path.read_text()
+
+    # The listener must be registered with capture=true.
+    # Match the pattern: addEventListener('keydown', <fn>, true)
+    # Allows whitespace flexibility but requires the literal `true` flag.
+    assert re.search(
+        r"addEventListener\(\s*['\"]keydown['\"].*?,\s*true\s*\)",
+        content,
+        re.DOTALL,
+    ), (
+        "The keydown listener in build_ui() MUST use capture phase (third arg `true`). "
+        "Without it, Gradio's textarea handler fires first and Enter inserts a newline "
+        "instead of submitting the message. See issue #276."
+    )
