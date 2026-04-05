@@ -26,13 +26,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - id: diff
-        uses: bcgov/actions-diff-triggers@v1.1.1
+        uses: bcgov/actions/diff-triggers@main
         with:
-          triggers: |
-            ./Containerfile
-            ./pyproject.toml
-            ./src/
-            ./scripts/
+          triggers: ('./Containerfile' './pyproject.toml' './src/' './scripts/')
 
   unit_tests:
     name: Unit Tests
