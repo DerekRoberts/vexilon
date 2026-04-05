@@ -81,9 +81,6 @@ jobs:
       triggered: ${{ steps.builder.outputs.triggered }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
       - name: Build and Push
         id: builder
         uses: bcgov/action-builder-ghcr@v4.2.1
