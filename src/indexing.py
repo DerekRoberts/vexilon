@@ -264,6 +264,7 @@ def build_index(chunks: list[dict]) -> "faiss.IndexFlatIP":
     import faiss
     import numpy as np
     texts = [c["text"] for c in chunks]
+    print("[index] Indexing... Please expect a wait (this can take 5-10 minutes on CPU).")
     print(f"[index] Embedding {len(texts)} chunks locally...")
     t0 = time.time()
     vectors = embed_texts(texts)
