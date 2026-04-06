@@ -2,7 +2,6 @@ import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from contextlib import asynccontextmanager
 import app
-import hashlib
 
 @pytest.mark.asyncio
 async def test_generate_perspective_queries_simple():
