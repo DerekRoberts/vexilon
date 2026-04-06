@@ -543,7 +543,7 @@ def startup(force_rebuild: bool = False, skip_pdf_fetch: bool = False) -> None:
     get_anthropic()
     
     # 1. Basic Metadata
-    if not os.getenv("VEXILON_QUIET"):
+    if os.getenv("VEXILON_QUIET", "").lower() not in ("1", "true"):
         print(f"[startup] Starting Vexilon {VEXILON_VERSION}…")
     if DEVELOPER_MODE:
         print("[startup] DEVELOPER_MODE is ACTIVE.")
@@ -562,12 +562,14 @@ def startup(force_rebuild: bool = False, skip_pdf_fetch: bool = False) -> None:
     # Rebuild only if forced OR if loading failed (missing/corrupt files)
     if _index is None or _chunks is None or force_rebuild:
         print("[startup] Pre-computed index missing or forced rebuild. Refreshing from sources...")
-        _index, _chunks = build_index_from_sources(force=force_rebuild)
+        # If we're here as a fallback (not a manual force), we MUST force the rebuild 
+        # to ensure it doesn't just re-read the same corrupt/empty files.
+        _index, _chunks = build_index_from_sources(force=True)
     else:
         # We already successfully loaded it in the load_precomputed_index call
         pass
 
-    if _index and _chunks:
+    if _index is not None and _chunks:
         print("[startup] Ready.")
     else:
         print("[startup] ERROR: Knowledge base failed to load.")
