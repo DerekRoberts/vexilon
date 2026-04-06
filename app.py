@@ -387,21 +387,28 @@ def get_system_prompt(developer_mode: bool = False) -> str:
     """Load the default system prompt, optionally with developer extensions."""
     path = PROMPTS_DIR / ("developer.txt" if developer_mode else "steward.txt")
     if path.is_file():
-        return path.read_text(encoding="utf-8")
-    # Robust fallback including required formatting placeholders
-    return (
-        "You are Vexilon, a professional assistant for BCGEU union stewards.\n\n"
-        "Knowledge Base:\n{manifest}\n\n"
-        "{verify_message}"
-    )
+        content = path.read_text(encoding="utf-8")
+    else:
+        # Robust fallback including required formatting placeholders
+        content = (
+            "You are Vexilon, a professional assistant for BCGEU union stewards.\n\n"
+            "Knowledge Base:\n{manifest}\n\n"
+            "{verify_message}"
+        )
+    # Always prepend mandatory overriding rules regardless of file content
+    return f"{GLOBAL_MANDATORY_RULES}\n\n{content}"
 
-GLOBAL_MANDATORY_RULES = """--- MANDATORY OPERATIONAL RULES (OVERRIDING) ---
+GLOBAL_MANDATORY_RULES = """--- MANDATORY OPERATIONAL RULES (OVERRIDING - v272-FIXED) ---
 1. ANSWER FROM EXCERPTS ONLY: Base your answer strictly on the provided excerpts. If the specific text was not retrieved, suggest the user ask about that section directly. NEVER fabricate contract language.
 2. CITATIONS: Every claim MUST be supported by a verbatim quote in a blockquote (> "...") followed by its citation (Document, Article, Page).
 3. HIERARCHY: Lead with the Collective Agreement. Use Statutes only to reinforce the legal framework.
 4. GRIEVANCE FILING (CRITICAL): If a steward asks for resolution steps or once the facts of a potential violation are gathered, you MUST proactively recommend filing a grievance. 
    - YOU MUST APPEND a final section titled '### 📁 Resolution & Next Steps'.
-   - THIS SECTION MUST CONTAIN this link: [Download BCGEU Grievance Form](/gradio_api/file=data/labour_law/forms/BCGEU%20Grievance%20Form.pdf)
+   - THIS SECTION MUST CONTAIN ONLY these 4 absolute links (DO NOT PARAPHRASE OR SUMMARIZE):
+       - [Grievance - 0 - Instructions](https://github.com/DerekRoberts/vexilon/raw/feat/272/data/labour_law/forms/Grievance%20-%200%20-%20Instructions.pdf)
+       - [Grievance - A - Grievor Case](https://github.com/DerekRoberts/vexilon/raw/feat/272/data/labour_law/forms/Grievance%20-%20A%20-%20Grievor%20Case.pdf)
+       - [Grievance - B - Notify Designates](https://github.com/DerekRoberts/vexilon/raw/feat/272/data/labour_law/forms/Grievance%20-%20B%20-%20Notify%20Designates.pdf)
+       - [Grievance - C - Steward Case](https://github.com/DerekRoberts/vexilon/raw/feat/272/data/labour_law/forms/Grievance%20-%20C%20-%20Steward%20Case.pdf)
    - YOU MUST ALSO mention the 'BCGEU Grievance Form Guide.md' for instructions.
    - DISCLAIMER: You MUST include this verbatim: "Note: Viability of this grievance will be assessed by the staff representative and/or arbitrator, not by the steward."
 5. NO MERIT ASSESSMENT: Do NOT judge the merit, viability, or likelihood of success of a grievance. Your role is to identify potential violations and facilitate the filing process.
@@ -527,18 +534,45 @@ _test_registry = TestRegistry()
 
 
 
-def startup(force_rebuild: bool = False) -> None:
-    """Initialise the vector index and load document chunks."""
+def startup(force_rebuild: bool = False, skip_pdf_fetch: bool = False) -> None:
+    """
+    Initialise the vector index and load document chunks.
+    Attempts cold-start from pre-computed index first.
+    """
     global _chunks, _index
     get_anthropic()
-    print(f"[startup] Starting Vexilon {VEXILON_VERSION}…")
+    
+    # 1. Basic Metadata
+    if os.getenv("VEXILON_QUIET", "").lower() not in ("1", "true"):
+        print(f"[startup] Starting Vexilon {VEXILON_VERSION}…")
     if DEVELOPER_MODE:
-        print("[startup] DEVELOPER_MODE is ACTIVE. Proactive suggestions enabled.")
-    _fetch_pdf_cache_if_missing()
+        print("[startup] DEVELOPER_MODE is ACTIVE.")
+    
+    # 2. Local Knowledge Bases
     _test_registry.load(TESTS_DIR)
-    # Delegate to src.indexing
-    _index, _chunks = build_index_from_sources(force=force_rebuild)
-    print("[startup] Ready.")
+
+    # 3. Load / Build Vector Index
+    if not skip_pdf_fetch:
+        _fetch_pdf_cache_if_missing()
+
+    # Attempt to load precomputed first if not forcing
+    if not force_rebuild:
+        _index, _chunks = load_precomputed_index()
+    
+    # Rebuild only if forced OR if loading failed (missing/corrupt files)
+    if _index is None or _chunks is None or force_rebuild:
+        print("[startup] Pre-computed index missing or forced rebuild. Refreshing from sources...")
+        # If we're here as a fallback (not a manual force), we MUST force the rebuild 
+        # to ensure it doesn't just re-read the same corrupt/empty files.
+        _index, _chunks = build_index_from_sources(force=True)
+    else:
+        # We already successfully loaded it in the load_precomputed_index call
+        pass
+
+    if _index is not None and _chunks:
+        print("[startup] Ready.")
+    else:
+        print("[startup] ERROR: Knowledge base failed to load.")
 
 
 # ─── RAG Query ────────────────────────────────────────────────────────────────
@@ -1050,14 +1084,18 @@ EXAMPLE_QUESTIONS = [
 
 
 
+import html
+import urllib.parse
+_SAFE_VEXILON_VERSION = html.escape(VEXILON_VERSION)
+_URL_VEXILON_VERSION = urllib.parse.quote(VEXILON_VERSION)
 
 ATTRIBUTION_HTML = f"""
 <div style='text-align: center; color: #6b7280; font-size: 0.85rem; margin-top: 1rem;'>
-    <a href='{VEXILON_REPO_URL}' target='_blank' style='color: #005691; text-decoration: none;'>View code on GitHub</a>
+    <a href='{VEXILON_REPO_URL}' target='_blank' rel='noopener noreferrer' style='color: #005691; text-decoration: none;'>View code on GitHub</a>
     <span style='margin-left: 0.5rem; opacity: 0.7;'>•</span>
-    <a href='{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md' target='_blank' style='color: #008542; text-decoration: none;'>Privacy Policy (PIPA)</a>
+    <a href='{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md' target='_blank' rel='noopener noreferrer' style='color: #008542; text-decoration: none;'>Privacy Policy (PIPA)</a>
     <span style='margin-left: 0.5rem; opacity: 0.7;'>•</span>
-    <a href='{VEXILON_REPO_URL}/pkgs/container/vexilon' target='_blank' style='color: #005691; text-decoration: none;'>{VEXILON_VERSION}</a>
+    <a href='{VEXILON_REPO_URL}/pkgs/container/vexilon/versions?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION}' target='_blank' rel='noopener noreferrer' style='color: #005691; text-decoration: none;'>{_SAFE_VEXILON_VERSION}</a>
 </div>
 """
 
@@ -1090,6 +1128,8 @@ def build_ui(css: str = "") -> "gr.Blocks":
         head=PWA_HEAD,
         js="""
         function() {
+            // Use capture phase (true) so this fires before Gradio's element-level
+            // textarea handler, preventing Enter from inserting a newline (#276).
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     const textarea = document.querySelector('#msg_input textarea');
@@ -1099,13 +1139,12 @@ def build_ui(css: str = "") -> "gr.Blocks":
                         if (sendBtn) sendBtn.click();
                     }
                 }
-            });
+            }, true);
         }
         """,
     ) as demo:
         # ── Header ────────────────────────────────────────────────────────────
-        # ── Header ────────────────────────────────────────────────────────────
-        gr.Markdown("## Unofficial Ephemeral BCGEU Steward Assistant")
+        gr.Markdown("# BCGEU Steward Assistant")
 
         with gr.Accordion("Knowledge Base & Priority", open=False):
             gr.Markdown(
@@ -1156,12 +1195,12 @@ def build_ui(css: str = "") -> "gr.Blocks":
             msg_input = gr.Textbox(
                 placeholder="Ask about the collective agreement…",
                 label="",
-                lines=2,
                 max_lines=6,
                 scale=5,
                 show_label=False,
                 container=False,
                 elem_id="msg_input",
+                lines=1,
             )
             send_btn = gr.Button("Send ➤", scale=1, variant="primary", elem_id="send_btn")
 
@@ -1172,7 +1211,7 @@ def build_ui(css: str = "") -> "gr.Blocks":
             use_reviewer: bool,
             persona_mode: str,
             **kwargs,
-        ) -> AsyncIterator[tuple[list[dict], str, dict, dict]]:
+        ) -> AsyncIterator[tuple[list[dict], str, dict]]:
             import gradio as gr
             
             # Onboarding visibility logic
@@ -1183,7 +1222,7 @@ def build_ui(css: str = "") -> "gr.Blocks":
             hide = gr.update(visible=False)
             show = gr.update(visible=True)
             if not message.strip():
-                yield history, "", show, gr.update()
+                yield history, "", show
                 return
 
             user_id = request.client.host if request else "default"
