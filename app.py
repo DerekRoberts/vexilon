@@ -57,6 +57,7 @@ from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 import datetime
 import tempfile
+import hashlib
 
 
 # Ensure the HuggingFace model cache is writable and persistent.
@@ -636,6 +637,62 @@ async def condense_query(message: str, history: list[dict]) -> str:
         return message
 
 
+async def generate_perspective_queries(message: str, history: list[dict]) -> list[str]:
+    """
+    Analyze if the query is complex and generate multiple perspectives if so.
+    Returns a list of queries (at least one, the original/condensed one).
+    Integrated Complexity Detection & Multi-Query Generation (Issue #132).
+    """
+    condensed = await condense_query(message, history)
+    
+    # Analyze complexity and generate perspectives in one go
+    prompt = (
+        "Analyze if the following search query for a BCGEU Steward Assistant is 'complex'. "
+        "A query is complex if it involves potential conflicts between contract articles, "
+        "exceptions, multiple different documents (statutes vs agreement), or "
+        "nuanced topics like off-duty conduct or seniority disputes.\n\n"
+        "If it is NOT complex, simply return the query itself without any changes, prefixes, or commentary.\n\n"
+        "If it IS complex, generate 3-5 distinct search queries from different 'angles' or perspectives "
+        "(e.g., employer rights, employee obligations, specific exceptions, related precedents). "
+        "Provide each query on a new line started with a hyphen (-). "
+        "Do NOT provide any opening or closing commentary, just the hyphenated queries if complex, "
+        "or the single query if simple.\n\n"
+        f"Query: {condensed}\n\n"
+        "Response:"
+    )
+
+    client = get_anthropic()
+    try:
+        response = await client.messages.create(
+            model=CONDENSE_MODEL,
+            max_tokens=250,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        resp_text = response.content[0].text.strip()
+        
+        # If it doesn't look like a list, return the original
+        if not resp_text.startswith("-"):
+            return [condensed]
+        
+        # Extract lines starting with hyphen
+        perspective_queries = []
+        for line in resp_text.split("\n"):
+            line = line.strip()
+            if line.startswith("-"):
+                q = line.lstrip("-").strip().strip('"')
+                if q:
+                    perspective_queries.append(q)
+        
+        if not perspective_queries:
+            return [condensed]
+            
+        print(f"[rag] Complex query detected. Generated {len(perspective_queries)} perspectives.")
+        return perspective_queries
+    except Exception as exc:
+        print(f"[rag] Multi-perspective generation failed: {exc}. Using condensed query.")
+        return [condensed]
+
+
 
 # ─── Export / Import Functions ────────────────────────────────────────────────
 MAX_IMPORT_SIZE_BYTES = 500 * 1024  # 500KB limit
@@ -658,9 +715,28 @@ async def rag_stream(
         )
         return
 
-    # Rewrite query for RAG if there is history
-    query = await condense_query(message, history)
-    relevant_chunks = search_index(_index, _chunks, query)
+    # Issue #132: Multi-perspective retrieval for complex topics
+    queries = await generate_perspective_queries(message, history)
+    
+    # Run searches for all queries and aggregate results
+    all_hits = []
+    seen_hashes = set()
+    
+    for q in queries:
+        # If multiple perspectives, we use a smaller k per query to avoid overwhelming the context
+        k = 15 if len(queries) > 1 else 40
+        relevant_chunks = search_index(_index, _chunks, q, top_k=k)
+        for chunk in relevant_chunks:
+            # Aggregation & Deduplication (Issue #132)
+            # We hash the text to identify duplicate chunks retrieved by different queries
+            text_hash = hashlib.md5(chunk["text"].encode("utf-8")).hexdigest()
+            if text_hash not in seen_hashes:
+                seen_hashes.add(text_hash)
+                all_hits.append(chunk)
+
+    # Limit total aggregated context to prevent token overflows if many queries returned many hits
+    # but keep enough for the LLM to see multiple perspectives.
+    relevant_chunks = all_hits[:50]
 
     # Build context block from retrieved chunks
     context_parts = []
@@ -728,9 +804,23 @@ async def rag_stream(
 
 
 async def get_rag_context(message: str, history: list[dict]) -> tuple[str, str]:
-    """Get context (excerpts) for a query without generating a response."""
-    query = await condense_query(message, history)
-    relevant_chunks = search_index(_index, _chunks, query)
+    """Get context (excerpts) for a query without generating a response. Consistent with Issue #132."""
+    queries = await generate_perspective_queries(message, history)
+    
+    # Run searches for all queries and aggregate results
+    all_hits = []
+    seen_hashes = set()
+    
+    for q in queries:
+        k = 15 if len(queries) > 1 else 40
+        relevant_chunks = search_index(_index, _chunks, q, top_k=k)
+        for chunk in relevant_chunks:
+            text_hash = hashlib.md5(chunk["text"].encode("utf-8")).hexdigest()
+            if text_hash not in seen_hashes:
+                seen_hashes.add(text_hash)
+                all_hits.append(chunk)
+
+    relevant_chunks = all_hits[:50]
 
     context_parts = []
     for chunk in relevant_chunks:
@@ -738,7 +828,8 @@ async def get_rag_context(message: str, history: list[dict]) -> tuple[str, str]:
             f"[Source: {chunk.get('source', 'Unknown')}, Page: {chunk['page']}]\n{chunk['text']}"
         )
     context = "\n\n---\n\n".join(context_parts)
-    return query, context
+    query_display = " | ".join(queries) if len(queries) > 1 else queries[0]
+    return query_display, context
 
 
 async def verify_response(assistant_response: str, context: str) -> str:
