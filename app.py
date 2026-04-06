@@ -534,18 +534,43 @@ _test_registry = TestRegistry()
 
 
 
-def startup(force_rebuild: bool = False) -> None:
-    """Initialise the vector index and load document chunks."""
+def startup(force_rebuild: bool = False, skip_pdf_fetch: bool = False) -> None:
+    """
+    Initialise the vector index and load document chunks.
+    Attempts cold-start from pre-computed index first.
+    """
     global _chunks, _index
     get_anthropic()
-    print(f"[startup] Starting Vexilon {VEXILON_VERSION}…")
+    
+    # 1. Basic Metadata
+    if not os.getenv("VEXILON_QUIET"):
+        print(f"[startup] Starting Vexilon {VEXILON_VERSION}…")
     if DEVELOPER_MODE:
-        print("[startup] DEVELOPER_MODE is ACTIVE. Proactive suggestions enabled.")
-    _fetch_pdf_cache_if_missing()
+        print("[startup] DEVELOPER_MODE is ACTIVE.")
+    
+    # 2. Local Knowledge Bases
     _test_registry.load(TESTS_DIR)
-    # Delegate to src.indexing
-    _index, _chunks = build_index_from_sources(force=force_rebuild)
-    print("[startup] Ready.")
+
+    # 3. Load / Build Vector Index
+    if not skip_pdf_fetch:
+        _fetch_pdf_cache_if_missing()
+
+    # Attempt to load precomputed first if not forcing
+    if not force_rebuild:
+        _index, _chunks = load_precomputed_index()
+    
+    # Rebuild only if forced OR if loading failed (missing/corrupt files)
+    if _index is None or _chunks is None or force_rebuild:
+        print("[startup] Pre-computed index missing or forced rebuild. Refreshing from sources...")
+        _index, _chunks = build_index_from_sources(force=force_rebuild)
+    else:
+        # We already successfully loaded it in the load_precomputed_index call
+        pass
+
+    if _index and _chunks:
+        print("[startup] Ready.")
+    else:
+        print("[startup] ERROR: Knowledge base failed to load.")
 
 
 # ─── RAG Query ────────────────────────────────────────────────────────────────

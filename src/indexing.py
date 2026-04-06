@@ -283,6 +283,11 @@ def save_index(index: "faiss.IndexFlatIP", chunks: list[dict]) -> None:
     print(f"[index] Saved index to {INDEX_PATH}")
 
 def build_index_from_sources(force: bool = False) -> tuple[Any, Any] | tuple[None, None]:
+    """
+    Main entry point for index creation.
+    NOTE: Manifest hashing is performed here to determine if a re-index is needed.
+    In container environments, this is typically called during the build stage.
+    """
     all_files = _get_rag_source_files()
     if not all_files:
         print("[build] No source files found!")
@@ -301,11 +306,12 @@ def build_index_from_sources(force: bool = False) -> tuple[Any, Any] | tuple[Non
             with open(MANIFEST_PATH, "r") as f:
                 stored_manifest = json.load(f)
             if stored_manifest == current_manifest and INDEX_PATH.exists() and CHUNKS_PATH.exists():
-                print("[build] Smart Refresh: No changes detected. Skipping.")
+                print("[build] Smart Refresh: No changes detected in sources. Skipping build.")
                 return load_precomputed_index()
         except Exception:
             pass
 
+    print(f"[build] Change detected or forced rebuild. Indexing {len(all_files)} files...")
     PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     chunks = []
     for f in all_files:
