@@ -106,6 +106,7 @@ jobs:
           build_context: .
           build_file: Containerfile
           tags: sha-${{ env.IMAGE_SHA }}
+          build_args: VERSION=sha-${{ env.IMAGE_SHA }}
 
   container_test:
     name: Container Smoke Test
