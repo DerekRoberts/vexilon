@@ -147,6 +147,7 @@ def test_startup_uses_precomputed_index_when_available(monkeypatch):
     """startup() fast path: if a pre-computed index exists, it MUST use it and skip rebuild."""
     monkeypatch.setattr(app, "_chunks", [])
     monkeypatch.setattr(app, "_index", None)
+    monkeypatch.setattr(app, "_test_registry", MagicMock()) # FEEDBACK: Avoid disk I/O
     monkeypatch.setattr(indexing, "_fetch_pdf_cache_if_missing", lambda: None)
     monkeypatch.setattr(app, "_fetch_pdf_cache_if_missing", lambda: None)
 
@@ -157,7 +158,7 @@ def test_startup_uses_precomputed_index_when_available(monkeypatch):
     monkeypatch.setattr(app, "load_precomputed_index", mock_load)
 
     # Ensure build_index_from_sources is NOT called
-    mock_build = MagicMock()
+    mock_build = MagicMock(return_value=(None, None)) # FEEDBACK: Unpack safety
     monkeypatch.setattr(app, "build_index_from_sources", mock_build)
 
     monkeypatch.setattr(app, "get_anthropic", MagicMock())
