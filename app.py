@@ -1064,7 +1064,7 @@ ATTRIBUTION_HTML = f"""
     <span style='margin-left: 0.5rem; opacity: 0.7;'>•</span>
     <a href='{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md' target='_blank' style='color: #008542; text-decoration: none;'>Privacy Policy (PIPA)</a>
     <span style='margin-left: 0.5rem; opacity: 0.7;'>•</span>
-    <a href='{VEXILON_REPO_URL}/pkgs/container/vexilon' target='_blank' style='color: #005691; text-decoration: none;'>{VEXILON_VERSION}</a>
+    <a href='{VEXILON_REPO_URL}/pkgs/container/vexilon/versions?filters%5Bversion_type%5D=tagged&query={VEXILON_VERSION}' target='_blank' style='color: #005691; text-decoration: none;'>{VEXILON_VERSION}</a>
 </div>
 """
 
