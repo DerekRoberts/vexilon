@@ -1061,15 +1061,33 @@ ATTRIBUTION_HTML = f"""
 </div>
 """
 
+PWA_HEAD = """
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#005691">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vexilon">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js');
+  });
+}
+</script>
+"""
 
 
 
-def build_ui() -> "gr.Blocks":
+
+def build_ui(css: str = "") -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
     import gradio as gr
 
     with gr.Blocks(
-        title="Collective Agreement Explorer",
+        title="BCGEU Steward Assistant",
+        css=css,
+        head=PWA_HEAD,
         js="""
         function() {
             document.addEventListener('keydown', function(e) {
@@ -1292,11 +1310,45 @@ if __name__ == "__main__":
     print(f"[startup] Vexilon UI initialized. Ready to serve at port {os.getenv('PORT', 7860)}.")
     print(f"[startup] Version: {VEXILON_VERSION} | Threads: {os.getenv('OMP_NUM_THREADS', 'Auto')}")
     
-    app.launch(
-        server_name="0.0.0.0",
-        server_port=int(os.getenv("PORT", 7860)),
-        share=False,
+    css_content = _CSS_PATH.read_text() if _CSS_PATH.exists() else ""
+    demo = build_ui(css=css_content)
+
+    # ── PWA & FastAPI Wrapper ───────────────────────────────────────────────
+    from fastapi import FastAPI
+    from fastapi.responses import FileResponse
+    import uvicorn
+    import gradio as gr
+
+    fastapi_app = FastAPI()
+
+    @fastapi_app.get("/manifest.json")
+    async def get_manifest():
+        return FileResponse("manifest.json")
+
+    @fastapi_app.get("/sw.js")
+    async def get_sw():
+        return FileResponse("sw.js", media_type="application/javascript")
+
+    @fastapi_app.get("/icon-192.png")
+    async def get_icon192():
+        return FileResponse("icon-192.png")
+
+    @fastapi_app.get("/icon-512.png")
+    async def get_icon512():
+        return FileResponse("icon-512.png")
+
+    # Mount Gradio sub-app
+    app_final = gr.mount_gradio_app(
+        fastapi_app,
+        demo,
+        path="/",
         allowed_paths=allowed_paths,
-        css=_CSS_PATH.read_text() if _CSS_PATH.exists() else "",
         auth=auth_creds,
+    )
+
+    uvicorn.run(
+        app_final,
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", 7860)),
+        log_level="info"
     )

@@ -5,3 +5,5 @@ anthropic
 torch
 sentence-transformers
 faiss-cpu
+fastapi
+uvicorn
