@@ -1079,6 +1079,8 @@ def build_ui() -> "gr.Blocks":
         title="Collective Agreement Explorer",
         js="""
         function() {
+            // Use capture phase (true) so this fires before Gradio's element-level
+            // textarea handler, preventing Enter from inserting a newline (#276).
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     const textarea = document.querySelector('#msg_input textarea');
@@ -1088,7 +1090,7 @@ def build_ui() -> "gr.Blocks":
                         if (sendBtn) sendBtn.click();
                     }
                 }
-            });
+            }, true);
         }
         """,
     ) as demo:
