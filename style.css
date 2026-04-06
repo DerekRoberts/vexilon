@@ -2,8 +2,6 @@
 .compact-row {
     align-items: center !important;
     gap: 6px !important;
-    flex-wrap: nowrap !important;
-    overflow: visible !important;
 }
 
 /* 2. Persona Segmented Control (Pill style) */
@@ -24,7 +22,7 @@
     flex: 1 !important;
     height: 32px !important;
     line-height: 32px !important;
-    padding: 0 !important;
+    padding: 0 12px !important;
     border: 1px solid var(--border-color-primary) !important;
     font-size: 0.8rem !important;
     border-radius: 0 !important;
@@ -33,6 +31,7 @@
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    white-space: nowrap !important;
 }
 #persona_selector label span {
     margin: 0 !important;
@@ -92,9 +91,28 @@
 .sm-btn {
     height: 32px !important;
     min-height: 32px !important;
-    padding: 0 10px !important;
+    padding: 0 8px !important;
     font-size: 0.8rem !important;
-    min-width: 60px !important;
+    flex: 1 1 0% !important; /* Force equal split inside the 1/6th slot */
+}
+
+/* 5. Locking the button sub-row to match Send button exactly */
+.button-locked-row {
+    flex: 0 0 calc(100% / 6) !important; /* HARD LOCK to 1/6th */
+    max-width: calc(100% / 6) !important;
+    gap: 4px !important;
+    flex-wrap: nowrap !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    justify-content: flex-end !important;
+    border: none !important;
+}
+
+#send_btn {
+    width: auto !important;
+    flex: 0 0 calc(100% / 6) !important; /* HARD LOCK to 1/6th */
+    max-width: calc(100% / 6) !important;
 }
 
 #chatbot {
@@ -102,21 +120,31 @@
 }
 
 @media (max-width: 540px) {
+    .compact-row {
+        flex-wrap: nowrap !important; /* Force single row, we have icons now */
+        overflow: visible !important;
+    }
+    
+    #persona_selector.block {
+        flex: 1 1 auto !important;
+    }
+
+    /* Option 2 (Responsive): Hide text but keep icons on mobile */
+    .sm-btn {
+        font-size: 0 !important; 
+        width: 34px !important;
+        min-width: 34px !important;
+        padding: 0 !important;
+    }
+    .sm-btn::after {
+        /* Gradio 6 usually keeps emojis/icons as text content. 
+           If font-size: 0 hides the emoji, we restore it here. */
+        font-size: 1.1rem !important;
+    }
+    
     #reviewer_toggle.block {
-        min-width: unset !important;
-    }
-    #reviewer_toggle label {
-        padding: 0 6px !important;
-        border: none !important;
-        background: transparent !important;
-    }
-    #reviewer_toggle label span {
-        display: none !important;
-    }
-    #reviewer_toggle input {
-        margin: 0 !important;
-        width: 18px !important;
-        height: 18px !important;
+        min-width: fit-content !important;
+        flex: 0 0 auto !important;
     }
 }
 

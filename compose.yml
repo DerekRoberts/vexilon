@@ -65,6 +65,7 @@ services:
       - ./Containerfile:/app/Containerfile:ro,z
       - ./src:/app/src:ro,z
       - ./scripts:/app/scripts:ro,z
+      - ./style.css:/app/style.css:ro,z
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       HF_HOME: /app/hf_cache

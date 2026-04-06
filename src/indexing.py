@@ -40,11 +40,12 @@ def get_embed_model() -> "SentenceTransformer":
              os.environ["HF_HUB_OFFLINE"] = "1"
 
         from sentence_transformers import SentenceTransformer
+        print("[embed] Loading BAAI/bge-small-en-v1.5 (~800MB). This may take 30-60s on modern CPUs. Please wait...")
         _embed_model = SentenceTransformer(EMBED_MODEL, device="cpu")
         _embed_model.max_seq_length = MAX_EMBED_TOKENS
         if hasattr(_embed_model, "tokenizer"):
             _embed_model.tokenizer.model_max_length = MAX_EMBED_TOKENS
-        print("[embed] Embedding model ready.")
+        print("[embed] Model loaded. Initializing index...")
     return _embed_model
 
 def _get_rag_source_files() -> list[Path]:

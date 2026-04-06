@@ -383,6 +383,56 @@ DEVELOPER_MODE = os.getenv("DEVELOPER_MODE", "false").lower() == "true"
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 
+# The 4 canonical grievance form filenames, in order.
+_GRIEVANCE_FORM_NAMES = [
+    "Grievance - 0 - Instructions.pdf",
+    "Grievance - A - Grievor Case.pdf",
+    "Grievance - B - Notify Designates.pdf",
+    "Grievance - C - Steward Case.pdf",
+]
+
+
+def _build_grievance_form_links() -> str:
+    """
+    Build Markdown links for the 4 grievance form PDFs using Gradio's
+    /gradio_api/file= endpoint.  Paths are resolved at call time from the
+    actual files on disk so no URL ever points at a branch that may not exist.
+    """
+    from urllib.parse import quote
+
+    forms_dir = LABOUR_LAW_DIR / "forms"
+    if not forms_dir.exists():
+        return ""
+
+    lines = []
+    for name in _GRIEVANCE_FORM_NAMES:
+        path = forms_dir / name
+        if path.exists():
+            rel = str(path.relative_to(Path(".")))
+            label = name.removesuffix(".pdf")
+            lines.append(f"       - [{label}](/gradio_api/file={quote(rel)})")
+    return "\n".join(lines)
+
+
+def get_mandatory_rules() -> str:
+    """Return the mandatory operational rules block with live Gradio download links."""
+    form_links = _build_grievance_form_links()
+    return f"""--- MANDATORY OPERATIONAL RULES (OVERRIDING) ---
+1. ANSWER FROM EXCERPTS ONLY: Base your answer strictly on the provided excerpts. If the specific text was not retrieved, suggest the user ask about that section directly. NEVER fabricate contract language.
+2. CITATIONS: Every claim MUST be supported by a verbatim quote in a blockquote (> "...") followed by its citation (Document, Article, Page).
+3. HIERARCHY: Lead with the Collective Agreement. Use Statutes only to reinforce the legal framework.
+4. GRIEVANCE FILING (CRITICAL): If a steward asks for resolution steps or once the facts of a potential violation are gathered, you MUST proactively recommend filing a grievance. 
+   - YOU MUST APPEND a final section titled '### 📁 Resolution & Next Steps'.
+   - THIS SECTION MUST CONTAIN ONLY these 4 links (DO NOT PARAPHRASE OR SUMMARIZE):
+{form_links}
+   - YOU MUST ALSO mention the 'BCGEU Grievance Form Guide.md' for instructions.
+   - DISCLAIMER: You MUST include this verbatim: "Note: Viability of this grievance will be assessed by the staff representative and/or arbitrator, not by the steward."
+5. NO MERIT ASSESSMENT: Do NOT judge the merit, viability, or likelihood of success of a grievance. Your role is to identify potential violations and facilitate the filing process.
+6. TONE: Professional, authoritative, and forensic.
+----------------------------------
+"""
+
+
 def get_system_prompt(developer_mode: bool = False) -> str:
     """Load the default system prompt, optionally with developer extensions."""
     path = PROMPTS_DIR / ("developer.txt" if developer_mode else "steward.txt")
@@ -396,25 +446,7 @@ def get_system_prompt(developer_mode: bool = False) -> str:
             "{verify_message}"
         )
     # Always prepend mandatory overriding rules regardless of file content
-    return f"{GLOBAL_MANDATORY_RULES}\n\n{content}"
-
-GLOBAL_MANDATORY_RULES = """--- MANDATORY OPERATIONAL RULES (OVERRIDING - v272-FIXED) ---
-1. ANSWER FROM EXCERPTS ONLY: Base your answer strictly on the provided excerpts. If the specific text was not retrieved, suggest the user ask about that section directly. NEVER fabricate contract language.
-2. CITATIONS: Every claim MUST be supported by a verbatim quote in a blockquote (> "...") followed by its citation (Document, Article, Page).
-3. HIERARCHY: Lead with the Collective Agreement. Use Statutes only to reinforce the legal framework.
-4. GRIEVANCE FILING (CRITICAL): If a steward asks for resolution steps or once the facts of a potential violation are gathered, you MUST proactively recommend filing a grievance. 
-   - YOU MUST APPEND a final section titled '### 📁 Resolution & Next Steps'.
-   - THIS SECTION MUST CONTAIN ONLY these 4 absolute links (DO NOT PARAPHRASE OR SUMMARIZE):
-       - [Grievance - 0 - Instructions](https://github.com/DerekRoberts/vexilon/raw/feat/272/data/labour_law/forms/Grievance%20-%200%20-%20Instructions.pdf)
-       - [Grievance - A - Grievor Case](https://github.com/DerekRoberts/vexilon/raw/feat/272/data/labour_law/forms/Grievance%20-%20A%20-%20Grievor%20Case.pdf)
-       - [Grievance - B - Notify Designates](https://github.com/DerekRoberts/vexilon/raw/feat/272/data/labour_law/forms/Grievance%20-%20B%20-%20Notify%20Designates.pdf)
-       - [Grievance - C - Steward Case](https://github.com/DerekRoberts/vexilon/raw/feat/272/data/labour_law/forms/Grievance%20-%20C%20-%20Steward%20Case.pdf)
-   - YOU MUST ALSO mention the 'BCGEU Grievance Form Guide.md' for instructions.
-   - DISCLAIMER: You MUST include this verbatim: "Note: Viability of this grievance will be assessed by the staff representative and/or arbitrator, not by the steward."
-5. NO MERIT ASSESSMENT: Do NOT judge the merit, viability, or likelihood of success of a grievance. Your role is to identify potential violations and facilitate the filing process.
-6. TONE: Professional, authoritative, and forensic.
-----------------------------------
-"""
+    return f"{get_mandatory_rules()}\n\n{content}"
 
 
 def get_persona_prompt(mode_name: str) -> str:
@@ -431,7 +463,7 @@ def get_persona_prompt(mode_name: str) -> str:
     path = paths.get(mode_name)
     content = path.read_text(encoding="utf-8") if path and path.is_file() else fallbacks.get(mode_name, get_system_prompt(DEVELOPER_MODE))
         
-    return f"{GLOBAL_MANDATORY_RULES}\n\n{content}"
+    return f"{get_mandatory_rules()}\n\n{content}"
 
 
 
@@ -1088,13 +1120,13 @@ def build_ui() -> "gr.Blocks":
                         if (sendBtn) sendBtn.click();
                     }
                 }
-            });
+            }, true);
         }
         """,
     ) as demo:
         # ── Header ────────────────────────────────────────────────────────────
         # ── Header ────────────────────────────────────────────────────────────
-        gr.Markdown("# 🚩 VEXILON (WORKTREE 272 - ACTIVE)")
+        gr.Markdown("## Unofficial Ephemeral BCGEU Steward Assistant")
 
         with gr.Accordion("Knowledge Base & Priority", open=False):
             gr.Markdown(
@@ -1125,7 +1157,7 @@ def build_ui() -> "gr.Blocks":
                 value="Explore",
                 show_label=False,
                 container=False,
-                scale=3,
+                scale=5,
                 elem_id="persona_selector",
             )
             reviewer_toggle = gr.Checkbox(
@@ -1135,8 +1167,10 @@ def build_ui() -> "gr.Blocks":
                 scale=1,
                 elem_id="reviewer_toggle",
             )
-            export_btn = gr.DownloadButton("⬇️ Save", variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
-            import_btn = gr.UploadButton("⬆️ Load", file_types=[".md"], variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
+            # Locked block: Sum of Save+Load = Send button width
+            with gr.Row(variant="compact", scale=1, elem_classes="button-locked-row"):
+                export_btn = gr.DownloadButton("⬇️ Save", variant="secondary", size="sm", elem_classes="sm-btn")
+                import_btn = gr.UploadButton("⬆️ Load", file_types=[".md"], variant="secondary", size="sm", elem_classes="sm-btn")
 
 
 
@@ -1281,6 +1315,8 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # Standard startup sequence
+    print("[startup] Initializing Vexilon (RAG + Gradio UI)...")
+    print("[startup] Please wait while we load models and index the knowledge base...")
     startup(force_rebuild=False)
     app = build_ui()
     # Enable authentication if a password is set in the environment.
