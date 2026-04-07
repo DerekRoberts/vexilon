@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Containerfile
-    container_name: vexilon
+    container_name: vexilon-app
     environment:
       # Mandatory: Anthropic API key
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
