@@ -1167,28 +1167,29 @@ ATTRIBUTION_HTML = f"""
 
 
 
+_CUSTOM_JS = """
+function() {
+    // Use capture phase (true) so this fires before Gradio's element-level
+    // textarea handler, preventing Enter from inserting a newline (#276).
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            const textarea = document.querySelector('#msg_input textarea');
+            if (textarea && document.activeElement === textarea) {
+                e.preventDefault();
+                const sendBtn = document.querySelector('#send_btn');
+                if (sendBtn) sendBtn.click();
+            }
+        }
+    }, true);
+}
+"""
+
 def build_ui() -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
     import gradio as gr
 
     with gr.Blocks(
         title="Collective Agreement Explorer",
-        js="""
-        function() {
-            // Use capture phase (true) so this fires before Gradio's element-level
-            // textarea handler, preventing Enter from inserting a newline (#276).
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    const textarea = document.querySelector('#msg_input textarea');
-                    if (textarea && document.activeElement === textarea) {
-                        e.preventDefault();
-                        const sendBtn = document.querySelector('#send_btn');
-                        if (sendBtn) sendBtn.click();
-                    }
-                }
-            }, true);
-        }
-        """,
     ) as demo:
         # ── Header ────────────────────────────────────────────────────────────
         gr.Markdown("# BCGEU Steward Assistant")
@@ -1403,4 +1404,5 @@ if __name__ == "__main__":
         allowed_paths=allowed_paths,
         css=_CSS_PATH.read_text() if _CSS_PATH.exists() else "",
         auth=auth_creds,
+        js=_CUSTOM_JS,
     )
