@@ -43,6 +43,7 @@ from src.indexing import (
     CHUNK_SIZE,
     CHUNK_OVERLAP,
     EMBED_DIM,
+    SIMILARITY_TOP_K,
 )
 TESTS_DIR = LABOUR_LAW_DIR / "tests"
 _chunks: list[dict] = []
@@ -698,9 +699,11 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
     seen_texts = set()
     
     for q in queries:
-        # Smaller k per query if multiple, to keep total context size reasonable
-        k = 15 if len(queries) > 1 else 40
+        # Smaller k per query if multiple, to keep total context size reasonable.
+        # We target about 1.5x the standard top_k total chunks across all queries.
+        k = max(10, (SIMILARITY_TOP_K * 3) // (2 * len(queries))) if len(queries) > 1 else SIMILARITY_TOP_K
         relevant_chunks = search_index(_index, _chunks, q, top_k=k)
+
         for chunk in relevant_chunks:
             # Deduplicate by direct string comparison (Issue #132 feedback)
             text = chunk["text"]
@@ -1164,28 +1167,29 @@ ATTRIBUTION_HTML = f"""
 
 
 
+_CUSTOM_JS = """
+function() {
+    // Use capture phase (true) so this fires before Gradio's element-level
+    // textarea handler, preventing Enter from inserting a newline (#276).
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            const textarea = document.querySelector('#msg_input textarea');
+            if (textarea && document.activeElement === textarea) {
+                e.preventDefault();
+                const sendBtn = document.querySelector('#send_btn');
+                if (sendBtn) sendBtn.click();
+            }
+        }
+    }, true);
+}
+"""
+
 def build_ui() -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
     import gradio as gr
 
     with gr.Blocks(
         title="Collective Agreement Explorer",
-        js="""
-        function() {
-            // Use capture phase (true) so this fires before Gradio's element-level
-            // textarea handler, preventing Enter from inserting a newline (#276).
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    const textarea = document.querySelector('#msg_input textarea');
-                    if (textarea && document.activeElement === textarea) {
-                        e.preventDefault();
-                        const sendBtn = document.querySelector('#send_btn');
-                        if (sendBtn) sendBtn.click();
-                    }
-                }
-            }, true);
-        }
-        """,
     ) as demo:
         # ── Header ────────────────────────────────────────────────────────────
         gr.Markdown("# BCGEU Steward Assistant")
@@ -1400,4 +1404,5 @@ if __name__ == "__main__":
         allowed_paths=allowed_paths,
         css=_CSS_PATH.read_text() if _CSS_PATH.exists() else "",
         auth=auth_creds,
+        js=_CUSTOM_JS,
     )
