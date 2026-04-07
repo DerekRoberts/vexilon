@@ -44,7 +44,6 @@ from src.indexing import (
     CHUNK_OVERLAP,
     EMBED_DIM,
     SIMILARITY_TOP_K,
-
 )
 TESTS_DIR = LABOUR_LAW_DIR / "tests"
 _chunks: list[dict] = []
