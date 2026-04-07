@@ -1401,6 +1401,11 @@ if __name__ == "__main__":
     print(f"[startup] Vexilon UI initialized. Ready to serve at port {os.getenv('PORT', 7860)}.")
     print(f"[startup] Version: {VEXILON_VERSION} | Threads: {os.getenv('OMP_NUM_THREADS', 'Auto')}")
     
+    # In Gradio 6, we use a FastAPI app to serve /health for container healthchecks.
+    # We then use app.launch() which will automatically handle its own registration.
+    # However, to explicitly add /health, we can either mount it or use the launch() prevent_thread_lock trick.
+    
+    # We'll use the launch() with prevent_thread_lock method to add the healthcheck to the internal app.
     app.launch(
         server_name="0.0.0.0",
         server_port=int(os.getenv("PORT", 7860)),
@@ -1409,4 +1414,13 @@ if __name__ == "__main__":
         css=_CSS_PATH.read_text() if _CSS_PATH.exists() else "",
         auth=auth_creds,
         js=_CUSTOM_JS,
+        prevent_thread_lock=True # Allow us to add routes after starting
     )
+    
+    # Add the healthcheck endpoint to the launched FastAPI instance
+    @app.app.get("/health")
+    async def health():
+        return {"status": "ok", "version": VEXILON_VERSION}
+    
+    print("[startup] Healthcheck endpoint added at /health")
+    app.block_until_deleted()
