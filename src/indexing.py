@@ -29,20 +29,22 @@ SIMILARITY_TOP_K = int(os.getenv("SIMILARITY_TOP_K", 40))
 
 
 _embed_model: Any = None
+_loaded_model_name: str | None = None
 
 def get_embed_model() -> "SentenceTransformer":
-    global _embed_model
-    if _embed_model is None:
+    global _embed_model, _loaded_model_name
+    
+    # Reload model if EMBED_MODEL env var has changed since last initialization
+    current_model_name = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5")
+    
+    if _embed_model is None or _loaded_model_name != current_model_name:
         if os.getenv("HF_SPACE_ID") or os.getenv("EXTERNAL_CI"):
             for var in ("OMP_NUM_THREADS", "MKL_NUM_THREADS"):
                 os.environ.setdefault(var, "1")
 
-        print(f"[embed] Loading local embedding model '{EMBED_MODEL}'...")
-        if os.getenv("TRANSFORMERS_OFFLINE") == "1":
-             os.environ["HF_HUB_OFFLINE"] = "1"
-
         from sentence_transformers import SentenceTransformer
-        _embed_model = SentenceTransformer(EMBED_MODEL, device="cpu")
+        _embed_model = SentenceTransformer(current_model_name, device="cpu")
+        _loaded_model_name = current_model_name
         _embed_model.max_seq_length = MAX_EMBED_TOKENS
         
         if hasattr(_embed_model, "tokenizer"):
@@ -50,13 +52,13 @@ def get_embed_model() -> "SentenceTransformer":
             # Most modern models (including BGE) have fast variants.
             if not getattr(_embed_model.tokenizer, "is_fast", False):
                 raise RuntimeError(
-                    f"Tokenizer for {EMBED_MODEL} is NOT a 'Fast' tokenizer. "
+                    f"Tokenizer for {current_model_name} is NOT a 'Fast' tokenizer. "
                     "Vexilon requires 'Fast' tokenizers for reliable character-offset mapping."
                 )
             
             _embed_model.tokenizer.model_max_length = MAX_EMBED_TOKENS
             
-        print("[embed] Embedding model ready.")
+        print(f"[embed] Embedding model '{current_model_name}' ready.")
     return _embed_model
 
 def _get_rag_source_files() -> list[Path]:
@@ -141,7 +143,6 @@ def load_md_chunks(md_path: Path) -> list[dict]:
         return []
     source_name = _get_source_name(md_path.stem)
     print(f"[loader] Parsing Markdown '{source_name}'...")
-
     tokenizer = get_embed_model().tokenizer
     token_metadata = []
     current_header = ""

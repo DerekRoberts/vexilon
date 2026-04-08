@@ -38,7 +38,6 @@ def test_tokenizer_offset_mapping_multiline():
     lines = ["Line one", "Second line", "Third line"]
     full_text = "\n".join(lines)
     
-    total_tokens = 0
     char_offset = 0
     for line in lines:
         encoding = tokenizer(
