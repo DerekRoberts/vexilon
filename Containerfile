@@ -14,7 +14,7 @@ RUN uv pip install --system huggingface_hub
 # This avoids shell PATH issues and wildcard copy bloat.
 # We use token=False to prevent auth attempts and satisfy security scanners.
 RUN --mount=type=cache,target=/root/.cache/huggingface \
-    python -c "from huggingface_hub import snapshot_download; snapshot_download('BAAI/bge-small-en-v1.5', cache_dir='/model_cache', token=False)"
+    python -c "from huggingface_hub import snapshot_download; snapshot_download('BAAI/bge-small-en-v1.5', cache_dir='/root/.cache/huggingface', local_dir='/model_cache', token=False)"
 
 # ─── Stage 2: Builder ─────────────────────────────────────────────────────────
 FROM python:3.14.3-slim AS builder
@@ -41,8 +41,10 @@ WORKDIR /app
 
 # ── Environment Configuration ────────────────────────────────────────────────
 # Set these early so they are active during the build-time indexing step.
+# CRITICAL: EMBED_MODEL points to the local path to ensure offline loading works reliably.
 ENV HF_HOME=/app/hf_cache \
     TRANSFORMERS_OFFLINE=1 \
+    EMBED_MODEL=/app/hf_cache \
     PATH="/app/.venv/bin:$PATH"
 
 # 2. Copy the virtualenv and model cache
