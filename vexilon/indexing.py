@@ -307,20 +307,15 @@ def build_index_from_sources(force: bool = False) -> tuple[Any, Any] | tuple[Non
         logger.warning("[build] No source files found!")
         return None, None
 
-    if SOURCE_MANIFEST_PATH.exists():
-        with open(SOURCE_MANIFEST_PATH, "r") as f:
-            current_manifest = json.load(f)
-        logger.info(f"[build] Using pre-generated source manifest from {SOURCE_MANIFEST_PATH}")
-    else:
-        current_manifest = {}
-        for source_file in all_files:
-            hasher = hashlib.sha256()
-            with open(source_file, "rb") as f:
-                while chunk := f.read(65536):
-                    hasher.update(chunk)
-            # Use relative path to avoid clashes with duplicate names in subdirs
-            rel_key = str(source_file.relative_to(LABOUR_LAW_DIR))
-            current_manifest[rel_key] = hasher.hexdigest()
+    current_manifest = {}
+    for source_file in all_files:
+        hasher = hashlib.sha256()
+        with open(source_file, "rb") as f:
+            while chunk := f.read(65536):
+                hasher.update(chunk)
+        # Use relative path to avoid clashes with duplicate names in subdirs
+        rel_key = str(source_file.relative_to(LABOUR_LAW_DIR))
+        current_manifest[rel_key] = hasher.hexdigest()
 
     if not force and MANIFEST_PATH.exists():
         try:
