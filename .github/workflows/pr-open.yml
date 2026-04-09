@@ -123,7 +123,7 @@ jobs:
         run: |
           declare -l IMAGE="ghcr.io/${{ github.repository }}:sha-${IMAGE_SHA}"
           podman pull $IMAGE
-          podman run -d --rm -p 7860:7860 --name vexilon-${{ github.event.pull_request.number || github.run_id }} -e ANTHROPIC_API_KEY=sk-ant-test123 $IMAGE
+          podman run -d -p 7860:7860 --name vexilon-${{ github.event.pull_request.number || github.run_id }} -e ANTHROPIC_API_KEY=sk-ant-test123 $IMAGE
 
       - name: Wait for Healthcheck
         run: |
@@ -148,6 +148,12 @@ jobs:
       - name: Dump Logs on Failure
         if: failure()
         run: podman logs vexilon-${{ github.event.pull_request.number || github.run_id }}
+
+      - name: Cleanup Container
+        if: always()
+        run: |
+          podman stop vexilon-${{ github.event.pull_request.number || github.run_id }} || true
+          podman rm vexilon-${{ github.event.pull_request.number || github.run_id }} || true
 
   trivy:
     name: Trivy Security Scan
