@@ -8,7 +8,7 @@ using the real embedding model but a mocked Anthropic API.
 import pytest
 import app
 from pathlib import Path
-import src.indexing as indexing
+import vexilon.indexing as indexing
 
 @pytest.mark.asyncio
 async def test_full_rag_flow_integration(monkeypatch, mock_anthropic, tmp_path):
@@ -36,6 +36,7 @@ async def test_full_rag_flow_integration(monkeypatch, mock_anthropic, tmp_path):
     monkeypatch.setattr(indexing, "INDEX_PATH", cache_dir / "index.faiss")
     monkeypatch.setattr(indexing, "CHUNKS_PATH", cache_dir / "chunks.json")
     monkeypatch.setattr(indexing, "MANIFEST_PATH", cache_dir / "manifest.json")
+    monkeypatch.setattr(indexing, "INTEGRITY_PATH", cache_dir / "integrity.json")
 
     # Mock the anthropic client globally for the app
     monkeypatch.setattr(app, "get_anthropic", lambda: mock_anthropic)

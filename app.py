@@ -22,10 +22,21 @@ Index pre-computation (run once after updating the PDF):
 # ─── Standard Library ────────────────────────────────────────────────────────
 import sys
 import threading
-from src.indexing import (
+import logging
+
+# Configure structured logging (Issue #196)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+
+from vexilon.indexing import (
     _get_source_name,
     _get_rag_source_files,
     build_index_from_sources,
+    get_integrity_report,
     load_precomputed_index,
     search_index,
     _fetch_pdf_cache_if_missing,
@@ -49,7 +60,7 @@ TESTS_DIR = LABOUR_LAW_DIR / "tests"
 _chunks: list[dict] = []
 _index: "faiss.IndexFlatIP | None" = None
 
-print("[boot] Python started, importing stdlib...", flush=True)
+logger.info("[boot] Python started, importing stdlib...")
 import json
 import os
 import re
@@ -69,7 +80,7 @@ if not os.getenv("HF_HOME"):
 # ─── Third-party: Deferred Imports ───────────────────────────────────────────
 # (numpy, anthropic, faiss, sentence_transformers, gradio)
 # are imported inside functions to keep startup and test-loading fast.
-print("[boot] All boilerplate complete.", flush=True)
+logger.info("[boot] All boilerplate complete.")
 
 # ─── Configuration ───────────────────────────────────────────────────────────
 VEXILON_REPO_URL = os.getenv("VEXILON_REPO_URL", "https://github.com/DerekRoberts/vexilon")
@@ -102,7 +113,7 @@ CONDENSE_QUERY_HISTORY_TURNS = int(os.getenv("CONDENSE_QUERY_HISTORY_TURNS", 3))
 CONDENSE_QUERY_CONTENT_MAX_LEN = int(os.getenv("CONDENSE_QUERY_CONTENT_MAX_LEN", 200))
 
 import re
-import logging
+
 
 # Input Sanitization (for prompt injection prevention)
 MAX_INPUT_LENGTH = int(os.getenv("MAX_INPUT_LENGTH", 10000))
@@ -236,6 +247,9 @@ _rate_limiter = RateLimiter(
     max_per_minute=RATE_LIMIT_PER_MINUTE, max_per_hour=RATE_LIMIT_PER_HOUR
 )
 
+# Build Integrity Warning (populated at startup)
+INTEGRITY_WARNING: str | None = None
+
 # Two-Bot Self-Review Pipeline (Issue #104)
 USE_REVIEWER = os.getenv("USE_REVIEWER", "false").lower() == "true"
 
@@ -267,11 +281,11 @@ def get_vexilon_info():
     os_info = platform.system()
 
     # The Banner
-    print("=" * 50)
-    print(f" VEXILON VERSION : {version} ({source})")
-    print(f" PYTHON VERSION  : {py_ver}")
-    print(f" RUNTIME OS      : {os_info}")
-    print("=" * 50, flush=True)
+    logger.info("=" * 50)
+    logger.info(f" VEXILON VERSION : {version} ({source})")
+    logger.info(f" PYTHON VERSION  : {py_ver}")
+    logger.info(f" RUNTIME OS      : {os_info}")
+    logger.info("=" * 50)
 
     return {"ver": version, "src": source, "py": py_ver, "os": os_info}
 
@@ -294,7 +308,7 @@ if TYPE_CHECKING:
 
 # ─── Clients ─────────────────────────────────────────────────────────────────
 # get_embed_model, EMBED_DIM, _get_rag_source_files, _get_source_name,
-# and others are imported from src.indexing above.
+# and others are imported from vexilon.indexing above.
 
 _anthropic_client: "anthropic.AsyncAnthropic | None" = None
 
@@ -497,12 +511,14 @@ class TestRegistry:
     def load(self, directory: Path) -> None:
         """Scan directory for .md files and parse them into the registry."""
         if not directory.exists():
-            print(f"[registry] Warning: {directory} does not exist.")
+            logger.warning(f"[registry] Warning: {directory} does not exist.")
             return
 
         with self._lock:
             self.tests = []
             for f in directory.glob("*.md"):
+                if f.name == "index.md":
+                    continue
                 try:
                     text = f.read_text(encoding="utf-8")
                     lines = text.split("\n")
@@ -524,8 +540,8 @@ class TestRegistry:
                         file_path=f
                     ))
                 except Exception as e:
-                    print(f"[registry] Failed to load {f.name}: {e}")
-            print(f"[registry] Loaded {len(self.tests)} tests from {directory.name}")
+                    logger.error(f"[registry] Failed to load {f.name}: {e}")
+            logger.info(f"[registry] Loaded {len(self.tests)} tests from {directory.name}")
 
     def find_matches(self, query: str) -> list[TestDoctrine]:
         """Find all tests whose keywords appear in the lowercased query."""
@@ -544,14 +560,14 @@ def startup(force_rebuild: bool = False, skip_pdf_fetch: bool = False) -> None:
     Initialise the vector index and load document chunks.
     Attempts cold-start from pre-computed index first.
     """
-    global _chunks, _index
+    global _chunks, _index, INTEGRITY_WARNING
     get_anthropic()
     
     # 1. Basic Metadata
     if os.getenv("VEXILON_QUIET", "").lower() not in ("1", "true"):
-        print(f"[startup] Starting Vexilon {VEXILON_VERSION}…")
+        logger.info(f"[startup] Starting Vexilon {VEXILON_VERSION}…")
     if DEVELOPER_MODE:
-        print("[startup] DEVELOPER_MODE is ACTIVE.")
+        logger.info("[startup] DEVELOPER_MODE is ACTIVE.")
     
     # 2. Local Knowledge Bases
     _test_registry.load(TESTS_DIR)
@@ -566,7 +582,7 @@ def startup(force_rebuild: bool = False, skip_pdf_fetch: bool = False) -> None:
     
     # Rebuild only if forced OR if loading failed (missing/corrupt files)
     if _index is None or _chunks is None or force_rebuild:
-        print("[startup] Pre-computed index missing or forced rebuild. Refreshing from sources...")
+        logger.info("[startup] Pre-computed index missing or forced rebuild. Refreshing from sources...")
         # If we're here as a fallback (not a manual force), we MUST force the rebuild 
         # to ensure it doesn't just re-read the same corrupt/empty files.
         _index, _chunks = build_index_from_sources(force=True)
@@ -575,9 +591,18 @@ def startup(force_rebuild: bool = False, skip_pdf_fetch: bool = False) -> None:
         pass
 
     if _index is not None and _chunks:
-        print("[startup] Ready.")
+        logger.info("[startup] Ready.")
+        # 4. Integrity Reporting
+        report = get_integrity_report()
+        if report.get("failed_files"):
+            failed = report["failed_files"]
+            INTEGRITY_WARNING = (
+                f"⚠️ **INDEX INTEGRITY WARNING:** {len(failed)} document(s) failed to index "
+                f"(e.g., {', '.join(failed[:2])}). Knowledge base may be incomplete."
+            )
+            logger.warning(f"[integrity] Found {len(failed)} failures.")
     else:
-        print("[startup] ERROR: Knowledge base failed to load.")
+        logger.error("[startup] ERROR: Knowledge base failed to load.")
 
 
 # ─── RAG Query ────────────────────────────────────────────────────────────────
@@ -637,7 +662,7 @@ async def condense_query(message: str, history: list[dict]) -> str:
         return condensed
     except Exception as exc:
         # We catch generic Exception here since anthropic is deferredly imported
-        print(f"[rag] Query condensation failed: {exc}. Using raw message.")
+        logger.error(f"[rag] Query condensation failed: {exc}. Using raw message.")
         return message
 
 
@@ -684,10 +709,10 @@ async def generate_perspective_queries(message: str, history: list[dict]) -> lis
         if not perspective_queries:
             return [condensed]
             
-        print(f"[rag] Complex query detected. Generated {len(perspective_queries)} perspectives.")
+        logger.info(f"[rag] Complex query detected. Generated {len(perspective_queries)} perspectives.")
         return perspective_queries
     except Exception as exc:
-        print(f"[rag] Multi-perspective generation failed: {exc}. Using condensed query.")
+        logger.error(f"[rag] Multi-perspective generation failed: {exc}. Using condensed query.")
         return [condensed]
 
 
@@ -799,9 +824,9 @@ async def rag_stream(
             usage = final.usage
             cache_created = usage.cache_creation_input_tokens or 0
             cache_read = usage.cache_read_input_tokens or 0
-            print(
+            logger.info(
                 f"[rag] Tokens — input: {usage.input_tokens}, "
-                f"cache_create: {cache_created}, cache_read: {cache_read}, "
+                f"cache_create: {cache_created or 0}, cache_read: {cache_read or 0}, "
                 f"output: {usage.output_tokens}"
             )
             if final.stop_reason == "max_tokens":
@@ -964,7 +989,7 @@ GROUND TRUTH CONTEXT (FOR VERIFICATION):
                 score = int(score_match.group(1))
 
             # Log the review
-            print(f"[review] Score: {score}/10")
+            logger.info(f"[review] Score: {score}/10")
     except Exception as exc:
         yield f"\n\n⚠️ Review error: {exc}"
 
@@ -1021,9 +1046,21 @@ async def rag_review_stream(
             
             # 1. New Registry Tests
             for test in matched_tests:
+                # Detect if user is specifically asking for the RAW factors or "show me"
+                show_request = any(k in message.lower() for k in ["show me", "what are the factors", "list the criteria", "what is the test for", "give me the test"])
+                
+                if show_request:
+                    formatted_prompt += f"\n\n--- USER REQUESTED TEST: {test.name.upper()} ---\n"
+                    formatted_prompt += f"The user asked to see this test. You MUST start your response by displaying the following factor list/criteria EXACTLY as written here:\n{test.content}\n"
+                    formatted_prompt += f"After displaying it, ask the user if they want you to apply it to their specific facts.\n"
+                
                 formatted_prompt += f"\n\n--- MANDATORY LOGIC CHECK: {test.name.upper()} ---\n"
-                formatted_prompt += f"This case involves potential {test.name}. You MUST follow these criteria and apply them to the facts:\n{test.content}\n"
-                formatted_prompt += f"In your response, follow the strategic guidance and instructions in the {test.name} module, specifically identifying any criteria or factors that have not been met or proven."
+                formatted_prompt += f"This case involves potential {test.name}. You MUST follow this pattern:\n"
+                formatted_prompt += "1. EXPLAIN: Briefly explain the test factors.\n"
+                formatted_prompt += "2. QUESTION: If any facts are missing from the user's query to satisfy these factors, ASK those specific questions now.\n"
+                formatted_prompt += "3. APPLY: Once facts are known, apply these factors to the scenario and identify which ones management HAS or HAS NOT proven.\n"
+                formatted_prompt += "4. CITE: Point to the specific articles or documents that support or limit the employer's position.\n"
+                formatted_prompt += f"CRITERIA:\n{test.content}\n"
 
             # 2. Legacy Millhaven Fallback (if registry doesn't catch it)
             if not matched_tests and MILLHAVEN_FACTORS:
@@ -1063,7 +1100,7 @@ async def rag_review_stream(
                 yield text_chunk
             final = await stream.get_final_message()
             usage = final.usage
-            print(
+            logger.info(
                 f"[rag] Tokens — input: {usage.input_tokens}, "
                 f"output: {usage.output_tokens}"
             )
@@ -1145,6 +1182,7 @@ EXAMPLE_QUESTIONS = [
     "What are the just cause requirements for discipline?",
     "What rights do stewards have in investigation meetings?",
     "What is the nexus test for establishing a link in off-duty conduct cases?",
+    "Show me the Harassment Threshold test.",
     "Does my employer have a social media policy?",
 ]
 
@@ -1197,6 +1235,8 @@ def build_ui() -> "gr.Blocks":
     ) as demo:
         # ── Header ────────────────────────────────────────────────────────────
         gr.Markdown("# BCGEU Steward Assistant")
+        if INTEGRITY_WARNING:
+            gr.Markdown(INTEGRITY_WARNING)
 
         with gr.Accordion("Knowledge Base & Priority", open=False):
             gr.Markdown(
@@ -1379,17 +1419,18 @@ if __name__ == "__main__":
 
     if args.rebuild_index:
         startup(force_rebuild=True)
-        print("[startup] Index rebuild complete. Exiting (--rebuild-index specified).")
+        logger.info("[startup] Index rebuild complete. Exiting (--rebuild-index specified).")
         sys.exit(0)
 
     # Standard startup sequence
     startup(force_rebuild=False)
     app = build_ui()
     # Enable authentication if a password is set in the environment.
+    VEXILON_PASSWORD = os.getenv("VEXILON_PASSWORD")
     auth_creds = None
     if VEXILON_PASSWORD:
-        auth_creds = (VEXILON_USERNAME, VEXILON_PASSWORD)
-        print(f"[startup] Authentication enabled for user '{VEXILON_USERNAME}'")
+        auth_creds = [(VEXILON_USERNAME, VEXILON_PASSWORD)]
+        logger.info(f"[startup] Authentication enabled for user '{VEXILON_USERNAME}'")
 
     # Build allowed_paths: allow labour_law directory for PDF downloads
     # Use relative path for cross-environment compatibility (local dev + Docker container)
@@ -1398,8 +1439,8 @@ if __name__ == "__main__":
     allowed_paths = [str(LABOUR_LAW_DIR), str(Path("docs"))]
     
     # ── Final Build Report ──────────────────────────────────────────────────
-    print(f"[startup] Vexilon UI initialized. Ready to serve at port {os.getenv('PORT', 7860)}.")
-    print(f"[startup] Version: {VEXILON_VERSION} | Threads: {os.getenv('OMP_NUM_THREADS', 'Auto')}")
+    logger.info(f"[startup] Vexilon UI initialized. Ready to serve at port {os.getenv('PORT', 7860)}.")
+    logger.info(f"[startup] Version: {VEXILON_VERSION} | Threads: {os.getenv('OMP_NUM_THREADS', 'Auto')}")
     
     app.launch(
         server_name="0.0.0.0",

@@ -3,8 +3,11 @@ import json
 import time
 import hashlib
 import fitz
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     import numpy as np
@@ -18,6 +21,12 @@ INDEX_PATH = PDF_CACHE_DIR / "index.faiss"
 CHUNKS_PATH = PDF_CACHE_DIR / "chunks.json"
 MANIFEST_PATH = PDF_CACHE_DIR / "manifest.json"
 _GITHUB_RAW_BASE = os.getenv("VEXILON_RAW_URL_BASE", "https://raw.githubusercontent.com/DerekRoberts/vexilon/main")
+INTEGRITY_PATH = PDF_CACHE_DIR / "integrity.json"
+SOURCE_MANIFEST_PATH = LABOUR_LAW_DIR / "manifest.json"
+
+class FileIntegrityError(Exception):
+    """Raised when source file parsing fails and strict mode is active."""
+    pass
 
 # Models
 EMBED_MODEL = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5")
@@ -58,7 +67,7 @@ def get_embed_model() -> "SentenceTransformer":
             
             _embed_model.tokenizer.model_max_length = MAX_EMBED_TOKENS
             
-        print(f"[embed] Embedding model '{current_model_name}' ready.")
+        logger.info(f"[embed] Embedding model '{current_model_name}' ready.")
     return _embed_model
 
 def _get_rag_source_files() -> list[Path]:
@@ -142,7 +151,7 @@ def load_md_chunks(md_path: Path) -> list[dict]:
     if not content:
         return []
     source_name = _get_source_name(md_path.stem)
-    print(f"[loader] Parsing Markdown '{source_name}'...")
+    logger.info(f"[loader] Parsing Markdown '{source_name}'...")
     tokenizer = get_embed_model().tokenizer
     token_metadata = []
     current_header = ""
@@ -200,9 +209,9 @@ def load_md_chunks(md_path: Path) -> list[dict]:
 
     return chunk_text(filtered_content, token_metadata, source_name)
 
-def load_pdf_chunks(pdf_path: Path) -> list[dict]:
+def load_pdf_chunks(pdf_path: Path, strict: bool = False) -> list[dict]:
     source_name = _get_source_name(pdf_path.stem)
-    print(f"[loader] Parsing PDF '{source_name}'...")
+    logger.info(f"[loader] Parsing PDF '{source_name}'...")
     
     chunks = []
     try:
@@ -241,12 +250,12 @@ def load_pdf_chunks(pdf_path: Path) -> list[dict]:
             
         return chunk_text(full_text, token_metadata, source_name)
     except Exception as e:
+        if strict:
+            raise FileIntegrityError(f"Critical error parsing {pdf_path}: {e}")
         import traceback
-        print(f"[loader] CRITICAL: Error reading PDF {pdf_path}:")
-        print(traceback.format_exc())
-        # We return an empty list so one bad file doesn't kill the whole build,
-        # but the traceback ensures it's visible in logs.
-        return []
+        logger.error(f"[loader] CRITICAL: Error reading PDF {pdf_path}:")
+        logger.error(traceback.format_exc())
+        raise e
 
 def embed_texts(texts: list[str]) -> "np.ndarray":
     import numpy as np
@@ -269,11 +278,11 @@ def build_index(chunks: list[dict]) -> "faiss.IndexFlatIP":
     import faiss
     import numpy as np
     texts = [c["text"] for c in chunks]
-    print("[index] Indexing... Please expect a wait (this can take 5-10 minutes on CPU).")
-    print(f"[index] Embedding {len(texts)} chunks locally...")
+    logger.info("[index] Indexing... Please expect a wait (this can take 5-10 minutes on CPU).")
+    logger.info(f"[index] Embedding {len(texts)} chunks locally...")
     t0 = time.time()
     vectors = embed_texts(texts)
-    print(f"[index] Embeddings complete in {time.time() - t0:.1f}s")
+    logger.info(f"[index] Embeddings complete in {time.time() - t0:.1f}s")
     faiss.normalize_L2(vectors)
     index = faiss.IndexFlatIP(EMBED_DIM)
     index.add(vectors)
@@ -285,7 +294,7 @@ def save_index(index: "faiss.IndexFlatIP", chunks: list[dict]) -> None:
     faiss.write_index(index, str(INDEX_PATH))
     with open(CHUNKS_PATH, "w", encoding="utf-8") as f:
         json.dump(chunks, f, ensure_ascii=False)
-    print(f"[index] Saved index to {INDEX_PATH}")
+    logger.info(f"[index] Saved index to {INDEX_PATH}")
 
 def build_index_from_sources(force: bool = False) -> tuple[Any, Any] | tuple[None, None]:
     """
@@ -295,7 +304,7 @@ def build_index_from_sources(force: bool = False) -> tuple[Any, Any] | tuple[Non
     """
     all_files = _get_rag_source_files()
     if not all_files:
-        print("[build] No source files found!")
+        logger.warning("[build] No source files found!")
         return None, None
 
     current_manifest = {}
@@ -304,29 +313,52 @@ def build_index_from_sources(force: bool = False) -> tuple[Any, Any] | tuple[Non
         with open(source_file, "rb") as f:
             while chunk := f.read(65536):
                 hasher.update(chunk)
-        current_manifest[source_file.name] = hasher.hexdigest()
+        # Use relative path to avoid clashes with duplicate names in subdirs
+        rel_key = str(source_file.relative_to(LABOUR_LAW_DIR))
+        current_manifest[rel_key] = hasher.hexdigest()
 
     if not force and MANIFEST_PATH.exists():
         try:
             with open(MANIFEST_PATH, "r") as f:
                 stored_manifest = json.load(f)
             if stored_manifest == current_manifest and INDEX_PATH.exists() and CHUNKS_PATH.exists():
-                print("[build] Smart Refresh: No changes detected in sources. Skipping build.")
+                logger.info("[build] Smart Refresh: No changes detected in sources. Skipping build.")
                 return load_precomputed_index()
         except Exception:
             pass
 
-    print(f"[build] Change detected or forced rebuild. Indexing {len(all_files)} files...")
+    logger.info(f"[build] Change detected or forced rebuild. Indexing {len(all_files)} files...")
     PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     chunks = []
+    failed_files = []
     for f in all_files:
-        if f.suffix.lower() == ".md":
-            chunks.extend(load_md_chunks(f))
-        elif f.suffix.lower() == ".pdf":
-            chunks.extend(load_pdf_chunks(f))
+        try:
+            if f.suffix.lower() == ".md":
+                chunks.extend(load_md_chunks(f))
+            elif f.suffix.lower() == ".pdf":
+                file_chunks = load_pdf_chunks(f, strict=os.getenv("VEXILON_STRICT_BUILD", "false").lower() == "true")
+                chunks.extend(file_chunks)
+        except Exception as e:
+            logger.error(f"[build] ERROR: Failed to index {f.name}: {e}")
+            failed_files.append(f.name)
+            if os.getenv("VEXILON_STRICT_BUILD", "false").lower() == "true":
+                raise
+
+    # Save integrity report
+    integrity_data = {
+        "timestamp": time.time(),
+        "failed_files": failed_files,
+        "success_count": len(all_files) - len(failed_files),
+        "total_count": len(all_files)
+    }
+    with open(INTEGRITY_PATH, "w") as f:
+        json.dump(integrity_data, f, indent=2)
+
+    if failed_files and os.getenv("VEXILON_STRICT_BUILD", "false").lower() == "true":
+        raise FileIntegrityError(f"Build failed due to integrity errors in: {', '.join(failed_files)}")
     
     if not chunks:
-        print("[build] No chunks found in source files!")
+        logger.error("[build] No chunks found in source files!")
         return None, None
 
     index = build_index(chunks)
@@ -338,13 +370,22 @@ def build_index_from_sources(force: bool = False) -> tuple[Any, Any] | tuple[Non
 def load_precomputed_index() -> tuple[Any, Any] | tuple[None, None]:
     if not INDEX_PATH.exists() or not CHUNKS_PATH.exists():
         return None, None
-    print(f"[startup] Loading pre-computed index from {INDEX_PATH}...")
+    logger.info(f"[startup] Loading pre-computed index from {INDEX_PATH}...")
     import faiss
     index = faiss.read_index(str(INDEX_PATH))
     with open(CHUNKS_PATH, encoding="utf-8") as f:
         chunks = json.load(f)
-    print(f"[startup] Pre-computed index loaded — {index.ntotal} vectors, {len(chunks)} chunks.")
+    logger.info(f"[startup] Pre-computed index loaded — {index.ntotal} vectors, {len(chunks)} chunks.")
     return index, chunks
+
+def get_integrity_report() -> dict:
+    if INTEGRITY_PATH.exists():
+        try:
+            with open(INTEGRITY_PATH, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
 
 def _fetch_pdf_cache_if_missing() -> None:
     import urllib.request
@@ -359,9 +400,9 @@ def _fetch_pdf_cache_if_missing() -> None:
     if not CHUNKS_PATH.exists():
         urls[CHUNKS_PATH] = f"{base}/.pdf_cache/chunks.json"
     for dest_path, url in urls.items():
-        print(f"[fetch] Downloading {dest_path.name} from {url}...")
+        logger.info(f"[fetch] Downloading {dest_path.name} from {url}...")
         try:
             urllib.request.urlretrieve(url, dest_path)
-            print(f"[fetch] Saved {dest_path}")
+            logger.info(f"[fetch] Saved {dest_path}")
         except (urllib.error.URLError, OSError) as e:
-            print(f"[fetch] Warning: could not fetch {dest_path.name}: {e}. Will build index from source.")
+            logger.warning(f"[fetch] Warning: could not fetch {dest_path.name}: {e}. Will build index from source.")
