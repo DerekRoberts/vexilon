@@ -174,6 +174,7 @@ jobs:
           scan-type: "fs"
           scanners: "vuln,secret,misconfig"
           severity: "CRITICAL,HIGH"
+          exit-code: "1"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
@@ -182,10 +183,12 @@ jobs:
 
   results:
     name: Results
-    needs: [unit_tests, integration_tests, container_build, container_test, trivy]
+    needs: [check, unit_tests, integration_tests, container_build, container_test, trivy]
     if: always()
     runs-on: ubuntu-slim
     steps:
-      - if: contains(needs.*.result, 'failure')||contains(needs.*.result, 'canceled')
-        run: echo "At least one job has failed." && exit 1
-      - run: echo "Success!"
+      - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'canceled')
+        run: |
+          echo "At least one required job has failed or was canceled."
+          exit 1
+      - run: echo "All critical checks passed or were intentionally skipped."
