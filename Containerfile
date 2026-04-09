@@ -2,18 +2,17 @@
 FROM ghcr.io/astral-sh/uv:0.11.3 AS uv_source
 
 # ─── Stage 1: Model Fetcher ──────────────────────────────────────────────────
-# This stage only re-runs if the model name or sentence-transformers version changes.
-FROM python:3.14.3-slim AS model_fetcher
+# This stage only re-runs if the model name changes.
+FROM python:3.13-slim AS model_fetcher
 ENV HF_HUB_DISABLE_IMPLICIT_TOKEN=1
 COPY --from=uv_source /uv /usr/local/bin/uv
-RUN uv pip install --system sentence-transformers==3.4.1
+RUN uv pip install --system huggingface_hub
 RUN --mount=type=cache,target=/root/.cache/huggingface \
-    HF_HOME=/root/.cache/huggingface python -c \
-    "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-small-en-v1.5')" && \
-    mkdir -p /model_cache && cp -r /root/.cache/huggingface/* /model_cache/
+    HF_HOME=/root/.cache/huggingface huggingface-cli download BAAI/bge-small-en-v1.5 --quiet && \
+    mkdir -p /model_cache && cp -r /root/.cache/huggingface/hub /model_cache/
 
 # ─── Stage 2: Builder ─────────────────────────────────────────────────────────
-FROM python:3.14.3-slim AS builder
+FROM python:3.13-slim AS builder
 
 COPY --from=uv_source /uv /usr/local/bin/uv
 WORKDIR /app
@@ -25,7 +24,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
-FROM python:3.14.3-slim AS runner
+FROM python:3.13-slim AS runner
 
 # 1. Runtime system deps and setup (runs once, cached forever)
 RUN apt-get update && apt-get install -y --no-install-recommends \
