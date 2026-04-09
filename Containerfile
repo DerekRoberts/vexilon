@@ -4,6 +4,7 @@ FROM ghcr.io/astral-sh/uv:0.11.3 AS uv_source
 # ─── Stage 1: Model Fetcher ──────────────────────────────────────────────────
 # This stage only re-runs if the model name or sentence-transformers version changes.
 FROM python:3.14.3-slim AS model_fetcher
+ENV HF_HUB_DISABLE_IMPLICIT_TOKEN=1
 COPY --from=uv_source /uv /usr/local/bin/uv
 RUN uv pip install --system sentence-transformers==3.4.1
 RUN --mount=type=cache,target=/root/.cache/huggingface \
