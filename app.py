@@ -69,6 +69,7 @@ from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 import datetime
 import tempfile
+import textwrap
 
 
 # Ensure the HuggingFace model cache is writable and persistent.
@@ -1019,15 +1020,16 @@ async def refine_stream(
     """
     client = get_anthropic()
     
-    prompt = f"""DRAFT:
-{draft}
+    prompt = textwrap.dedent(f"""
+        DRAFT:
+        {draft}
 
-CRITIQUE:
-{critique}
+        CRITIQUE:
+        {critique}
 
-GROUND TRUTH:
-{ground_truth}
-"""
+        GROUND TRUTH:
+        {ground_truth}
+    """).strip()
 
     try:
         async with client.messages.stream(
@@ -1047,6 +1049,9 @@ GROUND TRUTH:
             
             final_refine = await stream.get_final_message()
             logger.info(f"[refine] Tokens — input: {final_refine.usage.input_tokens}, output: {final_refine.usage.output_tokens}")
+
+            if final_refine.stop_reason == "max_tokens":
+                yield "\n\n⚠️ Response truncated. Please ask for the rest of the answer."
     except Exception as exc:
         yield f"\n\n⚠️ Refinement error: {exc}"
 
@@ -1057,6 +1062,7 @@ async def rag_review_stream(
     history: list[dict],
     use_reviewer: bool = False,
     persona_mode: str = "Explorer",
+    all_chunks: list[dict] = None,
 ) -> AsyncIterator[str]:
     """
     Retrieve relevant chunks, build the prompt, perform silent draft/audit,
@@ -1135,6 +1141,9 @@ async def rag_review_stream(
             final_draft = await stream.get_final_message()
             logger.info(f"[rag] Draft tokens — input: {final_draft.usage.input_tokens}, output: {final_draft.usage.output_tokens}")
             
+            if final_draft.stop_reason == "max_tokens":
+                raw_response += "\n\n⚠️ Response truncated during drafting phase. Synthesis results may be incomplete."
+            
             # If no reviewer, we just stream Bot A's response (with a clean break)
             if not use_reviewer:
                 yield "\n\n---\n\n"
@@ -1150,7 +1159,9 @@ async def rag_review_stream(
                 review_text += review_chunk
             
             # Fetch ground_truth from Bot B's logic to pass to refiner
-            ground_truth = get_ground_truth_for_review(raw_response, _chunks) or context
+            # Use provided chunks or fall back to global _chunks
+            target_chunks = all_chunks if all_chunks is not None else _chunks
+            ground_truth = get_ground_truth_for_review(raw_response, target_chunks) or context
             
             # Synthesis Phase (Step 3) - STREAMED
             yield "\n\n---\n\n✨ **VEXILON RECOMMENDATION**\n\n"
@@ -1390,7 +1401,7 @@ def build_ui() -> "gr.Blocks":
             # Stream tokens from RAG; accumulate into the assistant bubble
             accumulated = ""
             async for chunk in rag_review_stream(
-                message, prior_history, use_reviewer, persona_mode
+                message, prior_history, use_reviewer, persona_mode, _chunks
             ):
                 accumulated += chunk
                 history[-1]["content"] = accumulated
