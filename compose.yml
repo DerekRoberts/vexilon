@@ -50,7 +50,7 @@ services:
     build:
       context: .
       dockerfile: Containerfile
-      target: builder
+      target: test_builder
     mem_limit: 3g         # Integration tests load the real 800 MB embedding model;
     memswap_limit: 3g     # match mem_limit to disable swap — clean OOM, not host thrash
     volumes:
