@@ -29,38 +29,17 @@ jobs:
 
       - name: Resolve and verify image (with historical fallback)
         id: resolve
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # Walking back through the last 20 commits to find the most recent buildable candidate.
-          # We check the PR head SHA for each merge commit.
-          for COMMIT in $(git rev-list -n 20 HEAD); do
-            echo "Checking commit: $COMMIT"
-            
-            PR_HEAD_SHA=$(gh api "/repos/${{ github.repository }}/commits/${COMMIT}/pulls" --jq '.[0].head.sha')
-            
-            if [ -n "$PR_HEAD_SHA" ] && [ "$PR_HEAD_SHA" != "null" ]; then
-              TAG="sha-${PR_HEAD_SHA}"
-              declare -l IMAGE="ghcr.io/${{ github.repository }}:${TAG}"
-              
-              echo "  Candidate PR Head: ${TAG}..."
-              
-              if DIGEST=$(skopeo inspect "docker://${IMAGE}" --format '{{.Digest}}' 2>/dev/null); then
-                echo "✅ Found valid image: ${IMAGE} (${DIGEST})"
-                echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
-                exit 0
-              fi
-              echo "  No image found for ${TAG}. Stepping back..."
-            fi
-          done
-
-          echo "::error::No buildable image found in the last 20 commits on main!"
-          exit 1
+        uses: bcgov/actions/commit-to-package@main
+        with:
+          images: "vexilon=ghcr.io/${{ github.repository }}"
+          max_depth: 20
 
       - name: Push image-based stub to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: ./.github/scripts/deploy.sh "${{ steps.resolve.outputs.digest }}" --prod
+        run: |
+          DIGEST=$(echo '${{ steps.resolve.outputs.bundle }}' | jq -r '.vexilon')
+          ./.github/scripts/deploy.sh "$DIGEST" --prod
 
       - name: Verify Space boots successfully
         env:
