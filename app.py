@@ -16,7 +16,7 @@ Quick start:
 
 Index pre-computation (run once after updating the PDF):
   python -c "from app import startup; startup(force_rebuild=True)"
-  # Saves .pdf_cache/index.faiss + .pdf_cache/chunks.json for fast cold starts.
+  # Saves .pdf_cache/index.faiss + .pdf_cache/chunks.pkl for fast cold starts.
 """
 
 # ─── Standard Library ────────────────────────────────────────────────────────
@@ -399,6 +399,11 @@ DEVELOPER_MODE = os.getenv("DEVELOPER_MODE", "false").lower() == "true"
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 
+def get_mandatory_header() -> str:
+    """Centralized helper for standard prompt headers (Date + Rules)."""
+    today = datetime.datetime.now().strftime("%A, %B %d, %Y")
+    return f"Current Date: {today}\n{GLOBAL_MANDATORY_RULES}\n\n"
+
 def get_system_prompt(developer_mode: bool = False) -> str:
     """Load the default system prompt, optionally with developer extensions."""
     path = PROMPTS_DIR / ("developer.txt" if developer_mode else "steward.txt")
@@ -411,10 +416,8 @@ def get_system_prompt(developer_mode: bool = False) -> str:
             "Knowledge Base:\n{manifest}\n\n"
             "{verify_message}"
         )
-    # Always prepend mandatory overriding rules regardless of file content
-    today = datetime.datetime.now().strftime("%A, %B %d, %Y")
-    today_str = f"Current Date: {today}\n"
-    return f"{today_str}{GLOBAL_MANDATORY_RULES}\n\n{content}"
+    # Prepend mandatory header (Date + Rules)
+    return f"{get_mandatory_header()}{content}"
 
 GLOBAL_MANDATORY_RULES = """--- MANDATORY OPERATIONAL RULES (OVERRIDING - v272-FIXED) ---
 1. ANSWER FROM EXCERPTS ONLY: Base your answer strictly on the provided excerpts. If the specific text was not retrieved, suggest the user ask about that section directly. NEVER fabricate contract language.
@@ -451,11 +454,15 @@ def get_persona_prompt(mode_name: str) -> str:
     }
     
     path = paths.get(mode_name)
-    content = path.read_text(encoding="utf-8") if path and path.is_file() else fallbacks.get(mode_name, get_system_prompt(DEVELOPER_MODE))
+    if path and path.is_file():
+        content = path.read_text(encoding="utf-8")
+    elif mode_name in fallbacks:
+        content = fallbacks[mode_name]
+    else:
+        # Falls back to get_system_prompt which already handles get_mandatory_header()
+        return get_system_prompt(DEVELOPER_MODE)
         
-    today = datetime.datetime.now().strftime("%A, %B %d, %Y")
-    today_str = f"Current Date: {today}\n"
-    return f"{today_str}{GLOBAL_MANDATORY_RULES}\n\n{content}"
+    return f"{get_mandatory_header()}{content}"
 
 
 
@@ -969,7 +976,7 @@ def get_ground_truth_for_review(response: str, all_chunks: list[dict]) -> str:
 
 # ─── Two-Bot Review Stream (Bot B) ─────────────────────────────────────────────
 async def review_stream(
-    raw_response: str, query: str, context: str
+    raw_response: str, query: str, context: str, all_chunks: list[dict] = None
 ) -> AsyncIterator[str]:
     """
     Bot B: Senior BCGEU rep reviewing Bot A's (steward) output.
@@ -978,7 +985,7 @@ async def review_stream(
     client = get_anthropic()
     # Independent re-retrieval for Bot B (Issue #183)
     # Extracts cited articles from Bot A's response and fetches ground truth context.
-    ground_truth = get_ground_truth_for_review(raw_response, _chunks)
+    ground_truth = get_ground_truth_for_review(raw_response, all_chunks or _chunks)
     if not ground_truth:
         # Fallback to Bot A's context if no citations were generated or re-retrieval failed
         ground_truth = context
@@ -1164,7 +1171,7 @@ async def rag_review_stream(
             
             # Silent Audit (Bot B)
             review_text = ""
-            async for review_chunk in review_stream(raw_response, query, context):
+            async for review_chunk in review_stream(raw_response, query, context, all_chunks=all_chunks):
                 review_text += review_chunk
             
             # Fetch ground_truth from Bot B's logic to pass to refiner

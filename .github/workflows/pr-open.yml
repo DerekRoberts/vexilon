@@ -59,7 +59,7 @@ jobs:
             source $HOME/.cargo/env
             uv sync --frozen
             uv run pytest tests/ -v --ignore=tests/smoke/
-          triggers: '["./Containerfile", "./pyproject.toml", "./app.py", "./vexilon/", "./scripts/", "./prompts/", "./data/", "./tests/"]'
+          triggers: '["./Containerfile", "./pyproject.toml", "./app.py", "./vexilon/", "./scripts/", "./prompts/", "./data/", "./tests/", "./.github/workflows/"]'
           sonar_token: ${{ secrets.SONAR_TOKEN }}
 
   container_build:
