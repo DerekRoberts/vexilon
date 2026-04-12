@@ -119,3 +119,4 @@ if __name__ == "__main__":
     else:
         manifest = generate_manifest()
         print(f"Generated manifest.json with {len(manifest['sources'])} source files")
+
