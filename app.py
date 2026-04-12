@@ -56,6 +56,11 @@ from vexilon.indexing import (
     EMBED_DIM,
     SIMILARITY_TOP_K,
 )
+from vexilon.area_contacts import (
+    get_grievance_handoff_message,
+    get_area_by_workplace_location,
+    get_all_area_offices_summary,
+)
 TESTS_DIR = LABOUR_LAW_DIR / "tests"
 _chunks: list[dict] = []
 _index: "faiss.IndexFlatIP | None" = None
@@ -1181,8 +1186,14 @@ async def rag_review_stream(
             
             # Synthesis Phase (Step 3) - STREAMED
             yield "\n\n---\n\n✨ **VEXILON RECOMMENDATION**\n\n"
+            refined_response = ""
             async for refined_chunk in refine_stream(raw_response, review_text, ground_truth):
                 yield refined_chunk
+                refined_response += refined_chunk
+            
+            # Issue #232: Append area office contacts for grievance-related responses
+            if _is_grievance_related(message, refined_response):
+                yield _get_area_contacts_section(message)
 
     except Exception as exc:
         yield f"\n\n⚠️ API error: {exc}"
@@ -1246,6 +1257,47 @@ def markdown_to_history(file_path: str) -> list[dict]:
         )
 
     return history
+
+
+# ─── Issue #232: Area Office Contact Integration ──────────────────────────────
+
+def _is_grievance_related(message: str, response: str) -> bool:
+    """Detect if the conversation is about grievances."""
+    grievance_keywords = [
+        "grievance", "file a grievance", "grievance form", "step 1", "step 2",
+        "violation", "collective agreement", "article 8", "redress",
+        "union representation", "staff rep", "area office", "submit grievance"
+    ]
+    combined_text = (message + " " + response).lower()
+    return any(keyword in combined_text for keyword in grievance_keywords)
+
+
+def _get_area_contacts_section(message: str) -> str:
+    """Generate area office contact section for grievance handoff."""
+    # Try to extract location from message
+    import re
+    
+    # Common location patterns
+    location_patterns = [
+        r"in\s+([A-Za-z\s]+(?:BC|British Columbia))?",
+        r"at\s+([A-Za-z\s]+(?:workplace|site|office))?",
+        r"([A-Za-z]+(?:\s+[A-Za-z]+)?)\s+area",
+    ]
+    
+    location = None
+    for pattern in location_patterns:
+        match = re.search(pattern, message, re.IGNORECASE)
+        if match:
+            potential_location = match.group(1).strip()
+            if potential_location and len(potential_location) > 2:
+                location = potential_location
+                break
+    
+    try:
+        return get_grievance_handoff_message(location)
+    except Exception:
+        # Fallback if data file is missing
+        return """\n\n---\n\n## 📤 Next Steps: Contact Your BCGEU Area Office\n\n**Find your area office:** https://www.bcgeu.ca/full_contact\n\n**Toll-Free:** 1-800-663-2526\n\nYour area office will assign a staff representative to review your grievance."""
 
 
 # ─── Gradio UI ────────────────────────────────────────────────────────────────
