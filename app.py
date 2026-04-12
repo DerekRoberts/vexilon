@@ -1275,10 +1275,10 @@ def _is_grievance_related(message: str, response: str) -> bool:
 def _get_area_contacts_section(message: str) -> str:
     """Generate area office contact section for grievance handoff."""
     # Try to extract location from message
-    # Common location patterns
+    # Common location patterns (fixed per review feedback)
     location_patterns = [
-        r"in\s+([A-Za-z\s]+(?:BC|British Columbia))?",
-        r"at\s+([A-Za-z\s]+(?:workplace|site|office))?",
+        r"in\s+([A-Za-z\s]+?)(?:\s+BC|\s+British Columbia|$)",
+        r"at\s+([A-Za-z\s]+?)(?:\s+workplace|\s+site|\s+office|$)",
         r"([A-Za-z]+(?:\s+[A-Za-z]+)?)\s+area",
     ]
     

@@ -151,7 +151,7 @@ LOCATION_TO_AREA = {
     
     # Okanagan
     "kelowna": 8, "penticton": 8, "vernon": 8, "west kelowna": 8, "peachland": 8,
-    "summerland": 8, " osoyoos": 8, "oliver": 8, "princeton": 8, "revelstoke": 8,
+    "summerland": 8, "osoyoos": 8, "oliver": 8, "princeton": 8, "revelstoke": 8,
     
     # Thompson / Nicola
     "kamloops": 9, "clearwater": 9, "barriere": 9, "chase": 9, "cache creek": 9,
@@ -169,11 +169,11 @@ LOCATION_TO_AREA = {
     
     # North Central
     "prince george": 2, "vanderhoof": 2, "fort st. james": 2, "mackenzie": 2,
-    "valemount": 2, "mcbride": 2, "quesnel": 2,
+    "valemount": 2, "mcbride": 2,
     
     # Northwest
     "terrace": 1, "kitimat": 1, "prince rupert": 1, "smithers": 1, "houston": 1,
-    "masset": 1, "queen charlotte": 1, "haida gwaii": 1, "kitimat": 1,
+    "masset": 1, "queen charlotte": 1, "haida gwaii": 1,
     
     # Northeast
     "fort st. john": 12, "dawson creek": 12, "fort nelson": 12, "tumbler ridge": 12,
@@ -181,7 +181,7 @@ LOCATION_TO_AREA = {
     
     # Sunshine Coast
     "powell river": 4, "sechelt": 4, "gibsons": 4, "sunshine coast": 4,
-    "squit": 4, "roberts creek": 4, "madeira park": 4, "langdale": 4,
+    "squamish": 4, "roberts creek": 4, "madeira park": 4, "langdale": 4,
 }
 
 
