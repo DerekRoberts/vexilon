@@ -56,11 +56,7 @@ from vexilon.indexing import (
     EMBED_DIM,
     SIMILARITY_TOP_K,
 )
-from vexilon.area_contacts import (
-    get_grievance_handoff_message,
-    get_area_by_workplace_location,
-    get_all_area_offices_summary,
-)
+
 TESTS_DIR = LABOUR_LAW_DIR / "tests"
 _chunks: list[dict] = []
 _index: "faiss.IndexFlatIP | None" = None
@@ -75,8 +71,6 @@ from pathlib import Path
 import datetime
 import tempfile
 import textwrap
-
-
 # Ensure the HuggingFace model cache is writable and persistent.
 # Inside the container (WORKDIR /app), this resolves to /app/hf_cache.
 # Locally, it resolves to ./hf_cache in the repo root.
@@ -107,20 +101,14 @@ CLAUDE_MODEL = os.getenv("VEXILON_CLAUDE_MODEL", DEFAULT_MODEL_LLM)
 REVIEWER_MODEL = os.getenv("VEXILON_REVIEWER_MODEL", DEFAULT_MODEL_LLM)
 CONDENSE_MODEL = os.getenv("VEXILON_CONDENSE_MODEL", DEFAULT_MODEL_LLM)
 VERIFY_MODEL = os.getenv("VEXILON_VERIFY_MODEL", DEFAULT_MODEL_LLM)
-
-
 # Generation Limits (Tokens)
 RAG_MAX_TOKENS = 4096
 REVIEWER_MAX_TOKENS = 4096
-
-
 # Memory / Context Condensation
 CONDENSE_QUERY_HISTORY_TURNS = int(os.getenv("CONDENSE_QUERY_HISTORY_TURNS", 3))
 CONDENSE_QUERY_CONTENT_MAX_LEN = int(os.getenv("CONDENSE_QUERY_CONTENT_MAX_LEN", 200))
 
 import re
-
-
 # Input Sanitization (for prompt injection prevention)
 MAX_INPUT_LENGTH = int(os.getenv("MAX_INPUT_LENGTH", 10000))
 LOG_SUSPICIOUS_INPUTS = os.getenv("LOG_SUSPICIOUS_INPUTS", "true").lower() == "true"
@@ -146,8 +134,6 @@ PROMPT_INJECTION_PATTERNS = [
         r"discard\s+.*instructions",
     ]
 ]
-
-
 def sanitize_input(user_input: str) -> tuple[str, bool]:
     """
     Check for prompt injection patterns and length limits.
@@ -176,8 +162,6 @@ def sanitize_input(user_input: str) -> tuple[str, bool]:
     sanitized = user_input[:MAX_INPUT_LENGTH]
 
     return sanitized, flagged
-
-
 # Verification Bot (for reducing hallucinations)
 VERIFY_ENABLED = os.getenv("VERIFY_ENABLED", "true").lower() == "true"
 
@@ -199,12 +183,8 @@ Respond in this format:
 
 If all claims are verified, respond with "ALL_CLAIMS_VERIFIED".
 If there are disputed claims, list them with explanations."""
-
-
 _SECONDS_IN_MINUTE = 60
 _SECONDS_IN_HOUR = 3600
-
-
 class RateLimiter:
     """Simple in-memory rate limiter for request throttling."""
 
@@ -247,8 +227,6 @@ class RateLimiter:
 
             self.requests.setdefault(user_id, []).append(now)
             return True, ""
-
-
 _rate_limiter = RateLimiter(
     max_per_minute=RATE_LIMIT_PER_MINUTE, max_per_hour=RATE_LIMIT_PER_HOUR
 )
@@ -258,8 +236,6 @@ INTEGRITY_WARNING: str | None = None
 
 # Two-Bot Self-Review Pipeline (Issue #104)
 USE_REVIEWER = os.getenv("USE_REVIEWER", "false").lower() == "true"
-
-
 def get_vexilon_info():
     """
     1. Get Version (Priority: Env Var -> Baked File -> Fallback)
@@ -294,8 +270,6 @@ def get_vexilon_info():
     logger.info("=" * 50)
 
     return {"ver": version, "src": source, "py": py_ver, "os": os_info}
-
-
 # Initialise version and logging at imports
 _info = get_vexilon_info()
 VEXILON_VERSION = _info["ver"]
@@ -335,8 +309,6 @@ def _get_download_source_files() -> list[Path]:
     tests_dir = LABOUR_LAW_DIR / "tests"
     pdfs = [p for p in LABOUR_LAW_DIR.rglob("*.pdf") if not p.is_relative_to(tests_dir)]
     return sorted(pdfs, key=lambda p: str(p))
-
-
 def get_knowledge_manifest() -> str:
     """
     Dynamically scan the labour_law directory and build a formatted list for the system prompt.
@@ -362,8 +334,6 @@ def get_knowledge_manifest() -> str:
             lines.append(f"- {source_name} (Uncategorized)")
 
     return "\n".join(lines)
-
-
 def build_pdf_download_links() -> str:
     """
     Generate HTML for individual PDF and MD download links using Gradio's /gradio_api/file= endpoint.
@@ -398,8 +368,6 @@ def build_pdf_download_links() -> str:
 
     lines.append("</ul>")
     return "\n".join(lines)
-
-
 DEVELOPER_MODE = os.getenv("DEVELOPER_MODE", "false").lower() == "true"
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
@@ -445,8 +413,6 @@ GLOBAL_MANDATORY_RULES = """--- MANDATORY OPERATIONAL RULES (OVERRIDING - v272-F
 7. TONE: Professional, authoritative, and forensic.
 ----------------------------------
 """
-
-
 def get_persona_prompt(mode_name: str) -> str:
     """Helper to load system prompts for different operational modes."""
     paths = {
@@ -468,8 +434,6 @@ def get_persona_prompt(mode_name: str) -> str:
         return get_system_prompt(DEVELOPER_MODE)
         
     return f"{get_mandatory_header()}{content}"
-
-
 
 VERIFY_STEWARD_MESSAGE = os.getenv(
     "STEWARD_VERIFY_MESSAGE", "Verify w/ Area Office: 604-291-9611"
@@ -587,8 +551,6 @@ _test_registry = TestRegistry()
 
 # ─── Chunking ─────────────────────────────────────────────────────────────────
 
-
-
 def startup(force_rebuild: bool = False, skip_pdf_fetch: bool = False) -> None:
     """
     Initialise the vector index and load document chunks.
@@ -642,8 +604,6 @@ def startup(force_rebuild: bool = False, skip_pdf_fetch: bool = False) -> None:
             logger.warning(f"[integrity] Found {len(failed)} failures.")
     else:
         logger.error("[startup] ERROR: Knowledge base failed to load.")
-
-
 # ─── RAG Query ────────────────────────────────────────────────────────────────
 async def condense_query(message: str, history: list[dict]) -> str:
     """
@@ -703,8 +663,6 @@ async def condense_query(message: str, history: list[dict]) -> str:
         # We catch generic Exception here since anthropic is deferredly imported
         logger.error(f"[rag] Query condensation failed: {exc}. Using raw message.")
         return message
-
-
 async def generate_perspective_queries(message: str, history: list[dict]) -> list[str]:
     """
     Analyze if the query is complex and generate multiple perspectives if so.
@@ -753,8 +711,6 @@ async def generate_perspective_queries(message: str, history: list[dict]) -> lis
     except Exception as exc:
         logger.error(f"[rag] Multi-perspective generation failed: {exc}. Using condensed query.")
         return [condensed]
-
-
 async def get_multi_perspective_context(message: str, history: list[dict]) -> tuple[list[str], str]:
     """
     Generate multiple perspectives for complex queries, search the index,
@@ -791,14 +747,8 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
     
     return queries, context
 
-
-
 # ─── Export / Import Functions ────────────────────────────────────────────────
 MAX_IMPORT_SIZE_BYTES = 500 * 1024  # 500KB limit
-
-
-
-
 
 async def rag_stream(
     message: str, history: list[dict]
@@ -872,15 +822,11 @@ async def rag_stream(
                 yield ("\n\n⚠️ Response truncated. Please ask for the rest of the answer.", "")
     except Exception as exc:
         yield (f"\n\n⚠️ API error: {exc}", "")
-
-
 async def get_rag_context(message: str, history: list[dict]) -> tuple[str, str]:
     """Get context (excerpts) for a query without generating a response. Consistent with Issue #132."""
     queries, context = await get_multi_perspective_context(message, history)
     query_display = " | ".join(queries) if len(queries) > 1 else queries[0]
     return query_display, context
-
-
 async def verify_response(assistant_response: str, context: str) -> str:
     """
     Use a second bot to verify that the claims in the response are supported
@@ -912,11 +858,7 @@ SOURCE CITATIONS AND CONTEXT:
         return verify_resp.content[0].text
     except Exception as exc:
         return f"⚠️ Verification unavailable: {exc}"
-
-
 # ─── Verification Bot (for reducing hallucinations) ───────────────────────────
-
-
 def get_ground_truth_for_review(response: str, all_chunks: list[dict]) -> str:
     """
     Extract cited articles from Bot A's response and fetch their full text from context.
@@ -977,8 +919,6 @@ def get_ground_truth_for_review(response: str, all_chunks: list[dict]) -> str:
                 
     # Limit to 15 chunks (roughly 6k-8k tokens) for performance and window safety
     return "\n\n---\n\n".join(truth_parts[:15])
-
-
 # ─── Two-Bot Review Stream (Bot B) ─────────────────────────────────────────────
 async def review_stream(
     raw_response: str, query: str, context: str, all_chunks: list[dict] = None
@@ -1031,8 +971,6 @@ GROUND TRUTH CONTEXT (FOR VERIFICATION):
             logger.info(f"[review] Score: {score}/10")
     except Exception as exc:
         yield f"\n\n⚠️ Review error: {exc}"
-
-
 async def refine_stream(
     draft: str, critique: str, ground_truth: str
 ) -> AsyncIterator[str]:
@@ -1075,8 +1013,6 @@ async def refine_stream(
                 yield "\n\n⚠️ Response truncated. Please ask for the rest of the answer."
     except Exception as exc:
         yield f"\n\n⚠️ Refinement error: {exc}"
-
-
 # ─── Combined RAG + Review + Refine Stream (Collaboration Model) ──────────────
 async def rag_review_stream(
     message: str,
@@ -1186,22 +1122,12 @@ async def rag_review_stream(
             
             # Synthesis Phase (Step 3) - STREAMED
             yield "\n\n---\n\n✨ **VEXILON RECOMMENDATION**\n\n"
-            refined_response = ""
             async for refined_chunk in refine_stream(raw_response, review_text, ground_truth):
                 yield refined_chunk
-                refined_response += refined_chunk
-            
-            # Issue #232: Append area office contacts for grievance-related responses
-            if _is_grievance_related(message, refined_response):
-                yield _get_area_contacts_section(message)
 
     except Exception as exc:
         yield f"\n\n⚠️ API error: {exc}"
-
-
 # ─── Export & Import ──────────────────────────────────────────────────────────
-
-
 def history_to_markdown(history: list[dict]) -> str:
     """Convert chat history to a Markdown string."""
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -1222,8 +1148,6 @@ def history_to_markdown(history: list[dict]) -> str:
         md += f"### {role}\n{content}\n\n"
 
     return md
-
-
 def markdown_to_history(file_path: str) -> list[dict]:
     """Parse a Markdown conversation file back into a list of dicts."""
     with open(file_path, "r", encoding="utf-8") as f:
@@ -1258,48 +1182,6 @@ def markdown_to_history(file_path: str) -> list[dict]:
 
     return history
 
-
-# ─── Issue #232: Area Office Contact Integration ──────────────────────────────
-
-def _is_grievance_related(message: str, response: str) -> bool:
-    """Detect if the conversation is about grievances."""
-    grievance_keywords = [
-        "grievance", "file a grievance", "grievance form", "step 1", "step 2",
-        "violation", "collective agreement", "article 8", "redress",
-        "union representation", "staff rep", "area office", "submit grievance"
-    ]
-    combined_text = (message + " " + response).lower()
-    return any(keyword in combined_text for keyword in grievance_keywords)
-
-
-def _get_area_contacts_section(message: str) -> str:
-    """Generate area office contact section for grievance handoff."""
-    # Try to extract location from message
-    # Common location patterns (fixed per review feedback)
-    location_patterns = [
-        r"in\s+([A-Za-z\s]+?)(?:\s+BC|\s+British Columbia|$)",
-        r"at\s+([A-Za-z\s]+?)(?:\s+workplace|\s+site|\s+office|$)",
-        r"([A-Za-z]+(?:\s+[A-Za-z]+)?)\s+area",
-    ]
-    
-    location = None
-    for pattern in location_patterns:
-        match = re.search(pattern, message, re.IGNORECASE)
-        if match:
-            potential_location = match.group(1).strip()
-            if potential_location and len(potential_location) > 2:
-                location = potential_location
-                break
-    
-    try:
-        return get_grievance_handoff_message(location)
-    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
-        # Fallback if data file is missing or malformed
-        logger.warning(f"[area_contacts] Could not load contact data: {e}")
-        return """\n\n---\n\n## 📤 Next Steps: Contact Your BCGEU Area Office\n\n**Find your area office:** https://www.bcgeu.ca/full_contact\n\n**Toll-Free:** 1-800-663-2526\n\nYour area office will assign a staff representative to review your grievance."""
-
-
-# ─── Gradio UI ────────────────────────────────────────────────────────────────
 EXAMPLE_QUESTIONS = [
     "What are the just cause requirements for discipline?",
     "What rights do stewards have in investigation meetings?",
@@ -1307,12 +1189,6 @@ EXAMPLE_QUESTIONS = [
     "Show me the Harassment Threshold test.",
     "Does my employer have a social media policy?",
 ]
-
-
-
-
-
-
 import html
 import urllib.parse
 _SAFE_VEXILON_VERSION = html.escape(VEXILON_VERSION)
@@ -1327,10 +1203,6 @@ ATTRIBUTION_HTML = f"""
     <a href='{VEXILON_REPO_URL}/pkgs/container/vexilon/versions?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION}' target='_blank' rel='noopener noreferrer' style='color: #005691; text-decoration: none;'>{_SAFE_VEXILON_VERSION}</a>
 </div>
 """
-
-
-
-
 _CUSTOM_JS = """
 function() {
     // Use capture phase (true) so this fires before Gradio's element-level
@@ -1402,8 +1274,6 @@ def build_ui() -> "gr.Blocks":
             export_btn = gr.DownloadButton("⬇️ Save", variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
             import_btn = gr.UploadButton("⬆️ Load", file_types=[".md"], variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
 
-
-
         # ── Input row ─────────────────────────────────────────────────────────
         with gr.Row(elem_id="input_row"):
             msg_input = gr.Textbox(
@@ -1429,8 +1299,6 @@ def build_ui() -> "gr.Blocks":
             import gradio as gr
             
             # Onboarding visibility logic
-
-
 
             request = kwargs.get("request")
             hide = gr.update(visible=False)
@@ -1473,8 +1341,6 @@ def build_ui() -> "gr.Blocks":
                 accumulated += chunk
                 history[-1]["content"] = accumulated
                 yield history, gr.update(), hide
-
-
 
         submit_inputs = [msg_input, chatbot, reviewer_toggle, persona_selector]
         submit_outputs = [chatbot, msg_input, chip_row]
@@ -1528,8 +1394,6 @@ def build_ui() -> "gr.Blocks":
         gr.HTML(ATTRIBUTION_HTML)
 
     return demo
-
-
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import argparse
