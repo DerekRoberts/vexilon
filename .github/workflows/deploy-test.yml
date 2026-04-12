@@ -36,59 +36,17 @@ jobs:
 
       - name: Resolve and verify image
         id: resolve
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ -n "${{ inputs.image_tag }}" ]; then
-            # Manual dispatch — use provided tag
-            TAG="${{ inputs.image_tag }}"
-          else
-            # Push to main (squash merge) — look up the PR that was squash-merged at this commit
-            # and get its head SHA, which is what the image was built from in CI.
-            PR_HEAD_SHA=$(gh api "/repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
-              --jq '.[0].head.sha')
-            if [ -z "$PR_HEAD_SHA" ] || [ "$PR_HEAD_SHA" = "null" ]; then
-              echo "::error::No PR found for commit ${{ github.sha }}"
-              exit 1
-            fi
-            TAG="sha-${PR_HEAD_SHA}"
-          fi
-
-          # Resolve tag to immutable digest — proves image was built by CI for this PR
-          declare -l IMAGE="ghcr.io/${{ github.repository }}:${TAG}"
-          if DIGEST=$(skopeo inspect "docker://${IMAGE}" --format '{{.Digest}}' 2>/dev/null); then
-            echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
-            echo "Verified: ${IMAGE} (${DIGEST})"
-            exit 0
-          fi
-
-          # No image for this PR — walk back through recent commits to find the latest valid one.
-          # This ensures metadata-only PRs (e.g. README changes) still trigger a deploy.
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "No image for ${TAG}. Walking back through recent commits..."
-            for COMMIT in $(git rev-list -n 20 HEAD~1); do
-              PR_HEAD_SHA=$(gh api "/repos/${{ github.repository }}/commits/${COMMIT}/pulls" --jq '.[0].head.sha' 2>/dev/null)
-              if [ -n "$PR_HEAD_SHA" ] && [ "$PR_HEAD_SHA" != "null" ]; then
-                FALLBACK_TAG="sha-${PR_HEAD_SHA}"
-                declare -l FALLBACK_IMAGE="ghcr.io/${{ github.repository }}:${FALLBACK_TAG}"
-                if DIGEST=$(skopeo inspect "docker://${FALLBACK_IMAGE}" --format '{{.Digest}}' 2>/dev/null); then
-                  echo "✅ Found fallback image: ${FALLBACK_IMAGE} (${DIGEST})"
-                  echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
-                  exit 0
-                fi
-              fi
-            done
-            echo "::notice::No valid image found in last 20 commits. Skipping deployment."
-            exit 0
-          fi
-
-          echo "::error::Image not found in GHCR: ${IMAGE}"
-          exit 1
+        uses: bcgov/actions/commit-to-package@main
+        with:
+          images: "vexilon=ghcr.io/${{ github.repository }}"
+          max_depth: 20
 
       - name: Push image-based stub to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: ./.github/scripts/deploy.sh "${{ steps.resolve.outputs.digest }}"
+        run: |
+          DIGEST=$(echo '${{ steps.resolve.outputs.bundle }}' | jq -r '.vexilon')
+          ./.github/scripts/deploy.sh "$DIGEST"
 
       - name: Verify Space boots successfully
         env:

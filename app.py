@@ -412,7 +412,9 @@ def get_system_prompt(developer_mode: bool = False) -> str:
             "{verify_message}"
         )
     # Always prepend mandatory overriding rules regardless of file content
-    return f"{GLOBAL_MANDATORY_RULES}\n\n{content}"
+    today = datetime.datetime.now().strftime("%A, %B %d, %Y")
+    today_str = f"Current Date: {today}\n"
+    return f"{today_str}{GLOBAL_MANDATORY_RULES}\n\n{content}"
 
 GLOBAL_MANDATORY_RULES = """--- MANDATORY OPERATIONAL RULES (OVERRIDING - v272-FIXED) ---
 1. ANSWER FROM EXCERPTS ONLY: Base your answer strictly on the provided excerpts. If the specific text was not retrieved, suggest the user ask about that section directly. NEVER fabricate contract language.
@@ -451,7 +453,9 @@ def get_persona_prompt(mode_name: str) -> str:
     path = paths.get(mode_name)
     content = path.read_text(encoding="utf-8") if path and path.is_file() else fallbacks.get(mode_name, get_system_prompt(DEVELOPER_MODE))
         
-    return f"{GLOBAL_MANDATORY_RULES}\n\n{content}"
+    today = datetime.datetime.now().strftime("%A, %B %d, %Y")
+    today_str = f"Current Date: {today}\n"
+    return f"{today_str}{GLOBAL_MANDATORY_RULES}\n\n{content}"
 
 
 
@@ -586,6 +590,11 @@ def startup(force_rebuild: bool = False, skip_pdf_fetch: bool = False) -> None:
         logger.info(f"[startup] Starting Vexilon {VEXILON_VERSION}…")
     if DEVELOPER_MODE:
         logger.info("[startup] DEVELOPER_MODE is ACTIVE.")
+    
+    # Check for missing model cache (Issue #267)
+    hf_home = Path(os.getenv("HF_HOME", "./hf_cache"))
+    if not hf_home.exists() and not (os.getenv("HF_SPACE_ID") or os.getenv("EXTERNAL_CI")):
+        logger.warning(f"⚠️ [startup] Model cache directory '{hf_home}' not found. Vexilon is in offline mode and may fail to start.")
     
     # 2. Local Knowledge Bases
     _test_registry.load(TESTS_DIR)
