@@ -24,18 +24,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 50
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Resolve image
         id: resolve
+        if: ${{ !inputs.image_tag }}
         uses: bcgov/actions/commit-to-package@main
         with:
           package: vexilon
@@ -44,8 +36,12 @@ jobs:
       - name: Push image-based stub to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          BUNDLE: ${{ steps.resolve.outputs.bundle }}
         run: |
-          TAG=$(echo '${{ steps.resolve.outputs.bundle }}' | jq -r '.vexilon')
+          TAG="${{ inputs.image_tag }}"
+          if [ -z "$TAG" ]; then
+            TAG=$(echo "$BUNDLE" | jq -r '.vexilon')
+          fi
           ./.github/scripts/deploy.sh "$TAG"
 
       - name: Verify Space boots successfully
