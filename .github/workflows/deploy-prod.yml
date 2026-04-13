@@ -21,7 +21,7 @@ jobs:
 
       - name: Resolve image
         id: resolve
-        uses: bcgov/actions/commit-to-package@main
+        uses: bcgov/actions/image-tracker@main
         with:
           package: vexilon
           token: ${{ github.token }}
