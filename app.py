@@ -1017,7 +1017,6 @@ async def refine_stream(
 async def rag_review_stream(
     message: str,
     history: list[dict],
-    use_reviewer: bool = False,
     persona_mode: str = "Explorer",
     all_chunks: list[dict] = None,
 ) -> AsyncIterator[str]:
@@ -1101,13 +1100,7 @@ async def rag_review_stream(
             if final_draft.stop_reason == "max_tokens":
                 raw_response += "\n\n⚠️ Response truncated during drafting phase. Synthesis results may be incomplete."
             
-            # If no reviewer, we just stream Bot A's response (with a clean break)
-            if not use_reviewer:
-                yield "\n\n---\n\n"
-                yield raw_response
-
-        # 4. Step 2 & 3: Collaborative Refinement (Bot B + Bot A)
-        if use_reviewer:
+        # 4. Step 2 & 3: Collaborative Refinement (Bot B + Bot A) - Always enabled
             yield "\n\n🕵️ Senior Rep is auditing the response for forensic accuracy..."
             
             # Silent Audit (Bot B)
@@ -1266,13 +1259,7 @@ def build_ui() -> "gr.Blocks":
                 scale=3,
                 elem_id="persona_selector",
             )
-            reviewer_toggle = gr.Checkbox(
-                label="Enable Senior Rep Review",
-                value=USE_REVIEWER,
-                container=False,
-                scale=1,
-                elem_id="reviewer_toggle",
-            )
+
             export_btn = gr.DownloadButton("⬇️ Save Chat", variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
             import_btn = gr.UploadButton("⬆️ Load Chat", file_types=[".md"], variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
 
@@ -1294,7 +1281,6 @@ def build_ui() -> "gr.Blocks":
         async def submit(
             message: str,
             history: list[dict],
-            use_reviewer: bool,
             persona_mode: str,
             **kwargs,
         ) -> AsyncIterator[tuple[list[dict], str, dict]]:
@@ -1338,13 +1324,13 @@ def build_ui() -> "gr.Blocks":
             # Stream tokens from RAG; accumulate into the assistant bubble
             accumulated = ""
             async for chunk in rag_review_stream(
-                message, prior_history, use_reviewer, persona_mode, _chunks
+                message, prior_history, persona_mode, _chunks
             ):
                 accumulated += chunk
                 history[-1]["content"] = accumulated
                 yield history, gr.update(), hide
 
-        submit_inputs = [msg_input, chatbot, reviewer_toggle, persona_selector]
+        submit_inputs = [msg_input, chatbot, persona_selector]
         submit_outputs = [chatbot, msg_input, chip_row]
 
         send_btn.click(fn=submit, inputs=submit_inputs, outputs=submit_outputs)
