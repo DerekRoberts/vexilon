@@ -46,7 +46,7 @@ COPY --from=model_fetcher /model_cache /app/hf_cache/sentence-transformers/BAAI_
 ENV HF_HOME=/app/hf_cache \
     TRANSFORMERS_OFFLINE=1 \
     HF_HUB_OFFLINE=1 \
-    EMBED_MODEL=/app/hf_cache/sentence-transformers/BAAI_bge-small-en-v1.5
+    EMBED_MODEL=BAAI/bge-small-en-v1.5
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     UV_LINK_MODE=copy uv sync --frozen --no-install-project
