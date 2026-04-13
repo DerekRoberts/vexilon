@@ -39,6 +39,13 @@ COPY app.py style.css conftest.py ./
 # ─── Stage 2.5: Test Builder ─────────────────────────────────────────────────
 # This stage adds dev dependencies and test suite for the 'tests' service.
 FROM builder AS test_builder
+
+# Copy model from model_fetcher so tests can load it
+COPY --from=model_fetcher /model_cache /app/hf_cache
+ENV HF_HOME=/app/hf_cache \
+    TRANSFORMERS_OFFLINE=1 \
+    HF_HUB_OFFLINE=1
+
 RUN --mount=type=cache,target=/root/.cache/uv \
     UV_LINK_MODE=copy uv sync --frozen --no-install-project
 
@@ -65,7 +72,7 @@ ENV HF_HOME=/app/hf_cache \
 
 # 2. Copy the prepared environment and code from builder
 COPY --from=builder --chown=vexilon:vexilon /app /app
-COPY --from=model_fetcher --chown=vexilon:vexilon /model_cache /app/hf_cache
+COPY --from=model_fetcher /model_cache /app/hf_cache
 
 # 3. Build index
 # Create persistent cache directory

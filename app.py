@@ -1250,6 +1250,7 @@ def build_ui() -> "gr.Blocks":
             height=600,
             buttons=["copy"],
             render_markdown=True,
+            label="Chat Messages",
             show_label=False,
             elem_id="chatbot",
         )
@@ -1259,26 +1260,27 @@ def build_ui() -> "gr.Blocks":
             persona_selector = gr.Radio(
                 choices=["Explore", "Direct", "Defend"],
                 value="Explore",
+                label="Response Style",
                 show_label=False,
                 container=False,
                 scale=3,
                 elem_id="persona_selector",
             )
             reviewer_toggle = gr.Checkbox(
-                label="Reviewer",
+                label="Enable Senior Rep Review",
                 value=USE_REVIEWER,
                 container=False,
                 scale=1,
                 elem_id="reviewer_toggle",
             )
-            export_btn = gr.DownloadButton("⬇️ Save", variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
-            import_btn = gr.UploadButton("⬆️ Load", file_types=[".md"], variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
+            export_btn = gr.DownloadButton("⬇️ Save Chat", variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
+            import_btn = gr.UploadButton("⬆️ Load Chat", file_types=[".md"], variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
 
         # ── Input row ─────────────────────────────────────────────────────────
         with gr.Row(elem_id="input_row"):
             msg_input = gr.Textbox(
-                placeholder="Ask about the collective agreement…",
-                label="",
+                placeholder="Ask about the collective agreement...",
+                label="Your Question",
                 max_lines=6,
                 scale=5,
                 show_label=False,
@@ -1286,7 +1288,7 @@ def build_ui() -> "gr.Blocks":
                 elem_id="msg_input",
                 lines=1,
             )
-            send_btn = gr.Button("Send ➤", scale=1, variant="primary", elem_id="send_btn")
+            send_btn = gr.Button("Send", scale=1, variant="primary", elem_id="send_btn")
 
         # ── Submit handlers ───────────────────────────────────────────────────
         async def submit(

@@ -80,12 +80,10 @@ jobs:
           language: python
           python_version: "3.14"
           dir: .
-          # Using uv manually as the action doesn't natively support it yet
+          # Consistent test execution via podman-compose
           commands: |
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            source $HOME/.cargo/env
-            uv sync --frozen
-            uv run pytest tests/ -v --ignore=tests/smoke/
+            export ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY || 'sk-dummy-key-for-predictability' }}
+            podman compose run --rm tests
           triggers: '["./Containerfile", "./pyproject.toml", "./app.py", "./vexilon/", "./scripts/", "./prompts/", "./data/", "./tests/", "./.github/workflows/"]'
           sonar_token: ${{ secrets.SONAR_TOKEN }}
 
