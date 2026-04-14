@@ -379,6 +379,22 @@ def get_mandatory_header() -> str:
     today = datetime.datetime.now().strftime("%A, %B %d, %Y")
     return f"Current Date: {today}\n{GLOBAL_MANDATORY_RULES}\n\n"
 
+def get_manager_header() -> str:
+    """Management-specific header without union grievance rules."""
+    today = datetime.datetime.now().strftime("%A, %B %d, %Y")
+    return f"Current Date: {today}\n{MANAGER_MANDATORY_RULES}\n\n"
+
+MANAGER_MANDATORY_RULES = """--- MANDATORY OPERATIONAL RULES (MANAGEMENT - v272-FIXED) ---
+1. ANSWER FROM EXCERPTS ONLY: Base your answer strictly on the provided excerpts. If the specific text was not retrieved, suggest the user ask about that section directly. NEVER fabricate contract language.
+2. CITATIONS: Every claim MUST be supported by a verbatim quote in a blockquote (> "...") followed by its citation (Document, Article, Page).
+3. HIERARCHY: Lead with the Collective Agreement. Use Statutes only to reinforce the legal framework.
+4. COMPLIANCE AUDIT: Proactively identify operational risks, policy gaps, and compliance failures that could expose the organization to liability.
+5. RISK MITIGATION: Focus on preventive measures, process improvements, and early resolution strategies to minimize operational debt.
+6. NO UNION ADVICE: Do NOT provide guidance on grievance filing, union representation, or member advocacy. Direct such inquiries to HR or Legal.
+7. TONE: Professional, strategic, and solution-oriented.
+----------------------------------
+"""
+
 def get_system_prompt(developer_mode: bool = False) -> str:
     """Load the default system prompt, optionally with developer extensions."""
     path = PROMPTS_DIR / ("developer.txt" if developer_mode else "steward.txt")
@@ -437,7 +453,11 @@ def get_persona_prompt(mode_name: str) -> str:
         # Defaults to Lookup Mode (get_system_prompt handles header)
         return get_system_prompt(DEVELOPER_MODE)
         
-    prompt = f"{get_mandatory_header()}{content}"
+    # Use management-specific rules for Manager Mode to avoid union/steward conflicts
+    if mode_name == "Manager Mode":
+        prompt = f"{get_manager_header()}{content}"
+    else:
+        prompt = f"{get_mandatory_header()}{content}"
     
     # Smart Auditor Injection for Grieve Mode (#327)
     if mode_name == "Grieve Mode":
@@ -451,6 +471,10 @@ def get_persona_prompt(mode_name: str) -> str:
 
 VERIFY_STEWARD_MESSAGE = os.getenv(
     "STEWARD_VERIFY_MESSAGE", "Verify w/ Area Office: 604-291-9611"
+)
+
+VERIFY_MANAGER_MESSAGE = os.getenv(
+    "MANAGER_VERIFY_MESSAGE", "Verify with HR or Legal before acting on guidance."
 )
 
 # ─── Two-Bot Review Prompt (Bot B) ──────────────────────────────────────────────
@@ -1011,16 +1035,17 @@ async def rag_review_stream(
     
     # ── Autonomous Review Steering (#327) ────────────────────────────────────
     # 1. Grieve Mode ALWAYS uses a reviewer for forensic accuracy.
-    # 2. Manager Mode ALWAYS uses a reviewer to ensure strategic compliance.
+    # 2. Manager Mode does NOT use reviewer (avoids persona collapse - union reviewer vs management consultant).
     # 3. Lookup Mode only uses a reviewer if the query is complex (multi-perspective).
-    if persona_mode in ("Grieve Mode", "Manager Mode"):
+    if persona_mode == "Grieve Mode":
         use_reviewer = True
     else:
         # Lookup mode uses len(queries) > 1 as complexity heuristic
-        use_reviewer = len(queries) > 1
+        # Manager Mode explicitly disabled from review pipeline
+        use_reviewer = len(queries) > 1 and persona_mode != "Manager Mode"
     
     if use_reviewer:
-        trigger_reason = f"{persona_mode} active" if persona_mode in ("Grieve Mode", "Manager Mode") else "Complex query detected"
+        trigger_reason = f"{persona_mode} active" if persona_mode == "Grieve Mode" else "Complex query detected"
         logger.info(f"[rag] Autonomous Review active. Reason: {trigger_reason}")
     else:
         logger.info(f"[rag] Simple lookup path. No review needed.")
@@ -1040,7 +1065,9 @@ async def rag_review_stream(
         else:
             base_prompt = get_system_prompt(DEVELOPER_MODE)
             
-        formatted_prompt = base_prompt.replace("{manifest}", get_knowledge_manifest()).replace("{verify_message}", VERIFY_STEWARD_MESSAGE)
+        # Use appropriate verification message based on persona
+        verify_msg = VERIFY_MANAGER_MESSAGE if persona_mode == "Manager Mode" else VERIFY_STEWARD_MESSAGE
+        formatted_prompt = base_prompt.replace("{manifest}", get_knowledge_manifest()).replace("{verify_message}", verify_msg)
 
         # 2. Audit Logic (Issue #161 Refactor) - INJECT INTO PROMPT
         if persona_mode == "Grieve Mode":
