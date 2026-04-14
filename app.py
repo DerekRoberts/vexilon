@@ -417,13 +417,12 @@ GLOBAL_MANDATORY_RULES = """--- MANDATORY OPERATIONAL RULES (OVERRIDING - v272-F
 """
 def get_persona_prompt(mode_name: str) -> str:
     """Helper to load system prompts for different operational modes."""
+    # Forensic Rep merges legacy 'Direct' and 'Defend' modes for #327
     paths = {
-        "Direct": PROMPTS_DIR / "direct_staff_rep.txt",
-        "Defend": PROMPTS_DIR / "case_builder.txt",
+        "Forensic Rep": PROMPTS_DIR / "case_builder.txt",
     }
     fallbacks = {
-        "Direct": "You are a BCGEU Staff Rep providing DIRECT OPERATIONAL GUIDANCE.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
-        "Defend": "You are a BCGEU Staff Rep specializing in Grievance Drafting.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
+        "Forensic Rep": "You are a Senior BCGEU Staff Rep specializing in Forensic Case Building.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
     }
     
     path = paths.get(mode_name)
@@ -432,7 +431,7 @@ def get_persona_prompt(mode_name: str) -> str:
     elif mode_name in fallbacks:
         content = fallbacks[mode_name]
     else:
-        # Falls back to get_system_prompt which already handles get_mandatory_header()
+        # Defaults to Junior Steward (get_system_prompt)
         return get_system_prompt(DEVELOPER_MODE)
         
     return f"{get_mandatory_header()}{content}"
@@ -893,49 +892,6 @@ SOURCE CITATIONS AND CONTEXT:
     except Exception as exc:
         return f"⚠️ Verification unavailable: {exc}"
 # ─── Two-Bot Review Stream (Bot B) ─────────────────────────────────────────────
-async def review_stream(
-    raw_response: str, query: str, context: str, all_chunks: list[dict] = None
-) -> AsyncIterator[str]:
-    """
-    Bot B: Senior BCGEU rep reviewing Bot A's (steward) output.
-    Recycles Bot A's context directly to avoid redundant retrieval (#325).
-    """
-    client = get_anthropic()
-    
-    # Context Recycling (#325): Prioritize the provided context to speed up logic.
-    review_prompt = f"""Review the following steward's response for accuracy and completeness using the provided GROUND TRUTH context.
-
-QUERY: {query}
-
-STEWARD'S RESPONSE:
-{raw_response}
-
-GROUND TRUTH CONTEXT (FOR VERIFICATION):
-{context[:60000]}
-
-{REVIEWER_SYSTEM_PROMPT}
-"""
-
-    try:
-        async with client.messages.stream(
-            model=REVIEWER_MODEL,
-            max_tokens=REVIEWER_MAX_TOKENS,
-            messages=[{"role": "user", "content": review_prompt}],
-        ) as stream:
-            async for text_chunk in stream.text_stream:
-                yield text_chunk
-            final = await stream.get_final_message()
-            review_text = final.content[0].text if final.content else ""
-
-            # Parse score from response
-            score = 5  # default
-            score_match = re.search(r"SCORE:\s*(\d+)", review_text, re.IGNORECASE)
-            if score_match:
-                score = int(score_match.group(1))
-
-            logger.info(f"[review] Score: {score}/10")
-    except Exception as exc:
-        yield f"\n\n⚠️ Review error: {exc}"
 async def refine_stream(
     draft: str, critique: str, ground_truth: str
 ) -> AsyncIterator[str]:
@@ -978,17 +934,58 @@ async def refine_stream(
                 yield "\n\n⚠️ Response truncated. Please ask for the rest of the answer."
     except Exception as exc:
         yield f"\n\n⚠️ Refinement error: {exc}"
-# ─── Combined RAG + Review + Refine Stream (Collaboration Model) ──────────────
+
+async def review_stream(
+    raw_response: str, query: str, context: str, all_chunks: list[dict] = None
+) -> AsyncIterator[str]:
+    """
+    Bot B: Senior BCGEU rep reviewing Bot A's (steward) output.
+    Recycles Bot A's context directly to avoid redundant retrieval (#325).
+    """
+    client = get_anthropic()
+    
+    # Context Recycling (#325): Prioritize the provided context to speed up logic.
+    review_prompt = f"""Review the following steward's response for accuracy and completeness using the provided GROUND TRUTH context.
+
+QUERY: {query}
+
+STEWARD'S RESPONSE:
+{raw_response}
+
+GROUND TRUTH CONTEXT (FOR VERIFICATION):
+{context[:60000]}
+
+{REVIEWER_SYSTEM_PROMPT}
+"""
+
+    try:
+        async with client.messages.stream(
+            model=REVIEWER_MODEL,
+            max_tokens=REVIEWER_MAX_TOKENS,
+            messages=[{"role": "user", "content": review_prompt}],
+        ) as stream:
+            async for text_chunk in stream.text_stream:
+                yield text_chunk
+            final = await stream.get_final_message()
+            review_text = final.content[0].text if final.content else ""
+
+            # Parse score from response
+            score = 5  # default
+            score_match = re.search(r"SCORE:\s*(\d+)", review_text, re.IGNORECASE)
+        logger.info(f"[review] Score: {score}/10")
+    except Exception as exc:
+        yield f"\n\n⚠️ Review error: {exc}"
+
 async def rag_review_stream(
     message: str,
     history: list[dict],
-    use_reviewer: bool = False,
-    persona_mode: str = "Explorer",
+    persona_mode: str = "Junior Steward",
     all_chunks: list[dict] = None,
 ) -> AsyncIterator[str]:
     """
     Retrieve relevant chunks, build the prompt, perform silent draft/audit,
     and yield a single high-fidelity synthesized response.
+    Autonomous Review Orchestration (#327): Reviewer is triggered based on complexity or mode.
     """
 
     if _index is None:
@@ -996,8 +993,41 @@ async def rag_review_stream(
         return
 
     # Issue #132: Multi-perspective retrieval for complex topics
-    queries, context = await get_multi_perspective_context(message, history)
+    queries = await generate_perspective_queries(message, history)
     query = queries[0]
+    
+    # ── Autonomous Review Steering (#327) ────────────────────────────────────
+    # 1. Forensic Rep ALWAYS uses a reviewer.
+    # 2. Junior Steward only uses a reviewer if the query is complex (multi-perspective).
+    # We use len(queries) > 1 because generate_perspective_queries already does the complexity check.
+    is_complex = len(queries) > 1
+    use_reviewer = (persona_mode == "Forensic Rep") or is_complex
+    
+    if use_reviewer:
+        trigger_reason = "Forensic mode active" if persona_mode == "Forensic Rep" else "Complex query detected"
+        logger.info(f"[rag] Autonomous Review active. Reason: {trigger_reason}")
+    else:
+        logger.info(f"[rag] Simple query path. No review needed.")
+    
+    # Retrieval (shared async helper)
+    # We already have the queries, but we need the aggregated context string
+    top_ks = [
+        max(10, (SIMILARITY_TOP_K * 3) // (2 * len(queries))) if len(queries) > 1 else SIMILARITY_TOP_K
+        for _ in queries
+    ]
+    all_relevant_chunks = await asyncio.to_thread(search_index_batch, _index, _chunks, queries, top_ks)
+    
+    all_hits = []
+    seen_texts = set()
+    for rc in all_relevant_chunks:
+        for chunk in rc:
+            if chunk["text"] not in seen_texts:
+                seen_texts.add(chunk["text"])
+                all_hits.append(chunk)
+    
+    relevant_chunks = all_hits[:35]
+    context_parts = [f"[Source: {c.get('source', 'Unknown')}, Page: {c['page']}]\n{c['text']}" for c in relevant_chunks]
+    context = "\n\n---\n\n".join(context_parts)
 
     messages = []
     for turn in history:
@@ -1009,9 +1039,7 @@ async def rag_review_stream(
 
     try:
         # 1. Resolve System Prompt based on Persona
-        if persona_mode == "Explore":
-            base_prompt = get_system_prompt(DEVELOPER_MODE)
-        elif persona_mode in ["Direct", "Defend"]:
+        if persona_mode == "Forensic Rep":
             base_prompt = get_persona_prompt(persona_mode)
         else:
             base_prompt = get_system_prompt(DEVELOPER_MODE)
@@ -1019,7 +1047,7 @@ async def rag_review_stream(
         formatted_prompt = base_prompt.replace("{manifest}", get_knowledge_manifest()).replace("{verify_message}", VERIFY_STEWARD_MESSAGE)
 
         # 2. Audit Logic (Issue #161 Refactor) - INJECT INTO PROMPT
-        if persona_mode != "Explore":
+        if persona_mode == "Forensic Rep":
             matched_tests = _test_registry.find_matches(message + " " + query)
             for test in matched_tests:
                 show_request = any(k in message.lower() for k in ["show me", "what are the factors", "list the criteria", "what is the test for", "give me the test"])
@@ -1217,23 +1245,16 @@ def build_ui() -> "gr.Blocks":
             elem_id="chatbot",
         )
 
-        # ── Reviewer Toggle & Management ──────────────────────────────────────
+        # ── Autonomous Review Orchestration (#327) ─────────────────────────────
         with gr.Row(variant="compact", elem_classes="compact-row"):
             persona_selector = gr.Radio(
-                choices=["Explore", "Direct", "Defend"],
-                value="Explore",
-                label="Response Style",
+                choices=["Junior Steward", "Forensic Rep"],
+                value="Junior Steward",
+                label="Operational Mode",
                 show_label=False,
                 container=False,
-                scale=3,
+                scale=4,
                 elem_id="persona_selector",
-            )
-            reviewer_toggle = gr.Checkbox(
-                label="Enable Senior Rep Review",
-                value=USE_REVIEWER,
-                container=False,
-                scale=1,
-                elem_id="reviewer_toggle",
             )
             export_btn = gr.DownloadButton("⬇️ Save Chat", variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
             import_btn = gr.UploadButton("⬆️ Load Chat", file_types=[".md"], variant="secondary", size="sm", scale=1, elem_classes="sm-btn")
@@ -1256,7 +1277,6 @@ def build_ui() -> "gr.Blocks":
         async def submit(
             message: str,
             history: list[dict],
-            use_reviewer: bool,
             persona_mode: str,
             **kwargs,
         ) -> AsyncIterator[tuple[list[dict], str, dict]]:
@@ -1300,13 +1320,13 @@ def build_ui() -> "gr.Blocks":
             # Stream tokens from RAG; accumulate into the assistant bubble
             accumulated = ""
             async for chunk in rag_review_stream(
-                message, prior_history, use_reviewer, persona_mode, _chunks
+                message, prior_history, persona_mode, _chunks
             ):
                 accumulated += chunk
                 history[-1]["content"] = accumulated
                 yield history, gr.update(), hide
 
-        submit_inputs = [msg_input, chatbot, reviewer_toggle, persona_selector]
+        submit_inputs = [msg_input, chatbot, persona_selector]
         submit_outputs = [chatbot, msg_input, chip_row]
 
         send_btn.click(fn=submit, inputs=submit_inputs, outputs=submit_outputs)
