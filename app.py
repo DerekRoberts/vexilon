@@ -1242,7 +1242,6 @@ def build_ui() -> "gr.Blocks":
 
     with gr.Blocks(
         title="Collective Agreement Explorer",
-        fill_height=True,
     ) as demo:
         # ── Header ────────────────────────────────────────────────────────────
         gr.Markdown("# BCGEU Steward Assistant")
