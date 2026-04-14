@@ -1070,7 +1070,7 @@ async def rag_review_stream(
         formatted_prompt = base_prompt.replace("{manifest}", get_knowledge_manifest()).replace("{verify_message}", verify_msg)
 
         # 2. Audit Logic (Issue #161 Refactor) - INJECT INTO PROMPT
-        if persona_mode == "Grieve Mode":
+        if persona_mode in ("Grieve Mode", "Manager Mode"):
             matched_tests = _test_registry.find_matches(message + " " + query)
             for test in matched_tests:
                 show_request = any(k in message.lower() for k in ["show me", "what are the factors", "list the criteria", "what is the test for", "give me the test"])
@@ -1094,7 +1094,10 @@ async def rag_review_stream(
                 if is_off_duty:
                     formatted_prompt += f"\n\n--- MANDATORY LOGIC CHECK: MILLHAVEN AUDIT ---\n"
                     formatted_prompt += f"This case involves potential off-duty conduct. You MUST audit the facts against these 5 factors:\n{MILLHAVEN_FACTORS}\n"
-                    formatted_prompt += "In your response, identify which factors management HAS NOT PROVEN."
+                    if persona_mode == "Manager Mode":
+                        formatted_prompt += "In your response, identify which factors are already proven and which ones represent an 'Operational Risk' (not yet proven)."
+                    else:
+                        formatted_prompt += "In your response, identify which factors management HAS NOT PROVEN."
 
         # 3. Step 1: Steward Draft (Bot A) - STREAMED for TTFB optimization
         if use_reviewer:
