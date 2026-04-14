@@ -420,10 +420,12 @@ def get_persona_prompt(mode_name: str) -> str:
     paths = {
         "Lookup Mode": PROMPTS_DIR / "direct_staff_rep.txt",
         "Grieve Mode": PROMPTS_DIR / "case_builder.txt",
+        "Manager Mode": PROMPTS_DIR / "manager.txt",
     }
     fallbacks = {
         "Lookup Mode": "You are a BCGEU Steward Navigator. Your goal is to find specific clauses and provide literal guidance.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
         "Grieve Mode": "You are a Senior BCGEU Staff Rep acting as a Forensic Auditor. Your goal is to build air-tight cases while objectively identifying any liability.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
+        "Manager Mode": "You are a Senior Strategic Management Consultant. Your goal is to minimize risk and operational debt by ensuring 100% compliance with the Operational Framework.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
     }
     
     path = paths.get(mode_name)
@@ -1008,15 +1010,16 @@ async def rag_review_stream(
     
     # ── Autonomous Review Steering (#327) ────────────────────────────────────
     # 1. Grieve Mode ALWAYS uses a reviewer for forensic accuracy.
-    # 2. Lookup Mode only uses a reviewer if the query is complex (multi-perspective).
-    if persona_mode == "Grieve Mode":
+    # 2. Manager Mode ALWAYS uses a reviewer to ensure strategic compliance.
+    # 3. Lookup Mode only uses a reviewer if the query is complex (multi-perspective).
+    if persona_mode in ("Grieve Mode", "Manager Mode"):
         use_reviewer = True
     else:
         # Lookup mode uses len(queries) > 1 as complexity heuristic
         use_reviewer = len(queries) > 1
     
     if use_reviewer:
-        trigger_reason = "Grieve mode active" if persona_mode == "Grieve Mode" else "Complex query detected"
+        trigger_reason = f"{persona_mode} active" if persona_mode in ("Grieve Mode", "Manager Mode") else "Complex query detected"
         logger.info(f"[rag] Autonomous Review active. Reason: {trigger_reason}")
     else:
         logger.info(f"[rag] Simple lookup path. No review needed.")
@@ -1031,7 +1034,7 @@ async def rag_review_stream(
 
     try:
         # 1. Resolve System Prompt based on Persona
-        if persona_mode == "Grieve Mode":
+        if persona_mode in ("Grieve Mode", "Manager Mode"):
             base_prompt = get_persona_prompt(persona_mode)
         else:
             base_prompt = get_system_prompt(DEVELOPER_MODE)
@@ -1240,7 +1243,7 @@ def build_ui() -> "gr.Blocks":
         # ── Autonomous Review Orchestration (#327) ─────────────────────────────
         with gr.Row(variant="compact", elem_classes="compact-row"):
             persona_selector = gr.Radio(
-                choices=["Lookup Mode", "Grieve Mode"],
+                choices=["Lookup Mode", "Grieve Mode", "Manager Mode"],
                 value="Lookup Mode",
                 label="Operational Role",
                 show_label=False,
