@@ -434,14 +434,14 @@ GLOBAL_MANDATORY_RULES = """--- MANDATORY OPERATIONAL RULES (OVERRIDING - v272-F
 def get_persona_prompt(mode_name: str) -> str:
     """Helper to load system prompts for different operational modes."""
     paths = {
-        "Lookup Mode": PROMPTS_DIR / "direct_staff_rep.txt",
-        "Grieve Mode": PROMPTS_DIR / "case_builder.txt",
-        "Manager Mode": PROMPTS_DIR / "manager.txt",
+        "Lookup": PROMPTS_DIR / "direct_staff_rep.txt",
+        "Grieve": PROMPTS_DIR / "case_builder.txt",
+        "Manage": PROMPTS_DIR / "manager.txt",
     }
     fallbacks = {
-        "Lookup Mode": "You are a BCGEU Steward Navigator. Your goal is to find specific clauses and provide literal guidance.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
-        "Grieve Mode": "You are a Senior BCGEU Staff Rep acting as a Forensic Auditor. Your goal is to build air-tight cases while objectively identifying any liability.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
-        "Manager Mode": "You are a Senior Strategic Management Consultant. Your goal is to minimize risk and operational debt by ensuring 100% compliance with the Operational Framework.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
+        "Lookup": "You are a BCGEU Steward Navigator. Your goal is to find specific clauses and provide literal guidance.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
+        "Grieve": "You are a Senior BCGEU Staff Rep acting as a Forensic Auditor. Your goal is to build air-tight cases while objectively identifying any liability.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
+        "Manage": "You are a Senior Strategic Management Consultant. Your goal is to minimize risk and operational debt by ensuring 100% compliance with the Operational Framework.\n\nKnowledge Base:\n{manifest}\n\n{verify_message}",
     }
     
     path = paths.get(mode_name)
@@ -454,13 +454,13 @@ def get_persona_prompt(mode_name: str) -> str:
         return get_system_prompt(DEVELOPER_MODE)
         
     # Use management-specific rules for Manager Mode to avoid union/steward conflicts
-    if mode_name == "Manager Mode":
+    if mode_name == "Manage":
         prompt = f"{get_manager_header()}{content}"
     else:
         prompt = f"{get_mandatory_header()}{content}"
     
     # Smart Auditor Injection for Grieve Mode (#327)
-    if mode_name == "Grieve Mode":
+    if mode_name == "Grieve":
         prompt += "\n\n--- ADVERSARIAL AUDITOR MISSION ---\n"
         prompt += "1. ADVERSARIAL SKEPTICISM: Assume management is procedurally incompetent. Do not provide them with tips, 'Best Practices', or advice on how to fix their errors. Your goal is to EXPOSE their errors for a grievance.\n"
         prompt += "2. BURDEN OF PROOF: Frame requirements as 'Management Gaps.' Instead of 'Management needs to prove X,' say 'Management has failed to establish X, which is a critical fatal flaw in their position.'\n"
@@ -1015,7 +1015,7 @@ GROUND TRUTH CONTEXT (FOR VERIFICATION):
 async def rag_review_stream(
     message: str,
     history: list[dict],
-    persona_mode: str = "Lookup Mode",
+    persona_mode: str = "Lookup",
     all_chunks: list[dict] = None,
 ) -> AsyncIterator[str]:
     """
@@ -1037,15 +1037,15 @@ async def rag_review_stream(
     # 1. Grieve Mode ALWAYS uses a reviewer for forensic accuracy.
     # 2. Manager Mode does NOT use reviewer (avoids persona collapse - union reviewer vs management consultant).
     # 3. Lookup Mode only uses a reviewer if the query is complex (multi-perspective).
-    if persona_mode == "Grieve Mode":
+    if persona_mode == "Grieve":
         use_reviewer = True
     else:
         # Lookup mode uses len(queries) > 1 as complexity heuristic
         # Manager Mode explicitly disabled from review pipeline
-        use_reviewer = len(queries) > 1 and persona_mode != "Manager Mode"
+        use_reviewer = len(queries) > 1 and persona_mode != "Manage"
     
     if use_reviewer:
-        trigger_reason = f"{persona_mode} active" if persona_mode == "Grieve Mode" else "Complex query detected"
+        trigger_reason = f"{persona_mode} active" if persona_mode == "Grieve" else "Complex query detected"
         logger.info(f"[rag] Autonomous Review active. Reason: {trigger_reason}")
     else:
         logger.info(f"[rag] Simple lookup path. No review needed.")
@@ -1060,17 +1060,17 @@ async def rag_review_stream(
 
     try:
         # 1. Resolve System Prompt based on Persona
-        if persona_mode in ("Grieve Mode", "Manager Mode"):
+        if persona_mode in ("Grieve", "Manage"):
             base_prompt = get_persona_prompt(persona_mode)
         else:
             base_prompt = get_system_prompt(DEVELOPER_MODE)
             
         # Use appropriate verification message based on persona
-        verify_msg = VERIFY_MANAGER_MESSAGE if persona_mode == "Manager Mode" else VERIFY_STEWARD_MESSAGE
+        verify_msg = VERIFY_MANAGER_MESSAGE if persona_mode == "Manage" else VERIFY_STEWARD_MESSAGE
         formatted_prompt = base_prompt.replace("{manifest}", get_knowledge_manifest()).replace("{verify_message}", verify_msg)
 
         # 2. Audit Logic (Issue #161 Refactor) - INJECT INTO PROMPT
-        if persona_mode in ("Grieve Mode", "Manager Mode"):
+        if persona_mode in ("Grieve", "Manage"):
             matched_tests = _test_registry.find_matches(message + " " + query)
             for test in matched_tests:
                 show_request = any(k in message.lower() for k in ["show me", "what are the factors", "list the criteria", "what is the test for", "give me the test"])
@@ -1094,7 +1094,7 @@ async def rag_review_stream(
                 if is_off_duty:
                     formatted_prompt += f"\n\n--- MANDATORY LOGIC CHECK: MILLHAVEN AUDIT ---\n"
                     formatted_prompt += f"This case involves potential off-duty conduct. You MUST audit the facts against these 5 factors:\n{MILLHAVEN_FACTORS}\n"
-                    if persona_mode == "Manager Mode":
+                    if persona_mode == "Manage":
                         formatted_prompt += "In your response, identify which factors are already proven and which ones represent an 'Operational Risk' (not yet proven)."
                     else:
                         formatted_prompt += "In your response, identify which factors management HAS NOT PROVEN."
@@ -1274,8 +1274,8 @@ def build_ui() -> "gr.Blocks":
         # ── Autonomous Review Orchestration (#327) ─────────────────────────────
         with gr.Row(variant="compact", elem_classes="compact-row"):
             persona_selector = gr.Radio(
-                choices=["Lookup Mode", "Grieve Mode", "Manager Mode"],
-                value="Lookup Mode",
+                choices=["Lookup", "Grieve", "Manage"],
+                value="Lookup",
                 label="Operational Role",
                 show_label=False,
                 container=False,
