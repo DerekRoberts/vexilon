@@ -972,6 +972,8 @@ GROUND TRUTH CONTEXT (FOR VERIFICATION):
             # Parse score from response
             score = 5  # default
             score_match = re.search(r"SCORE:\s*(\d+)", review_text, re.IGNORECASE)
+            if score_match:
+                score = int(score_match.group(1))
         logger.info(f"[review] Score: {score}/10")
     except Exception as exc:
         yield f"\n\n⚠️ Review error: {exc}"
@@ -993,7 +995,8 @@ async def rag_review_stream(
         return
 
     # Issue #132: Multi-perspective retrieval for complex topics
-    queries = await generate_perspective_queries(message, history)
+    # Use the helper to avoid duplication as spotted by the "geniuses" in code review.
+    queries, context = await get_multi_perspective_context(message, history)
     query = queries[0]
     
     # ── Autonomous Review Steering (#327) ────────────────────────────────────
@@ -1008,26 +1011,6 @@ async def rag_review_stream(
         logger.info(f"[rag] Autonomous Review active. Reason: {trigger_reason}")
     else:
         logger.info(f"[rag] Simple query path. No review needed.")
-    
-    # Retrieval (shared async helper)
-    # We already have the queries, but we need the aggregated context string
-    top_ks = [
-        max(10, (SIMILARITY_TOP_K * 3) // (2 * len(queries))) if len(queries) > 1 else SIMILARITY_TOP_K
-        for _ in queries
-    ]
-    all_relevant_chunks = await asyncio.to_thread(search_index_batch, _index, _chunks, queries, top_ks)
-    
-    all_hits = []
-    seen_texts = set()
-    for rc in all_relevant_chunks:
-        for chunk in rc:
-            if chunk["text"] not in seen_texts:
-                seen_texts.add(chunk["text"])
-                all_hits.append(chunk)
-    
-    relevant_chunks = all_hits[:35]
-    context_parts = [f"[Source: {c.get('source', 'Unknown')}, Page: {c['page']}]\n{c['text']}" for c in relevant_chunks]
-    context = "\n\n---\n\n".join(context_parts)
 
     messages = []
     for turn in history:
