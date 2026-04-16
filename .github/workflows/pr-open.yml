@@ -55,7 +55,12 @@ jobs:
       - name: Validate Cache Manifest
         run: |
           echo "Validating FAISS cache against source files..."
-          uv run scripts/generate_cache_manifest.py validate
+          if ! uv run scripts/generate_cache_manifest.py validate; then
+            echo ""
+            echo "ERROR: Cache is out of sync with data/labour_law/ directory."
+            echo "Run 'python scripts/generate_cache_manifest.py' to regenerate."
+            exit 1
+          fi
 
   tests:
     name: Tests and Analysis
