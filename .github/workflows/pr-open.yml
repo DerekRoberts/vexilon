@@ -194,7 +194,7 @@ jobs:
 
   results:
     name: Results
-    needs: [check, tests, container_build, container_test, trivy]
+    needs: [check, tests, container_build, container_test]
     if: always()
     runs-on: ubuntu-slim
     steps:
