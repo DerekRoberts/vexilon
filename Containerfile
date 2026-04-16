@@ -16,7 +16,7 @@ RUN uv pip install --system huggingface_hub
 # This avoids shell PATH issues and wildcard copy bloat.
 # We use token=False to prevent auth attempts and satisfy security scanners.
 RUN --mount=type=cache,target=/root/.cache/huggingface \
-    python -c "from huggingface_hub import snapshot_download; snapshot_download('BAAI/bge-small-en-v1.5', cache_dir='/root/.cache/huggingface', local_dir='/model_cache', token=False)"
+    python -c "from huggingface_hub import snapshot_download; snapshot_download('BAAI/bge-small-en-v1.5', cache_dir='/root/.cache/huggingface', local_dir='/model_cache', token=False, local_dir_use_symlinks=False)"
 
 # ─── Stage 2: Builder ─────────────────────────────────────────────────────────
 FROM python:3.14.3-slim AS builder
