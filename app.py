@@ -1353,17 +1353,15 @@ def build_ui() -> "gr.Blocks":
                 yield (
                     history,
                     "Your input was flagged for security review. Please try a different question.",
-                    show,
                 )
                 return
             prior_history = list(history)
             # Append user turn; seed an empty assistant bubble for streaming.
-            # Hide onboarding components on first message.
             history = prior_history + [
                 {"role": "user", "content": message},
                 {"role": "assistant", "content": ""},
             ]
-            yield history, "", hide
+            yield history, ""
             # Stream tokens from RAG; accumulate into the assistant bubble
             accumulated = ""
             async for chunk in rag_review_stream(
@@ -1371,7 +1369,7 @@ def build_ui() -> "gr.Blocks":
             ):
                 accumulated += chunk
                 history[-1]["content"] = accumulated
-                yield history, gr.update(), hide
+                yield history, ""
 
         submit_inputs = [msg_input, chatbot, persona_selector]
         submit_outputs = [chatbot, msg_input]
@@ -1416,7 +1414,7 @@ def build_ui() -> "gr.Blocks":
                 return new_history
             except Exception:
                 logging.error("[ui] Import failed", exc_info=True)
-                return gr.update(), gr.update()
+                return gr.update()
 
         import_btn.upload(
             fn=handle_import, inputs=[import_btn], outputs=[chatbot]
