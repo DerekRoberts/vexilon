@@ -24,6 +24,7 @@ import sys
 import threading
 import logging
 import asyncio
+from collections import OrderedDict
 
 # Configure structured logging (Issue #196)
 logging.basicConfig(
@@ -96,6 +97,9 @@ GITHUB_LABOUR_LAW_URL = os.getenv(
 
 # Raw URL base for downloading pre-computed index from GitHub.
 _CSS_PATH = Path(__file__).parent / "style.css"
+_PERSPECTIVE_CACHE = OrderedDict()
+_MAX_PERSPECTIVE_CACHE_SIZE = 1000
+_PERSPECTIVE_CACHE_LOCK = threading.Lock()
 
 # Models
 DEFAULT_MODEL_LLM = os.getenv("VEXILON_DEFAULT_MODEL", "claude-haiku-4-5-20251001")
@@ -726,6 +730,23 @@ async def generate_perspective_queries(message: str, history: list[dict]) -> lis
     Returns a list of queries (at least one, the original/condensed one).
     Integrated Complexity Detection & Multi-Query Generation (Issue #132).
     """
+    # 1. Sanitize input to create a hashable cache key (recursive helper for G6 multi-modal)
+    def _to_hashable(val):
+        if isinstance(val, dict):
+            return tuple(sorted((str(k), _to_hashable(v)) for k, v in val.items()))
+        if isinstance(val, list):
+            return tuple(_to_hashable(i) for i in val)
+        return val
+
+    history_tuple = tuple(_to_hashable(turn) for turn in history)
+    cache_key = (message, history_tuple)
+
+    with _PERSPECTIVE_CACHE_LOCK:
+        if cache_key in _PERSPECTIVE_CACHE:
+            _PERSPECTIVE_CACHE.move_to_end(cache_key)
+            # Move to end for LRU
+            return _PERSPECTIVE_CACHE[cache_key]
+
     condensed = await condense_query(message, history)
     
     # Heuristic Bypass (#324): Skip LLM complexity check for simple queries
@@ -769,6 +790,13 @@ async def generate_perspective_queries(message: str, history: list[dict]) -> lis
             return [condensed]
             
         logger.info(f"[rag] Complex query detected. Generated {len(perspective_queries)} perspectives.")
+        
+        # 6. Cache hydration with simple LRU logic (evict first entry if full)
+        with _PERSPECTIVE_CACHE_LOCK:
+            if len(_PERSPECTIVE_CACHE) >= _MAX_PERSPECTIVE_CACHE_SIZE:
+                _PERSPECTIVE_CACHE.popitem(last=False)
+            _PERSPECTIVE_CACHE[cache_key] = perspective_queries
+        
         return perspective_queries
     except Exception as exc:
         logger.error(f"[rag] Multi-perspective generation failed: {exc}. Using condensed query.")
