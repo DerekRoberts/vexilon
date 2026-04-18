@@ -24,6 +24,7 @@ import sys
 import threading
 import logging
 import asyncio
+from collections import OrderedDict
 
 # Configure structured logging (Issue #196)
 logging.basicConfig(
@@ -96,6 +97,9 @@ GITHUB_LABOUR_LAW_URL = os.getenv(
 
 # Raw URL base for downloading pre-computed index from GitHub.
 _CSS_PATH = Path(__file__).parent / "style.css"
+_PERSPECTIVE_CACHE = OrderedDict()
+_MAX_PERSPECTIVE_CACHE_SIZE = 1000
+_PERSPECTIVE_CACHE_LOCK = threading.Lock()
 
 # Models
 DEFAULT_MODEL_LLM = os.getenv("VEXILON_DEFAULT_MODEL", "claude-haiku-4-5-20251001")
@@ -726,6 +730,23 @@ async def generate_perspective_queries(message: str, history: list[dict]) -> lis
     Returns a list of queries (at least one, the original/condensed one).
     Integrated Complexity Detection & Multi-Query Generation (Issue #132).
     """
+    # 1. Sanitize input to create a hashable cache key (recursive helper for G6 multi-modal)
+    def _to_hashable(val):
+        if isinstance(val, dict):
+            return tuple(sorted((str(k), _to_hashable(v)) for k, v in val.items()))
+        if isinstance(val, list):
+            return tuple(_to_hashable(i) for i in val)
+        return val
+
+    history_tuple = tuple(_to_hashable(turn) for turn in history)
+    cache_key = (message, history_tuple)
+
+    with _PERSPECTIVE_CACHE_LOCK:
+        if cache_key in _PERSPECTIVE_CACHE:
+            _PERSPECTIVE_CACHE.move_to_end(cache_key)
+            # Move to end for LRU
+            return _PERSPECTIVE_CACHE[cache_key]
+
     condensed = await condense_query(message, history)
     
     # Heuristic Bypass (#324): Skip LLM complexity check for simple queries
@@ -769,6 +790,13 @@ async def generate_perspective_queries(message: str, history: list[dict]) -> lis
             return [condensed]
             
         logger.info(f"[rag] Complex query detected. Generated {len(perspective_queries)} perspectives.")
+        
+        # 6. Cache hydration with simple LRU logic (evict first entry if full)
+        with _PERSPECTIVE_CACHE_LOCK:
+            if len(_PERSPECTIVE_CACHE) >= _MAX_PERSPECTIVE_CACHE_SIZE:
+                _PERSPECTIVE_CACHE.popitem(last=False)
+            _PERSPECTIVE_CACHE[cache_key] = perspective_queries
+        
         return perspective_queries
     except Exception as exc:
         logger.error(f"[rag] Multi-perspective generation failed: {exc}. Using condensed query.")
@@ -1244,22 +1272,19 @@ def build_ui() -> "gr.Blocks":
         title="Collective Agreement Explorer",
     ) as demo:
         # ── Header ────────────────────────────────────────────────────────────
-        gr.Markdown("# BCGEU Steward Assistant")
-        if INTEGRITY_WARNING:
-            gr.Markdown(INTEGRITY_WARNING)
-
-        with gr.Accordion("Knowledge Base & Priority", open=False):
-            gr.Markdown(
-                "**The Collective Agreement and Primary Statutes** are our primary references. Anything else provides additional context."
-            )
-            # Use gr.HTML() to preserve clickable links (gr.Markdown sanitizes HTML)
-            gr.HTML(build_pdf_download_links())
-            gr.Markdown(
-                f"[📁 Browse Knowledge Base on GitHub]({GITHUB_LABOUR_LAW_URL})"
-            )
-
-        with gr.Row(visible=True) as chip_row:
-            chip_btns = [gr.Button(q, size="sm") for q in EXAMPLE_QUESTIONS]
+        with gr.Row(elem_classes="compact-row"):
+            with gr.Column(scale=3):
+                gr.Markdown("### 🛡️ BCGEU Steward Assistant")
+            with gr.Column(scale=1):
+                with gr.Accordion("📚 Resources & Examples", open=False, elem_id="resource_accordion") as resource_accordion:
+                    if INTEGRITY_WARNING:
+                        gr.Markdown(f"⚠️ {INTEGRITY_WARNING}")
+                    gr.HTML(build_pdf_download_links())
+                    gr.Markdown(
+                        f"[📁 Browse Knowledge Base on GitHub]({GITHUB_LABOUR_LAW_URL})"
+                    )
+                    with gr.Row():
+                        chip_btns = [gr.Button(q, size="sm") for q in EXAMPLE_QUESTIONS]
 
         # ── Chat interface ────────────────────────────────────────────────────
         chatbot = gr.Chatbot(
@@ -1270,7 +1295,7 @@ def build_ui() -> "gr.Blocks":
             elem_id="chatbot",
         )
 
-        # ── Autonomous Review Orchestration (#327) ─────────────────────────────
+        # ── Persona & Export Row ──────────────────────────────────────────────
         with gr.Row(variant="compact", elem_classes="compact-row"):
             persona_selector = gr.Radio(
                 choices=["Lookup", "Grieve", "Manage"],
@@ -1304,16 +1329,13 @@ def build_ui() -> "gr.Blocks":
             history: list[dict],
             persona_mode: str,
             **kwargs,
-        ) -> AsyncIterator[tuple[list[dict], str, dict]]:
+        ) -> AsyncIterator[tuple[list[dict], str]]:
             import gradio as gr
             
-            # Onboarding visibility logic
-
+            # Persistent UI — no hiding components
             request = kwargs.get("request")
-            hide = gr.update(visible=False)
-            show = gr.update(visible=True)
             if not message.strip():
-                yield history, "", show
+                yield history, ""
                 return
 
             user_id = request.client.host if request else "default"
@@ -1323,7 +1345,7 @@ def build_ui() -> "gr.Blocks":
                     {"role": "user", "content": message},
                     {"role": "assistant", "content": rate_msg},
                 ]
-                yield history, "", show
+                yield history, ""
                 return
 
             message, was_flagged = sanitize_input(message)
@@ -1331,17 +1353,15 @@ def build_ui() -> "gr.Blocks":
                 yield (
                     history,
                     "Your input was flagged for security review. Please try a different question.",
-                    show,
                 )
                 return
             prior_history = list(history)
             # Append user turn; seed an empty assistant bubble for streaming.
-            # Hide onboarding components on first message.
             history = prior_history + [
                 {"role": "user", "content": message},
                 {"role": "assistant", "content": ""},
             ]
-            yield history, "", hide
+            yield history, ""
             # Stream tokens from RAG; accumulate into the assistant bubble
             accumulated = ""
             async for chunk in rag_review_stream(
@@ -1349,10 +1369,10 @@ def build_ui() -> "gr.Blocks":
             ):
                 accumulated += chunk
                 history[-1]["content"] = accumulated
-                yield history, gr.update(), hide
+                yield history, gr.update()
 
         submit_inputs = [msg_input, chatbot, persona_selector]
-        submit_outputs = [chatbot, msg_input, chip_row]
+        submit_outputs = [chatbot, msg_input]
 
         send_btn.click(fn=submit, inputs=submit_inputs, outputs=submit_outputs)
         msg_input.submit(fn=submit, inputs=submit_inputs, outputs=submit_outputs)
@@ -1363,6 +1383,7 @@ def build_ui() -> "gr.Blocks":
                 fn=lambda q: q,
                 inputs=[chip],
                 outputs=[msg_input],
+                js="(q) => { document.querySelector('#resource_accordion button.label-wrap')?.click(); return q; }"
             ).then(
                 fn=submit,
                 inputs=submit_inputs,
@@ -1390,14 +1411,12 @@ def build_ui() -> "gr.Blocks":
             try:
                 new_history = markdown_to_history(file.name)
                 # Hide onboarding if history is restored
-                return new_history, gr.update(visible=False)
+                return new_history
             except Exception:
                 logging.error("[ui] Import failed", exc_info=True)
-                return gr.update(), gr.update()
+                return gr.update()
 
-        import_btn.upload(
-            fn=handle_import, inputs=[import_btn], outputs=[chatbot, chip_row]
-        )
+        import_btn.upload(fn=handle_import, inputs=[import_btn], outputs=[chatbot])
 
         # ── Attribution Footer ────────────────────────────────────────────────
         gr.HTML(ATTRIBUTION_HTML)
