@@ -99,7 +99,7 @@ GITHUB_LABOUR_LAW_URL = os.getenv(
 _CSS_PATH = Path(__file__).parent / "style.css"
 _PERSPECTIVE_CACHE = OrderedDict()
 _MAX_PERSPECTIVE_CACHE_SIZE = 1000
-_CACHE_LOCK = asyncio.Lock()
+_PERSPECTIVE_CACHE_LOCK = threading.Lock()
 
 # Models
 DEFAULT_MODEL_LLM = os.getenv("VEXILON_DEFAULT_MODEL", "claude-haiku-4-5-20251001")
@@ -733,7 +733,7 @@ async def generate_perspective_queries(message: str, history: list[dict]) -> lis
     # 1. Sanitize input to create a hashable cache key (recursive helper for G6 multi-modal)
     def _to_hashable(val):
         if isinstance(val, dict):
-            return tuple(sorted((k, _to_hashable(v)) for k, v in val.items()))
+            return tuple(sorted((str(k), _to_hashable(v)) for k, v in val.items()))
         if isinstance(val, list):
             return tuple(_to_hashable(i) for i in val)
         return val
@@ -741,7 +741,7 @@ async def generate_perspective_queries(message: str, history: list[dict]) -> lis
     history_tuple = tuple(_to_hashable(turn) for turn in history)
     cache_key = (message, history_tuple)
 
-    async with _CACHE_LOCK:
+    with _PERSPECTIVE_CACHE_LOCK:
         if cache_key in _PERSPECTIVE_CACHE:
             _PERSPECTIVE_CACHE.move_to_end(cache_key)
             # Move to end for LRU
@@ -792,7 +792,7 @@ async def generate_perspective_queries(message: str, history: list[dict]) -> lis
         logger.info(f"[rag] Complex query detected. Generated {len(perspective_queries)} perspectives.")
         
         # 6. Cache hydration with simple LRU logic (evict first entry if full)
-        async with _CACHE_LOCK:
+        with _PERSPECTIVE_CACHE_LOCK:
             if len(_PERSPECTIVE_CACHE) >= _MAX_PERSPECTIVE_CACHE_SIZE:
                 _PERSPECTIVE_CACHE.popitem(last=False)
             _PERSPECTIVE_CACHE[cache_key] = perspective_queries
