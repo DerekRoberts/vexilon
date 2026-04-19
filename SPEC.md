@@ -229,7 +229,8 @@ Vexilon is a "content-blind" application designed to protect the privacy of BCGE
 - **PIPA Compliance**: For detailed mapping of Vexilon features to PIPA principles, see [docs/PRIVACY.md](docs/PRIVACY.md).
 - **NO Conversation History**: Conversations are ephemeral. Once a browser tab is refreshed or closed, all history is permanently deleted. No conversation data is persisted across sessions.
 - **NO Content Logging**: User queries, condensed search queries, and bot responses are **never** written to disk or any persistent database. 
-- **Persistence**: These metrics are migrated to an external PostgreSQL database (Supabase/Neon) via the `DATABASE_URL` environment variable. If the variable is missing, the system falls back to structured console logging.
+- **Persistence**: Interaction metadata (tokens, latency, score) is optionally sent to an external HTTP endpoint via `TELEMETRY_URL`. If the variable is missing, telemetry is silently disabled.
+- **Content Blind**: Telemetry **never** includes user queries, bot responses, or search terms. Only numerical and categorical metadata is logged.
 
 ### Input Sanitization
 
@@ -486,7 +487,8 @@ Open `http://localhost:7860`.
 | `RATE_LIMIT_PER_HOUR` | `100` | Max requests per hour per client IP |
 | `MAX_INPUT_LENGTH` | `10000` | Max characters per user message |
 | `LOG_SUSPICIOUS_INPUTS` | `true` | Log flagged inputs for security review |
-| `DATABASE_URL` | *(optional)* | PostgreSQL connection string for telemetry (Supabase/Neon). Falls back to logging if unset. |
+| `TELEMETRY_URL` | *(optional)* | HTTP endpoint for interaction metadata. Silent skip if unset. |
+| `TELEMETRY_KEY` | *(optional)* | API key for telemetry endpoint (Bearer/apikey header). |
 
 ---
 

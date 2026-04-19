@@ -1210,8 +1210,6 @@ async def rag_review_stream(
             asyncio.create_task(log_interaction(
                 user_id=user_id,
                 persona=persona_mode,
-                query=query,
-                response_preview=raw_response,
                 score=telemetry_metadata.get("score"),
                 input_tokens=in_tokens,
                 output_tokens=out_tokens,

@@ -1,55 +1,13 @@
 import os
 import logging
-import datetime
+import httpx
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Lazy pool initialization
-_pool = None
-
-async def get_pool():
-    global _pool
-    if _pool is not None:
-        return _pool
-        
-    db_url = os.getenv("DATABASE_URL")
-    if not db_url:
-        return None
-        
-    try:
-        import asyncpg
-        _pool = await asyncpg.create_pool(db_url)
-        
-        # Verify schema
-        async with _pool.acquire() as conn:
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS telemetry (
-                    id SERIAL PRIMARY KEY,
-                    timestamp TIMESTAMPTZ DEFAULT NOW(),
-                    user_id TEXT,
-                    persona TEXT,
-                    query TEXT,
-                    response_preview TEXT,
-                    score INTEGER,
-                    input_tokens INTEGER,
-                    output_tokens INTEGER,
-                    cache_creation_tokens INTEGER,
-                    cache_read_tokens INTEGER,
-                    latency_ms INTEGER
-                );
-            """)
-        logger.info("[telemetry] External database connected and schema verified.")
-        return _pool
-    except Exception as e:
-        logger.error(f"[telemetry] Database connection failed: {e}")
-        return None
-
 async def log_interaction(
     user_id: str,
     persona: str,
-    query: str,
-    response_preview: str,
     score: Optional[int],
     input_tokens: int,
     output_tokens: int,
@@ -58,31 +16,38 @@ async def log_interaction(
     latency_ms: int
 ):
     """
-    Log an interaction to the external database.
-    Falls back to structured logging if DATABASE_URL is missing.
+    Log interaction metadata to an external HTTP endpoint (Axiom, Supabase REST, etc.)
+    Silent Skip: If TELEMETRY_URL is not set, this function does nothing.
+    Privacy First: No query content or response text is logged.
     """
-    pool = await get_pool()
-    
-    if not pool:
-        # Fallback to structured log
-        logger.info(
-            f"[telemetry] interaction user={user_id} persona={persona} score={score} "
-            f"tokens_in={input_tokens} tokens_out={output_tokens} "
-            f"cache_new={cache_creation_tokens} cache_hit={cache_read_tokens} "
-            f"latency={latency_ms}ms"
-        )
+    url = os.getenv("TELEMETRY_URL")
+    if not url:
         return
 
+    key = os.getenv("TELEMETRY_KEY")
+    
+    payload = {
+        "steward_id": user_id,
+        "persona": persona,
+        "score": score,
+        "tokens_in": input_tokens,
+        "tokens_out": output_tokens,
+        "cache_new": cache_creation_tokens,
+        "cache_hit": cache_read_tokens,
+        "latency_ms": latency_ms,
+        "environment": os.getenv("VEXILON_ENV", "production")
+    }
+
+    headers = {}
+    if key:
+        # Standard bearer token or Supabase-style apikey header
+        headers["Authorization"] = f"Bearer {key}"
+        headers["apikey"] = key # Compatibility with Supabase PostgREST
+
     try:
-        async with pool.acquire() as conn:
-            await conn.execute("""
-                INSERT INTO telemetry (
-                    user_id, persona, query, response_preview, score, 
-                    input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, latency_ms
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-            """, 
-            user_id, persona, query, response_preview[:200], score, 
-            input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, latency_ms
-            )
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(url, json=payload, headers=headers, timeout=5.0)
+            if resp.status_code >= 400:
+                logger.warning(f"[telemetry] Failed to log interaction: {resp.status_code} {resp.text}")
     except Exception as e:
-        logger.error(f"[telemetry] Failed to insert record: {e}")
+        logger.warning(f"[telemetry] Error sending telemetry: {e}")
