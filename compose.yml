@@ -18,6 +18,8 @@ x-common-env: &common-env
 x-common-build: &common-build
   context: .
   dockerfile: Containerfile
+  args:
+    VERSION: ${VEXILON_VERSION:-dev}
 
 # Standard service boilerplate: Resource limits and Persistence
 x-service-defaults: &service-defaults
@@ -55,7 +57,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 30s # Match the slow model loading period
     depends_on:
       tests:
         condition: service_completed_successfully

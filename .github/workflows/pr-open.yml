@@ -62,9 +62,20 @@ jobs:
             exit 1
           fi
 
+  compose_validation:
+    name: Compose Validation
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Validate Compose File
+        run: podman compose config
+
   tests:
     name: Tests and Analysis
-    needs: [check, cache_validation]
+    needs: [check, cache_validation, compose_validation]
     if: needs.check.outputs.triggered == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
