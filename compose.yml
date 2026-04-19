@@ -92,7 +92,7 @@ services:
     <<: *service-defaults
     build:
       <<: *common-build
-      target: builder
+      target: test_builder
     volumes: *dev-volumes
     environment: *common-env
     command: python scripts/generate_cache_manifest.py validate
@@ -103,7 +103,7 @@ services:
     <<: *service-defaults
     build:
       <<: *common-build
-      target: builder
+      target: test_builder
     environment: *common-env
     command: sh -c "uv run --no-sync bandit -r vexilon/ scripts/ app.py"
 
