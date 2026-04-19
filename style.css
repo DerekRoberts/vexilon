@@ -185,7 +185,20 @@ html {
         width: 95vw !important;
         right: 0 !important;
         left: auto !important;
-        max-height: 60vh !important;
+        max-height: 55vh !important;
+        padding: 0.5rem !important;
+    }
+    #resource_accordion ul, #resource_accordion li {
+        font-size: 0.75rem !important;
+        line-height: 1.2 !important;
+    }
+    #resource_accordion b {
+        font-size: 0.8rem !important;
+    }
+    #resource_accordion button {
+        font-size: 0.7rem !important;
+        padding: 0.2rem 0.4rem !important;
+        min-height: unset !important;
     }
 }
 
