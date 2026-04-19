@@ -60,6 +60,8 @@ from vexilon.indexing import (
     SIMILARITY_TOP_K,
 )
 
+from vexilon.telemetry import log_interaction
+
 TESTS_DIR = LABOUR_LAW_DIR / "tests"
 _chunks: list[dict] = []
 _index: "faiss.IndexFlatIP | None" = None
@@ -955,7 +957,7 @@ SOURCE CITATIONS AND CONTEXT:
         return f"⚠️ Verification unavailable: {exc}"
 # ─── Two-Bot Review Stream (Bot B) ─────────────────────────────────────────────
 async def refine_stream(
-    draft: str, critique: str, ground_truth: str
+    draft: str, critique: str, ground_truth: str, metadata: dict = None
 ) -> AsyncIterator[str]:
     """
     Step 3: Refiner Bot (Claude) synthesizes draft + critique into a final polished answer.
@@ -990,6 +992,8 @@ async def refine_stream(
                 yield text_chunk
             
             final_refine = await stream.get_final_message()
+            if metadata is not None:
+                metadata["usage_refine"] = final_refine.usage
             logger.info(f"[refine] Tokens — input: {final_refine.usage.input_tokens}, output: {final_refine.usage.output_tokens}")
 
             if final_refine.stop_reason == "max_tokens":
@@ -998,7 +1002,7 @@ async def refine_stream(
         yield f"\n\n⚠️ Refinement error: {exc}"
 
 async def review_stream(
-    raw_response: str, query: str, context: str, all_chunks: list[dict] = None
+    raw_response: str, query: str, context: str, all_chunks: list[dict] = None, metadata: dict = None
 ) -> AsyncIterator[str]:
     """
     Bot B: Senior BCGEU rep reviewing Bot A's (steward) output.
@@ -1036,6 +1040,10 @@ GROUND TRUTH CONTEXT (FOR VERIFICATION):
             score_match = re.search(r"SCORE:\s*(\d+)", review_text, re.IGNORECASE)
             if score_match:
                 score = int(score_match.group(1))
+            
+            if metadata is not None:
+                metadata["usage_review"] = final.usage
+                metadata["score"] = score
         logger.info(f"[review] Score: {score}/10")
     except Exception as exc:
         yield f"\n\n⚠️ Review error: {exc}"
@@ -1045,6 +1053,7 @@ async def rag_review_stream(
     history: list[dict],
     persona_mode: str = "Lookup",
     all_chunks: list[dict] = None,
+    user_id: str = "anonymous",
 ) -> AsyncIterator[str]:
     """
     Retrieve relevant chunks, build the prompt, perform silent draft/audit,
@@ -1055,6 +1064,10 @@ async def rag_review_stream(
     if _index is None:
         yield "⚠️ The index is not ready yet. Please wait a moment and try again."
         return
+
+    start_time = time.time()
+    telemetry_metadata = {}
+    final_draft = None
 
     # Issue #132: Multi-perspective retrieval for complex topics
     # Use the helper to avoid duplication as spotted by the "geniuses" in code review.
@@ -1158,7 +1171,7 @@ async def rag_review_stream(
             
             # Silent Audit (Bot B)
             review_text = ""
-            async for review_chunk in review_stream(raw_response, query, context, all_chunks=all_chunks):
+            async for review_chunk in review_stream(raw_response, query, context, all_chunks=all_chunks, metadata=telemetry_metadata):
                 review_text += review_chunk
             
             # Fetch ground_truth from Bot A's retrieval to pass to refiner (#325)
@@ -1166,8 +1179,46 @@ async def rag_review_stream(
             
             # Synthesis Phase (Step 3) - STREAMED
             yield "\n\n---\n\n✨ **VEXILON RECOMMENDATION**\n\n"
-            async for refined_chunk in refine_stream(raw_response, review_text, ground_truth):
+            async for refined_chunk in refine_stream(raw_response, review_text, ground_truth, metadata=telemetry_metadata):
                 yield refined_chunk
+
+        # ── Telemetry Logging (#253) ─────────────────────────────────────────
+        if final_draft:
+            latency_ms = int((time.time() - start_time) * 1000)
+            
+            # Aggregate tokens
+            in_tokens = final_draft.usage.input_tokens
+            out_tokens = final_draft.usage.output_tokens
+            cache_new = final_draft.usage.cache_creation_input_tokens or 0
+            cache_hit = final_draft.usage.cache_read_input_tokens or 0
+            
+            if "usage_review" in telemetry_metadata:
+                u = telemetry_metadata["usage_review"]
+                in_tokens += u.input_tokens
+                out_tokens += u.output_tokens
+                cache_new += u.cache_creation_input_tokens or 0
+                cache_hit += u.cache_read_input_tokens or 0
+                
+            if "usage_refine" in telemetry_metadata:
+                u = telemetry_metadata["usage_refine"]
+                in_tokens += u.input_tokens
+                out_tokens += u.output_tokens
+                cache_new += u.cache_creation_input_tokens or 0
+                cache_hit += u.cache_read_input_tokens or 0
+
+            # Run logging in background to avoid blocking the generator's exit
+            asyncio.create_task(log_interaction(
+                user_id=user_id,
+                persona=persona_mode,
+                query=query,
+                response_preview=raw_response,
+                score=telemetry_metadata.get("score"),
+                input_tokens=in_tokens,
+                output_tokens=out_tokens,
+                cache_creation_tokens=cache_new,
+                cache_read_tokens=cache_hit,
+                latency_ms=latency_ms
+            ))
 
     except Exception as exc:
         yield f"\n\n⚠️ API error: {exc}"
@@ -1338,7 +1389,10 @@ def build_ui() -> "gr.Blocks":
                 yield history, ""
                 return
 
-            user_id = request.client.host if request else "default"
+            if os.getenv("VEXILON_PASSWORD"):
+                user_id = os.getenv("VEXILON_USERNAME", "admin")
+            else:
+                user_id = request.client.host if request else "default"
             allowed, rate_msg = _rate_limiter.is_allowed(user_id)
             if not allowed:
                 history = list(history) + [
@@ -1365,7 +1419,7 @@ def build_ui() -> "gr.Blocks":
             # Stream tokens from RAG; accumulate into the assistant bubble
             accumulated = ""
             async for chunk in rag_review_stream(
-                message, prior_history, persona_mode, _chunks
+                message, prior_history, persona_mode, _chunks, user_id=user_id
             ):
                 accumulated += chunk
                 history[-1]["content"] = accumulated

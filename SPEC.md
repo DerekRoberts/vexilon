@@ -229,12 +229,7 @@ Vexilon is a "content-blind" application designed to protect the privacy of BCGE
 - **PIPA Compliance**: For detailed mapping of Vexilon features to PIPA principles, see [docs/PRIVACY.md](docs/PRIVACY.md).
 - **NO Conversation History**: Conversations are ephemeral. Once a browser tab is refreshed or closed, all history is permanently deleted. No conversation data is persisted across sessions.
 - **NO Content Logging**: User queries, condensed search queries, and bot responses are **never** written to disk or any persistent database. 
-- **Minimal Metadata Tracking**: For the purpose of monitoring system health and API costs, Vexilon only logs the following "lite" metadata:
-    - **Timestamp**: When the interaction occurred.
-    - **Score**: The 1-10 "Quality Score" (only recorded when **Senior Rep Review** is enabled).
-    - **Steward ID**: The authenticated username (if `VEXILON_PASSWORD` is set).
-    - **Token Counts**: Input, output, and cache effectiveness tokens (for billing/performance).
-- **Transparency**: These metrics are stored in an ephemeral CSV file (`./.pdf_cache/review_log.csv`) and are **completely wiped** every time the application redeploys or restarts.
+- **Persistence**: These metrics are migrated to an external PostgreSQL database (Supabase/Neon) via the `DATABASE_URL` environment variable. If the variable is missing, the system falls back to structured console logging.
 
 ### Input Sanitization
 
@@ -491,6 +486,7 @@ Open `http://localhost:7860`.
 | `RATE_LIMIT_PER_HOUR` | `100` | Max requests per hour per client IP |
 | `MAX_INPUT_LENGTH` | `10000` | Max characters per user message |
 | `LOG_SUSPICIOUS_INPUTS` | `true` | Log flagged inputs for security review |
+| `DATABASE_URL` | *(optional)* | PostgreSQL connection string for telemetry (Supabase/Neon). Falls back to logging if unset. |
 
 ---
 
