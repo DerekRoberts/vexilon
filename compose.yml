@@ -71,7 +71,9 @@ services:
       <<: *common-build
       target: test_builder
     volumes: *dev-volumes # Overrides x-service-defaults
-    environment: *common-env
+    environment:
+      <<: *common-env
+      COVERAGE_FILE: reports/.coverage
     command: >
       sh -c "uv run --no-sync python -m pytest tests/test_*.py tests/integration/ -v 
       --junitxml=reports/junit.xml 
