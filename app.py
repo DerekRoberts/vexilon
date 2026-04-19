@@ -1260,7 +1260,7 @@ def build_ui() -> "gr.Blocks":
     css_code = _CSS_PATH.read_text() if _CSS_PATH.exists() else ""
 
     with gr.Blocks(
-        title="Collective Agreement Explorer",
+        title="BCGEU Steward Assistant",
         css=css_code,
         js=_CUSTOM_JS
     ) as demo:
@@ -1281,11 +1281,12 @@ def build_ui() -> "gr.Blocks":
 
         # ── Chat interface ────────────────────────────────────────────────────
         chatbot = gr.Chatbot(
-            buttons=["copy"],
-            render_markdown=True,
-            label="Chat Messages",
+            label="Steward Assistant",
             show_label=False,
+            avatar_images=(None, "https://raw.githubusercontent.com/DerekRoberts/vexilon/main/assets/steward_avatar.png"),
+            type="messages",
             elem_id="chatbot",
+            height=600,
         )
 
         # ── Persona & Export Row ──────────────────────────────────────────────

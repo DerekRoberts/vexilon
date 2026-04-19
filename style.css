@@ -1,20 +1,13 @@
-/* Vexilon Accessibility Styles (WCAG 2.1 AA Compliant) */
+/* Vexilon Stable UI (No Layout Lockdown) */
 
-/* 1. Root font size for relative units */
-html {
-    font-size: 100%; /* 16px base, respects user preferences */
-}
-
-/* 2. Unified row alignment */
+/* 1. Unified row alignment */
 .compact-row {
     align-items: center !important;
-    gap: 0.375rem !important; /* 6px */
+    gap: 0.375rem !important;
     flex-wrap: nowrap !important;
-    overflow: visible !important;
-    position: relative !important;
 }
 
-/* 3. Persona Segmented Control (Pill style) */
+/* 2. Persona Segmented Control (Pill style) */
 #persona_selector.block {
     background: transparent !important;
     border: none !important;
@@ -32,11 +25,11 @@ html {
 
 #persona_selector label {
     flex: 1 !important;
-    height: 2rem !important; /* 32px */
+    height: 2rem !important;
     line-height: 2rem !important;
-    padding: 0 !important;
-    border: 0.0625rem solid var(--border-color-primary) !important; /* 1px */
-    font-size: 0.875rem !important; /* 14px */
+    padding: 0 0.75rem !important;
+    border: 0.0625rem solid var(--border-color-primary) !important;
+    font-size: 0.875rem !important;
     border-radius: 0 !important;
     background: var(--background-fill-secondary) !important;
     cursor: pointer !important;
@@ -45,17 +38,8 @@ html {
     justify-content: center !important;
 }
 
-#persona_selector label span {
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-#persona_selector label:not(:last-child) {
-    margin-right: -0.0625rem !important; /* -1px */
-}
-
 #persona_selector label:first-child {
-    border-top-left-radius: 0.5rem !important; /* 8px */
+    border-top-left-radius: 0.5rem !important;
     border-bottom-left-radius: 0.5rem !important;
 }
 
@@ -71,142 +55,26 @@ html {
 
 #persona_selector label.selected,
 #persona_selector label:has(input:checked) {
-    background-color: var(--primary-600) !important; /* Darker for better contrast */
+    background-color: var(--primary-600) !important;
     color: white !important;
     border-color: var(--primary-700) !important;
     z-index: 1;
 }
 
-/* Focus indicators for keyboard navigation */
-#persona_selector label:focus-visible,
-#reviewer_toggle label:focus-visible,
-.sm-btn:focus-visible,
-#send_btn:focus-visible,
-#msg_input textarea:focus-visible {
-    outline: 0.1875rem solid var(--primary-500) !important; /* 3px */
-    outline-offset: 0.125rem !important; /* 2px */
-}
-
-/* 4. Reviewer Checkbox (Unified height) */
-#reviewer_toggle.block {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    min-width: 5.625rem !important; /* 90px */
-    overflow: visible !important;
-}
-
-#reviewer_toggle label {
-    height: 2rem !important; /* 32px */
-    line-height: 2rem !important;
-    padding: 0 0.625rem !important; /* 10px */
-    border: 0.0625rem solid var(--border-color-primary) !important;
-    border-radius: 0.5rem !important;
-    font-size: 0.875rem !important;
-    display: flex !important;
-    align-items: center !important;
-    white-space: nowrap !important;
-    background: var(--background-fill-secondary) !important;
-    cursor: pointer !important;
-}
-
-#reviewer_toggle input {
-    margin: 0 0.375rem 0 0 !important; /* 6px */
-    width: 1rem !important; /* 16px */
-    height: 1rem !important;
-}
-
-/* 5. Button normalization */
+/* 3. Button normalization */
 .sm-btn {
-    height: 2rem !important; /* 32px */
+    height: 2rem !important;
     min-height: 2rem !important;
     padding: 0 !important;
     font-size: 0.875rem !important;
-    min-width: 2rem !important; /* Square 32px */
-}
-
-/* Ensure buttons have sufficient contrast */
-.sm-btn:hover,
-#send_btn:hover {
-    filter: brightness(1.1);
+    min-width: 2rem !important;
 }
 
 #chatbot {
-    margin-bottom: 0.3125rem !important; /* 5px */
-    height: calc(100vh - 21rem) !important; /* Optimized offset for new UI components */
+    margin-bottom: 0.25rem !important; /* Tighten footer gap */
 }
 
-/* 6. Input Row Alignment - Align Textbox and Button heights */
-#input_row {
-    align-items: center !important;
-    flex-wrap: nowrap !important; /* Prevent wrapping on mobile */
-}
-
-#msg_input textarea {
-    min-height: 3.75rem !important; /* 60px */
-    height: 3.75rem !important;
-    font-size: 1rem !important; /* 16px, prevents iOS zoom */
-}
-
-#send_btn {
-    height: 3.75rem !important;
-    min-height: 3.75rem !important;
-}
-
-/* 7. Reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-
-/* 8. High contrast mode support */
-@media (prefers-contrast: high) {
-    #persona_selector label.selected,
-    #persona_selector label:has(input:checked) {
-        border: 0.125rem solid currentColor !important;
-    }
-    
-    #send_btn {
-        border: 0.125rem solid currentColor !important;
-    }
-}
-
-/* 9. Screen reader only text (if needed) */
-.sr-only {
-    position: absolute !important;
-    width: 0.0625rem !important;
-    height: 0.0625rem !important;
-    padding: 0 !important;
-    margin: -0.0625rem !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
-}
-
-/* 10. Clean UI - Hide Gradio Boilerplate */
-footer {
-    display: none !important;
-}
-
-/* Hide floating header elements (Settings/API) if present */
-header {
-    display: none !important;
-}
-
-/* If the header is actually needed for layout, just hide the buttons inside it */
-.show-api, .built-with {
-    display: none !important;
-}
-
-/* 11. Floating Resource Accordion Overlay */
+/* 4. Floating Resource Accordion Overlay */
 #resource_accordion {
     position: relative !important;
     overflow: visible !important;
@@ -216,27 +84,22 @@ header {
     position: absolute !important;
     top: 100% !important;
     right: 0 !important;
-    width: 28rem !important; /* 448px wide reference card */
+    width: 28rem !important;
     z-index: 2000 !important;
     background: var(--background-fill-primary) !important;
     border: 0.0625rem solid var(--border-color-primary) !important;
     border-radius: 0.5rem !important;
-    box-shadow: 0 0.625rem 0.9375rem -0.1875rem rgba(0, 0, 0, 0.1), 0 0.25rem 0.375rem -0.125rem rgba(0, 0, 0, 0.05) !important;
-    padding: 0.625rem !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    padding: 0.75rem !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    scrollbar-gutter: stable !important; /* Exorcise the ghost scrollbar */
     height: fit-content !important;
-    max-height: 70vh !important;
-}
-
-#resource_accordion .prose p:last-child,
-#resource_accordion ul:last-child {
-    margin-bottom: 0 !important;
+    max-height: 65vh !important; /* Shorter to prevent page scroll */
 }
 
 #chip_column {
     gap: 0.375rem !important;
-    margin-bottom: 0.5rem !important;
 }
 
 .chip-btn {
@@ -249,56 +112,44 @@ header {
     white-space: normal !important;
 }
 
-/* 12. MOBILE RESPONSIVENESS (Must be last to ensure priority) */
-@media (max-width: 33.75rem) { /* 540px */
-    .compact-row {
-        flex-wrap: wrap !important;
-    }
-    #reviewer_toggle.block {
-        min-width: unset !important;
-    }
-    #reviewer_toggle label {
-        padding: 0 0.375rem !important;
-        border: none !important;
-        background: transparent !important;
-    }
-    #reviewer_toggle label span {
-        display: none !important;
-    }
-    #reviewer_toggle input {
-        margin: 0 !important;
-        width: 1.125rem !important; /* 18px */
-        height: 1.125rem !important;
-    }
-    #chatbot {
-        height: 60vh !important;
-    }
-    #send_btn {
-        min-width: 5rem !important;
-        max-width: 6rem !important;
-    }
+/* 5. Clean Markdown Alignment (Hanging Indents) */
+#resource_accordion .prose p,
+#resource_accordion strong {
+    margin-left: 0 !important;
+    display: block !important;
+}
+
+#resource_accordion ul {
+    list-style-position: outside !important;
+    padding-left: 0 !important;
+    margin-left: 1.3rem !important;
+    font-size: 0.85rem !important;
+}
+
+#resource_accordion li {
+    margin-bottom: 0.4rem !important;
+    line-height: 1.5 !important;
+}
+
+/* 6. Footer Space Reduction */
+footer {
+    display: none !important;
+}
+
+.footer-markdown {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    text-align: center !important;
+}
+
+/* 7. MOBILE RESPONSIVENESS */
+@media (max-width: 33.75rem) {
     #resource_accordion > div:last-child {
         width: 85vw !important;
         max-width: 24rem !important;
-        right: 0 !important;
-        left: auto !important;
         max-height: 80vh !important;
-        padding: 0.75rem !important;
     }
-    #resource_accordion .prose p,
-    #resource_accordion b,
-    #resource_accordion strong {
-        margin-left: 0 !important;
-        display: block !important;
-    }
-    #resource_accordion ul {
-        list-style-position: outside !important;
-        padding-left: 0 !important;
-        margin-left: 1.3rem !important;
-        font-size: 0.85rem !important;
-    }
-    #resource_accordion li {
-        margin-bottom: 0.4rem !important;
-        line-height: 1.5 !important;
+    #persona_selector label {
+        padding: 0 0.35rem !important;
     }
 }
