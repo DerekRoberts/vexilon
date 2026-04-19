@@ -44,6 +44,7 @@ services:
   # Uses code baked into the image for maximum performance/reliability.
   vexilon:
     <<: *service-defaults
+    profiles: [prod]
     build: *common-build
     environment:
       <<: *common-env
