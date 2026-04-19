@@ -42,6 +42,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           lfs: true
+      - name: Start Podman Socket
+        run: systemctl --user start podman.socket
       - name: Validate Cache Manifest
         run: podman compose run --rm cache-validator
 
@@ -53,6 +55,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Start Podman Socket
+        run: systemctl --user start podman.socket
       - name: Validate Compose File
         run: podman compose config
 
@@ -70,6 +74,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           lfs: true
+      - name: Start Podman Socket
+        run: systemctl --user start podman.socket
 
       - name: Run Tests and Analysis
         uses: bcgov/action-test-and-analyse@main
