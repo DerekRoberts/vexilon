@@ -67,7 +67,7 @@ services:
     build:
       <<: *common-build
       target: test_builder
-    volumes: *dev-volumes
+    volumes: *dev-volumes # Overrides x-service-defaults
     environment: *common-env
     command: sh -c "uv run --no-sync python -m pytest tests/test_*.py tests/integration/ -v"
     depends_on:
