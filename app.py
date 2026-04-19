@@ -1259,11 +1259,7 @@ def build_ui() -> "gr.Blocks":
     import gradio as gr
     css_code = _CSS_PATH.read_text() if _CSS_PATH.exists() else ""
 
-    with gr.Blocks(
-        title="Vexilon: BCGEU Steward Assistant",
-        css=css_code,
-        js=_CUSTOM_JS
-    ) as demo:
+    with gr.Blocks(title="Vexilon: BCGEU Steward Assistant") as demo:
         # ── Header ────────────────────────────────────────────────────────────
         with gr.Row(elem_classes="compact-row"):
             with gr.Column(scale=3):
@@ -1284,7 +1280,6 @@ def build_ui() -> "gr.Blocks":
             label="Steward Assistant",
             show_label=False,
             avatar_images=(None, "https://raw.githubusercontent.com/DerekRoberts/vexilon/main/assets/steward_avatar.png"),
-            type="messages",
             elem_id="chatbot",
         )
 
