@@ -1239,7 +1239,7 @@ _SAFE_VEXILON_VERSION = html.escape(VEXILON_VERSION)
 _URL_VEXILON_VERSION = urllib.parse.quote(VEXILON_VERSION)
 
 ATTRIBUTION_HTML = f"""
-<div style='text-align: center; color: #6b7280; font-size: 0.85rem; margin-top: 1rem;'>
+<div style='text-align: center; color: #6b7280; font-size: 0.85rem; margin-top: 1rem; padding-bottom: 2rem;'>
     <a href='{VEXILON_REPO_URL}' target='_blank' rel='noopener noreferrer' style='color: #005691; text-decoration: none;'>View code on GitHub</a>
     <span style='margin-left: 0.5rem; opacity: 0.7;'>•</span>
     <a href='{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md' target='_blank' rel='noopener noreferrer' style='color: #008542; text-decoration: none;'>Privacy Policy (PIPA)</a>
@@ -1276,7 +1276,7 @@ def build_ui() -> "gr.Blocks":
             with gr.Column(scale=3):
                 gr.Markdown("### 🛡️ BCGEU Steward Assistant")
             with gr.Column(scale=1):
-                with gr.Accordion("📚 Resources & Examples", open=False, elem_id="resource_accordion") as resource_accordion:
+                with gr.Accordion("📚 Resources", open=False, elem_id="resource_accordion") as resource_accordion:
                     if INTEGRITY_WARNING:
                         gr.Markdown(f"⚠️ {INTEGRITY_WARNING}")
                     gr.HTML(build_pdf_download_links())

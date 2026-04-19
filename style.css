@@ -14,6 +14,12 @@ html {
     position: relative !important;
 }
 
+@media (max-width: 33.75rem) {
+    .compact-row {
+        flex-wrap: wrap !important;
+    }
+}
+
 /* 3. Persona Segmented Control (Pill style) */
 #persona_selector.block {
     background: transparent !important;
@@ -173,7 +179,13 @@ html {
         height: 1.125rem !important;
     }
     #chatbot {
-        height: 65vh !important; /* Fixed percentage for small screens */
+        height: 60vh !important; /* Reduced from 65vh to ensure footer visibility */
+    }
+    #resource_accordion > div:last-child {
+        width: 95vw !important;
+        right: 0 !important;
+        left: auto !important;
+        max-height: 60vh !important;
     }
 }
 
