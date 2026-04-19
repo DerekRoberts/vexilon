@@ -602,6 +602,12 @@ def startup(force_rebuild: bool = False, skip_pdf_fetch: bool = False) -> None:
     if DEVELOPER_MODE:
         logger.info("[startup] DEVELOPER_MODE is ACTIVE.")
     
+    # 2. Telemetry Status
+    if os.getenv("TELEMETRY_URL"):
+        logger.info("[startup] External telemetry is ENABLED.")
+    else:
+        logger.info("[startup] Telemetry is DISABLED (no TELEMETRY_URL).")
+    
     # Check for missing model cache
     hf_home = Path(os.getenv("HF_HOME", "./hf_cache"))
     if not hf_home.exists() and not (os.getenv("HF_SPACE_ID") or os.getenv("EXTERNAL_CI")):
