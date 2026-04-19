@@ -1274,6 +1274,10 @@ def build_ui() -> "gr.Blocks":
                     gr.Markdown(
                         f"[📁 Browse Knowledge Base on GitHub]({GITHUB_LABOUR_LAW_URL})"
                     )
+                    gr.Markdown(
+                        f"--- \n"
+                        f"[GitHub]({VEXILON_REPO_URL})   •   [Privacy]({VEXILON_REPO_URL}/blob/main/PRIVACY.md)   •   [{_SAFE_VEXILON_VERSION}]({VEXILON_REPO_URL}/pkgs/container/vexilon/versions?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION})"
+                    )
 
         # ── Chat interface ────────────────────────────────────────────────────
         chatbot = gr.Chatbot(
@@ -1406,11 +1410,6 @@ def build_ui() -> "gr.Blocks":
 
         import_btn.upload(fn=handle_import, inputs=[import_btn], outputs=[chatbot])
 
-        # ── Footer ────────────────────────────────────────────────────────────
-        gr.Markdown(
-            f"[GitHub]({VEXILON_REPO_URL})   •   [Privacy]({VEXILON_REPO_URL}/blob/main/PRIVACY.md)   •   [{_SAFE_VEXILON_VERSION}]({VEXILON_REPO_URL}/pkgs/container/vexilon/versions?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION})",
-            elem_classes="vanilla-footer"
-        )
 
     return demo
 # ─── Entry Point ──────────────────────────────────────────────────────────────
