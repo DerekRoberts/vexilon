@@ -1,128 +1,102 @@
+# ── Reusable Variables ───────────────────────────────────────────────────────
+x-var:
+  - &PORT "7860"
+  - &MEM_LIMIT 3g
+
+# Reusable environment for all services
+x-common-env: &common-env
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+  HF_HOME: /app/hf_cache
+  HF_HUB_OFFLINE: "1"
+  HF_TOKEN_PATH: /dev/null # Prevent HuggingFace token lookup permission errors
+  PATH: "/app/.venv/bin:/app/:$PATH"
+  PYTHONPATH: "/app"
+  TRANSFORMERS_OFFLINE: "1"
+  EMBED_MODEL: /app/hf_cache
+
+# Reusable build configuration
+x-common-build: &common-build
+  context: .
+  dockerfile: Containerfile
+  args:
+    VERSION: ${VEXILON_VERSION:-dev}
+
+# Standard service boilerplate: Resource limits and Persistence
+x-service-defaults: &service-defaults
+  mem_limit: *MEM_LIMIT
+  memswap_limit: *MEM_LIMIT
+  volumes:
+    - ./.pdf_cache:/app/.pdf_cache:z
+
+# Development volumes: Enables live-reload while protecting internal container data
+x-dev-volumes: &dev-volumes
+  - .:/app:ro,z
+  - ./.pdf_cache:/app/.pdf_cache:z
+  - /app/.venv         # Lifeboat for packages
+  - /app/hf_cache      # Lifeboat for the model
+  - /app/.pytest_cache # Lifeboat for test metadata
+
 services:
 
   # ── Vexilon app ───────────────────────────────────────────────────────────────
+  # Production-ready entry point gated by integration tests.
+  # Uses code baked into the image for maximum performance/reliability.
   vexilon:
-    build:
-      context: .
-      dockerfile: Containerfile
+    <<: *service-defaults
+    build: *common-build
     environment:
-      # Mandatory: Anthropic API key
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-
-      # Optional: Basic Auth (Login is disabled if VEXILON_PASSWORD is empty)
+      <<: *common-env
       VEXILON_USERNAME: ${VEXILON_USERNAME:-admin}
       VEXILON_PASSWORD: ${VEXILON_PASSWORD:-}
-
-      # Enforce strict offline mode for models baked into the image.
-      HF_TOKEN_PATH: /dev/null
-      TRANSFORMERS_OFFLINE: "1"
-      HF_HUB_OFFLINE: "1"
-
-      PORT: "7860"
-    ports:
-      - "7860:7860"
-    cap_drop:
-      - ALL
-    tmpfs:
-      - /tmp                  # Writable tmp for Gradio and other runtime files
+      PORT: *PORT
+    ports: ["7860:7860"]
+    cap_drop: [ALL]
+    tmpfs: [/tmp]
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:7860')\""]
+      test: ["CMD-SHELL", "python -c \"import os, urllib.request; urllib.request.urlopen('http://localhost:' + os.getenv('PORT', '7860'))\""]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
-    mem_limit: 3g
-    memswap_limit: 3g
+      start_period: 30s # Match the slow model loading period
     depends_on:
       tests:
         condition: service_completed_successfully
-    volumes:
-      - ./.pdf_cache:/app/.pdf_cache:z
-    # Production-optimized: Uses the CMD defined in the Containerfile
-    # (No 'uv' or 'gradio' CLI required in the final image)
 
   # ── Testing ──────────────────────────────────────────────────────────────────
-  # Run with: podman-compose run --rm tests
+  # Mounts source code to allow testing local changes without a rebuild.
   tests:
+    <<: *service-defaults
     build:
-      context: .
-      dockerfile: Containerfile
+      <<: *common-build
       target: test_builder
-    mem_limit: 3g         # Integration tests load the real 800 MB embedding model;
-    memswap_limit: 3g     # match mem_limit to disable swap — clean OOM, not host thrash
-    volumes:
-      - ./.pdf_cache:/app/.pdf_cache:z
-      - ./app.py:/app/app.py:ro,z
-      - ./tests:/app/tests:ro,z
-      - ./data:/app/data:ro,z
-      - ./vexilon:/app/vexilon:ro,z
-      - ./scripts:/app/scripts:ro,z
-      - ./README.md:/app/README.md:ro,z
-      - ./Containerfile:/app/Containerfile:ro,z
-      - ./compose.yml:/app/compose.yml:ro,z
-    environment:
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      HF_HOME: /app/hf_cache
-      EMBED_MODEL: /app/hf_cache
-      TRANSFORMERS_OFFLINE: "1"
-      HF_HUB_OFFLINE: "1"
-      PYTHONPATH: "/app"
-    # We use python -m pytest to ensure /app is in the sys.path for module discovery
+    volumes: *dev-volumes # Overrides x-service-defaults
+    environment: *common-env
     command: sh -c "uv run --no-sync python -m pytest tests/test_*.py tests/integration/ -v"
     depends_on:
       index-refresh:
         condition: service_completed_successfully
 
   # ── Cache Refresh ────────────────────────────────────────────────────────────
-  # Run with: podman-compose run --rm index-refresh
-  # This updates the local .pdf_cache/ folder using the smart refresh logic.
+  # Runs the indexing script against the baked-in code.
   index-refresh:
+    <<: *service-defaults
     build:
-      context: .
-      dockerfile: Containerfile
+      <<: *common-build
       target: builder
-    mem_limit: 2g
-    memswap_limit: 2g
-    volumes:
-      - ./.pdf_cache:/app/.pdf_cache:z
-      - ./app.py:/app/app.py:ro,z
-      - ./vexilon:/app/vexilon:ro,z
-      - ./scripts:/app/scripts:ro,z
-      - ./data:/app/data:ro,z
-    environment:
-      HF_HOME: /app/hf_cache
-      # Prevent HuggingFace token lookup permission errors
-      HF_TOKEN_PATH: /dev/null
-      PATH: "/app/.venv/bin:$PATH"
-      PYTHONPATH: "/app"
+    environment: *common-env
     command: python scripts/build_index.py
 
-  # ── Troubleshooting Version ────────────────────────────────────────────────
-  # This service REUSES vexilon but strips the dependencies
-  app:
-    extends: vexilon
-    profiles: ["app"]
-    depends_on: [] # This overrides and removes the default dependencies
-
   # ── Fast Development ───────────────────────────────────────────────────
-  # Use: podman compose up --build dev
-  # Builds from source with live reload. Loads pre-computed index if available.
-  dev:
+  # Builds from source with live reload and polling enabled for Podman.
+  watch:
+    <<: *service-defaults
     extends: vexilon
     build:
-      target: builder
+      <<: *common-build
+      target: test_builder
     profiles: ["dev"]
+    volumes: *dev-volumes
     environment:
-      TRANSFORMERS_OFFLINE: "1"
-      HF_HOME: /app/hf_cache
-      PATH: "/app/.venv/bin:$PATH"
-    volumes:
-      - ./app.py:/app/app.py:ro,z
-      - ./style.css:/app/style.css:ro,z
-      - ./scripts:/app/scripts:ro,z
-      - ./data:/app/data:ro,z
-      - ./vexilon:/app/vexilon:ro,z
-      - ./.pdf_cache:/app/.pdf_cache:z
-      - ./pyproject.toml:/app/pyproject.toml:ro,z
-      - ./uv.lock:/app/uv.lock:ro,z
-    command: sh -c "uv sync --frozen && uv run gradio app.py --watch-dirs ."
+      <<: *common-env
+      WATCHFILES_FORCE_POLLING: "true"
+    command: uv run --no-sync gradio app.py --watch-dirs .

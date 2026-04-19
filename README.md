@@ -85,16 +85,29 @@ Docker deployments.
 
 ### Prerequisites
 
-- [Podman](https://podman.io/docs/installation) + [Podman Compose](https://github.com/containers/podman-compose)
-- An [Anthropic API key](https://console.anthropic.com/) (`ANTHROPIC_API_KEY`)
+- **Container Engine**: [Podman](https://podman.io/docs/installation) (recommended) or [Docker](https://docs.docker.com/get-docker/)
+- **Compose**: `podman compose` (built-in) or [Docker Compose V2](https://docs.docker.com/compose/) plugin
+- **Anthropic API key**: An active key exported as `ANTHROPIC_API_KEY`
 
 ### Run
 
-**Run the production-optimized container:**
+> [!TIP]
+> **Docker users**: `docker compose` can be used as a drop-in replacement for `podman compose` in all examples below.
+
+**1. Production Smoke Test (Immutable Code)**
+Run the app exactly as it will behave in production. Changes to your local files **will not** be reflected.
 
 ```bash
 export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
-podman-compose up --build
+podman compose up --build
+```
+
+**2. Local Development (Live Reload)**
+Run the **`watch`** service to enable hot-reloading. When you modify `app.py`, `style.css`, or the `vexilon/` directory, the container will automatically refresh.
+
+```bash
+export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
+podman compose up --build watch
 ```
 
 The container uses a multi-stage build and pre-indexes the agreement at build time for zero-downtime startup.
@@ -291,17 +304,20 @@ Vexilon uses a **Quality Gate** pattern in `compose.yml` — the app will not st
 uv run pytest tests/ --ignore=tests/integration --ignore=tests/smoke
 
 # Run full suite (unit + integration) inside the memory-capped container
-podman-compose run --rm tests
+podman compose run --rm tests
 
 # Gated startup — tests must pass before Vexilon launches
 export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
-podman-compose up
+podman compose up
 
-# Skip the gate — useful for rapid UI iteration
-podman-compose up vexilon
+# Live Development — launch with hot-reload and volumes
+podman compose up watch
+
+# Skip the gate — useful for rapid UI iteration (no volumes)
+podman compose up vexilon
 
 # Smoke tests — verifies real Anthropic API connectivity
-podman-compose run --rm tests sh -c "uv run --no-sync pytest tests/smoke/ -v"
+podman compose run --rm tests sh -c "uv run --no-sync pytest tests/smoke/ -v"
 ````
 
 > [!NOTE]

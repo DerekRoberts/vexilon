@@ -37,21 +37,17 @@ jobs:
     needs: [check]
     if: needs.check.outputs.triggered == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           lfs: true
-
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.14'
-
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
-
       - name: Validate Cache Manifest
         run: |
           echo "Validating FAISS cache against source files..."
@@ -62,9 +58,20 @@ jobs:
             exit 1
           fi
 
+  compose_validation:
+    name: Compose Validation
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Validate Compose File
+        run: podman compose config
+
   tests:
     name: Tests and Analysis
-    needs: [check, cache_validation]
+    needs: [check, cache_validation, compose_validation]
     if: needs.check.outputs.triggered == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
