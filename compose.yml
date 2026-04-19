@@ -104,3 +104,14 @@ services:
       <<: *common-env
       WATCHFILES_FORCE_POLLING: "true"
     command: uv run --no-sync gradio app.py --watch-dirs .
+
+  # ── Cache Validator ─────────────────────────────────────────────────────────
+  # Ensures the FAISS cache is in sync with the source data.
+  cache-validator:
+    <<: *service-defaults
+    build:
+      <<: *common-build
+      target: test_builder
+    volumes: *dev-volumes
+    environment: *common-env
+    command: uv run --no-sync python scripts/generate_cache_manifest.py validate

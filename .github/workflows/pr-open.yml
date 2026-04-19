@@ -34,7 +34,7 @@ jobs:
 
   cache_validation:
     name: Validate FAISS Cache
-    needs: [check]
+    needs: [check, compose_validation]
     if: needs.check.outputs.triggered == 'true'
     runs-on: ubuntu-24.04
     steps:
@@ -42,21 +42,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           lfs: true
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.14'
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
       - name: Validate Cache Manifest
-        run: |
-          echo "Validating FAISS cache against source files..."
-          if ! uv run scripts/generate_cache_manifest.py validate; then
-            echo ""
-            echo "ERROR: Cache is out of sync with data/labour_law/ directory."
-            echo "Run 'python scripts/generate_cache_manifest.py' to regenerate."
-            exit 1
-          fi
+        run: podman compose run --rm cache-validator
 
   compose_validation:
     name: Compose Validation
