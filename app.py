@@ -1408,7 +1408,7 @@ def build_ui() -> "gr.Blocks":
 
         # ── Footer ────────────────────────────────────────────────────────────
         gr.Markdown(
-            f"[GitHub]({VEXILON_REPO_URL})   •   [Privacy]({VEXILON_REPO_URL}/blob/main/PRIVACY.md)   •   {_SAFE_VEXILON_VERSION}",
+            f"[GitHub]({VEXILON_REPO_URL})   •   [Privacy]({VEXILON_REPO_URL}/blob/main/PRIVACY.md)   •   [{_SAFE_VEXILON_VERSION}]({VEXILON_REPO_URL}/pkgs/container/vexilon/versions?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION})",
             elem_classes="vanilla-footer"
         )
 
