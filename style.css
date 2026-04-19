@@ -269,10 +269,11 @@ header {
         max-width: 6rem !important;
     }
     #resource_accordion > div:last-child {
-        width: 95vw !important;
+        width: 85vw !important;
+        max-width: 24rem !important;
         right: 0 !important;
         left: auto !important;
-        max-height: 65vh !important;
+        max-height: 50vh !important;
         padding: 0.75rem !important;
     }
     #resource_accordion ul, #resource_accordion li {
