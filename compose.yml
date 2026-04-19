@@ -7,10 +7,11 @@ x-var:
 # Reusable environment for all services
 x-common-env: &common-env
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-  TRANSFORMERS_OFFLINE: "1"
   HF_HOME: /app/hf_cache
   HF_HUB_OFFLINE: "1"
   HF_TOKEN_PATH: /dev/null # Prevent HuggingFace token lookup permission errors
+  PATH: "/app/.venv/bin:/app/:$PATH"
+  TRANSFORMERS_OFFLINE: "1"
 
 # Reusable build configuration
 x-common-build: &common-build
@@ -33,8 +34,7 @@ services:
       VEXILON_USERNAME: ${VEXILON_USERNAME:-admin}
       VEXILON_PASSWORD: ${VEXILON_PASSWORD:-}
       PORT: *PORT
-    ports:
-      - "7860:7860"
+    ports: ["7860:7860"]
     cap_drop: [ALL]
     tmpfs: [/tmp]
     healthcheck:
@@ -64,7 +64,6 @@ services:
     environment:
       <<: *common-env
       EMBED_MODEL: /app/hf_cache
-      PYTHONPATH: "/app"
     command: sh -c "uv run --no-sync python -m pytest tests/test_*.py tests/integration/ -v"
     depends_on:
       index-refresh:
@@ -81,8 +80,6 @@ services:
     volumes: *source-volumes
     environment:
       <<: *common-env
-      PATH: "/app/.venv/bin:$PATH"
-      PYTHONPATH: "/app"
     command: python scripts/build_index.py
 
   # ── Fast Development ───────────────────────────────────────────────────
@@ -94,7 +91,6 @@ services:
     profiles: ["dev"]
     environment:
       <<: *common-env
-      PATH: "/app/.venv/bin:$PATH"
       WATCHFILES_FORCE_POLLING: "true" # Force polling for reliable reload in Podman
     volumes: *source-volumes
     command: sh -c "uv sync --frozen && uv run gradio app.py --watch-dirs ."
