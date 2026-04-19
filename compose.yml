@@ -92,10 +92,11 @@ services:
     <<: *service-defaults
     extends: vexilon
     build:
-      target: builder
+      <<: *common-build
+      target: test_builder
     profiles: ["dev"]
     volumes: *dev-volumes
     environment:
       <<: *common-env
       WATCHFILES_FORCE_POLLING: "true"
-    command: sh -c "uv sync --frozen && uv run gradio app.py --watch-dirs ."
+    command: uv run --no-sync gradio app.py --watch-dirs .
