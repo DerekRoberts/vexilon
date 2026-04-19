@@ -341,27 +341,18 @@ def get_knowledge_manifest() -> str:
 
     return "\n".join(lines)
 def build_pdf_download_links() -> str:
-    """Scan knowledge_base for PDFs and return a Markdown list of download links."""
-    kb_path = Path("knowledge_base")
-    if not kb_path.exists():
-        return ""
-
-    pdf_files = sorted(list(kb_path.glob("*.pdf")))
-    if not pdf_files:
+    """Scan labour_law for PDFs and return a Markdown list of download links."""
+    files = _get_download_source_files()
+    if not files:
         return ""
 
     lines = ["**Download Documents:**"]
-    for f in pdf_files:
+    for f in files:
         stem = f.stem
-        # Try to get a pretty name from the registry
         source_name = _get_source_name(stem)
-        if source_name == stem:
-            display_name = stem.replace("_", " ").title()
-        else:
-            display_name = source_name
 
         # Shorten common names for cleaner UI
-        display_name = display_name.replace("BCGEU ", "").replace("Bcgeu ", "")
+        display_name = source_name.replace("BCGEU ", "").replace("Bcgeu ", "")
         display_name = display_name.replace("Main Agreement", "Agreement")
         display_name = display_name.replace("Labour Relations Code", "Labour Code")
 
