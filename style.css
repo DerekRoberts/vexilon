@@ -1,6 +1,9 @@
-/* Vexilon Stable UI (No Layout Lockdown) */
+.gradio-container {
+    min-height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
 
-/* 1. Unified row alignment */
 .compact-row {
     align-items: center !important;
     gap: 0.375rem !important;

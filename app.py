@@ -1286,7 +1286,7 @@ def build_ui() -> "gr.Blocks":
             avatar_images=(None, "https://raw.githubusercontent.com/DerekRoberts/vexilon/main/assets/steward_avatar.png"),
             type="messages",
             elem_id="chatbot",
-            height=600,
+            height="70vh",
         )
 
         # ── Persona & Export Row ──────────────────────────────────────────────
