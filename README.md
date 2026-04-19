@@ -85,7 +85,8 @@ Docker deployments.
 
 ### Prerequisites
 
-- [Podman](https://podman.io/docs/installation) + [Podman Compose](https://github.com/containers/podman-compose)
+- [Podman](https://podman.io/docs/installation) / [Docker](https://docs.docker.com/get-docker/)
+- [Podman Compose](https://github.com/containers/podman-compose) / [Docker Compose V2](https://docs.docker.com/compose/)
 - An [Anthropic API key](https://console.anthropic.com/) (`ANTHROPIC_API_KEY`)
 
 ### Run
@@ -95,7 +96,10 @@ Run the app exactly as it will behave in production. Changes to your local files
 
 ```bash
 export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
+# Podman
 podman-compose up --build
+# Docker
+docker compose up --build
 ```
 
 **2. Local Development (Live Reload)**
@@ -103,7 +107,10 @@ Run the **`watch`** service to enable hot-reloading. When you modify `app.py`, `
 
 ```bash
 export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
+# Podman
 podman-compose up --build watch
+# Docker
+docker compose up --build watch
 ```
 
 The container uses a multi-stage build and pre-indexes the agreement at build time for zero-downtime startup.
@@ -300,20 +307,35 @@ Vexilon uses a **Quality Gate** pattern in `compose.yml` — the app will not st
 uv run pytest tests/ --ignore=tests/integration --ignore=tests/smoke
 
 # Run full suite (unit + integration) inside the memory-capped container
+# Podman
 podman-compose run --rm tests
+# Docker
+docker compose run --rm tests
 
 # Gated startup — tests must pass before Vexilon launches
 export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
+# Podman
 podman-compose up
+# Docker
+docker compose up
 
 # Live Development — launch with hot-reload and volumes
+# Podman
 podman-compose up watch
+# Docker
+docker compose up watch
 
 # Skip the gate — useful for rapid UI iteration (no volumes)
+# Podman
 podman-compose up vexilon
+# Docker
+docker compose up vexilon
 
 # Smoke tests — verifies real Anthropic API connectivity
+# Podman
 podman-compose run --rm tests sh -c "uv run --no-sync pytest tests/smoke/ -v"
+# Docker
+docker compose run --rm tests sh -c "uv run --no-sync pytest tests/smoke/ -v"
 ````
 
 > [!NOTE]
