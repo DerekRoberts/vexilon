@@ -10,23 +10,30 @@ x-common-env: &common-env
   HF_HUB_OFFLINE: "1"
   HF_TOKEN_PATH: /dev/null # Prevent HuggingFace token lookup permission errors
   PATH: "/app/.venv/bin:/app/:$PATH"
+  PYTHONPATH: "/app"
   TRANSFORMERS_OFFLINE: "1"
+  EMBED_MODEL: /app/hf_cache
 
 # Reusable build configuration
 x-common-build: &common-build
   context: .
   dockerfile: Containerfile
 
-# Balanced source mounting: Root is RO for safety, Cache is RW for persistence
-x-source-volumes: &source-volumes
-  - .:/app:ro,z
-  - ./.pdf_cache:/app/.pdf_cache:z
+# Standard service boilerplate: Resource limits and Volumes
+x-service-defaults: &service-defaults
+  mem_limit: *MEM_LIMIT
+  memswap_limit: *MEM_LIMIT
+  volumes:
+    - .:/app:ro,z
+    - ./.pdf_cache:/app/.pdf_cache:z
+    - /app/.venv # Prevents host mount from burying the container's installed packages
 
 services:
 
   # ── Vexilon app ───────────────────────────────────────────────────────────────
   # Production-ready entry point gated by integration tests.
   vexilon:
+    <<: *service-defaults
     build: *common-build
     environment:
       <<: *common-env
@@ -43,26 +50,18 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    mem_limit: *MEM_LIMIT
-    memswap_limit: *MEM_LIMIT # Match mem_limit to disable swap and prevent host thrashing
     depends_on:
       tests:
         condition: service_completed_successfully
-    volumes:
-      - ./.pdf_cache:/app/.pdf_cache:z
 
   # ── Testing ──────────────────────────────────────────────────────────────────
   # Run with: podman-compose run --rm tests
   tests:
+    <<: *service-defaults
     build:
       <<: *common-build
       target: test_builder
-    mem_limit: *MEM_LIMIT
-    memswap_limit: *MEM_LIMIT # Match mem_limit to disable swap and prevent host thrashing
-    volumes: *source-volumes
-    environment:
-      <<: *common-env
-      EMBED_MODEL: /app/hf_cache
+    environment: *common-env
     command: sh -c "uv run --no-sync python -m pytest tests/test_*.py tests/integration/ -v"
     depends_on:
       index-refresh:
@@ -71,19 +70,17 @@ services:
   # ── Cache Refresh ────────────────────────────────────────────────────────────
   # Run with: podman-compose run --rm index-refresh
   index-refresh:
+    <<: *service-defaults
     build:
       <<: *common-build
       target: builder
-    mem_limit: *MEM_LIMIT
-    memswap_limit: *MEM_LIMIT # Match mem_limit to disable swap and prevent host thrashing
-    volumes: *source-volumes
-    environment:
-      <<: *common-env
+    environment: *common-env
     command: python scripts/build_index.py
 
   # ── Fast Development ───────────────────────────────────────────────────
-  # Builds from source with live reload. Loads pre-computed index if available.
+  # Builds from source with live reload.
   dev:
+    <<: *service-defaults
     extends: vexilon
     build:
       target: builder
@@ -91,5 +88,4 @@ services:
     environment:
       <<: *common-env
       WATCHFILES_FORCE_POLLING: "true" # Force polling for reliable reload in Podman
-    volumes: *source-volumes
     command: sh -c "uv sync --frozen && uv run gradio app.py --watch-dirs ."
