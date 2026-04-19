@@ -1260,7 +1260,7 @@ def build_ui() -> "gr.Blocks":
     css_code = _CSS_PATH.read_text() if _CSS_PATH.exists() else ""
 
     with gr.Blocks(
-        title="BCGEU Steward Assistant",
+        title="Vexilon: BCGEU Steward Assistant",
         css=css_code,
         js=_CUSTOM_JS
     ) as demo:
