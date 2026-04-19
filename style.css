@@ -279,8 +279,9 @@ header {
         padding: 0.75rem !important;
     }
     #resource_accordion .prose p,
+    #resource_accordion b,
     #resource_accordion strong {
-        margin-left: 1.3rem !important;
+        margin-left: 0 !important;
         display: block !important;
     }
     #resource_accordion ul {
