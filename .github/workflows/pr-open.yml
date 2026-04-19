@@ -32,50 +32,27 @@ jobs:
         with:
           triggers: '["./Containerfile", "./pyproject.toml", "./app.py", "./vexilon/", "./scripts/", "./prompts/", "./data/", "./tests/", "./.github/workflows/"]'
 
-  cache_validation:
-    name: Validate FAISS Cache
+  validate:
+    name: Validate and Scan
     needs: [check]
     if: needs.check.outputs.triggered == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           lfs: true
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.14'
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
-
-      - name: Validate Cache Manifest
+      - name: Containerized Validation & Security Scan
+        env:
+          VEXILON_VERSION: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          echo "Validating FAISS cache against source files..."
-          if ! uv run scripts/generate_cache_manifest.py validate; then
-            echo ""
-            echo "ERROR: Cache is out of sync with data/labour_law/ directory."
-            echo "Run 'python scripts/generate_cache_manifest.py' to regenerate."
-            exit 1
-          fi
-
-  compose_validation:
-    name: Compose Validation
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Validate Compose File
-        run: podman compose config
+          podman compose config
+          podman compose run --rm cache-validator
+          podman compose run --rm security-auditor
 
   tests:
     name: Tests and Analysis
-    needs: [check, cache_validation, compose_validation]
+    needs: [check, validate]
     if: needs.check.outputs.triggered == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -94,10 +71,13 @@ jobs:
           language: python
           python_version: "3.14"
           dir: .
-          # Consistent test execution via podman-compose
+          # Consistent test execution via podman-compose with SonarCloud artifacts
           commands: |
+            export VEXILON_VERSION=${{ github.event.pull_request.head.sha || github.sha }}
             export ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY || 'sk-dummy-key-for-predictability' }}
-            podman compose run --rm tests
+            mkdir -p reports
+            podman compose run --rm -v ./reports:/app/reports tests \
+              sh -c "uv run pytest --junitxml=reports/junit.xml --cov=vexilon --cov-report=xml:reports/coverage.xml tests/test_*.py tests/integration/ -v"
           triggers: '["./Containerfile", "./pyproject.toml", "./app.py", "./vexilon/", "./scripts/", "./prompts/", "./data/", "./tests/", "./.github/workflows/"]'
           sonar_token: ${{ secrets.SONAR_TOKEN }}
 
