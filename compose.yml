@@ -2,7 +2,6 @@
 x-var:
   - &PORT "7860"
   - &MEM_LIMIT 3g
-  - &MEM_LIMIT_REFRESH 2g
 
 # Reusable environment for all services
 x-common-env: &common-env
@@ -75,8 +74,8 @@ services:
     build:
       <<: *common-build
       target: builder
-    mem_limit: *MEM_LIMIT_REFRESH
-    memswap_limit: *MEM_LIMIT_REFRESH
+    mem_limit: *MEM_LIMIT
+    memswap_limit: *MEM_LIMIT # Match mem_limit to disable swap and prevent host thrashing
     volumes: *source-volumes
     environment:
       <<: *common-env
