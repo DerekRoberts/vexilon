@@ -104,14 +104,3 @@ services:
       <<: *common-env
       WATCHFILES_FORCE_POLLING: "true"
     command: uv run --no-sync gradio app.py --watch-dirs .
-
-  # ── Security Auditor ────────────────────────────────────────────────────────
-  # Runs Bandit against the source code to identify vulnerabilities.
-  security-auditor:
-    <<: *service-defaults
-    build:
-      <<: *common-build
-      target: test_builder
-    volumes: *dev-volumes
-    environment: *common-env
-    command: uv run --no-sync bandit -r vexilon app.py -f json -o reports/bandit.json

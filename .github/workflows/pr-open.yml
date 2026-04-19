@@ -95,7 +95,6 @@ jobs:
             export ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY || 'sk-dummy-key-for-predictability' }}
             mkdir -p reports
             podman compose run --rm tests
-            podman compose run --rm security-auditor
           triggers: '["./Containerfile", "./pyproject.toml", "./app.py", "./vexilon/", "./scripts/", "./prompts/", "./data/", "./tests/", "./.github/workflows/"]'
           sonar_token: ${{ secrets.SONAR_TOKEN }}
       
@@ -209,9 +208,35 @@ jobs:
         with:
           sarif_file: "trivy-results.sarif"
 
+  semgrep:
+    name: Semgrep Security Scan
+    needs: [check]
+    if: needs.check.outputs.triggered == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/python
+            p/security-audit
+            p/secrets
+            p/owasp-top-10
+          generateSarif: "1"
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: semgrep.sarif
+
   results:
     name: Results
-    needs: [check, tests, container_build, container_test]
+    needs: [check, tests, container_build, container_test, trivy, semgrep]
     if: always()
     runs-on: ubuntu-slim
     steps:
