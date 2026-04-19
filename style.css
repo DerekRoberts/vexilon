@@ -135,7 +135,7 @@ html {
 
 #chatbot {
     margin-bottom: 0.3125rem !important; /* 5px */
-    height: calc(100vh - 21rem) !important; /* Optimized offset for new UI components */
+    height: calc(100vh - 13rem) !important; /* Reclaimed space from footer */
 }
 
 #input_row {
