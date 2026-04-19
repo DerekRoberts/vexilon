@@ -65,6 +65,19 @@
 }
 
 /* 3. Button normalization */
+#chatbot {
+    height: 70vh !important;
+    min-height: 400px !important;
+}
+
+/* Force Gradio's internal divs to fill the 70vh container */
+#chatbot > div, 
+#chatbot .bubble-wrap,
+#chatbot .message-wrap {
+    flex-grow: 1 !important;
+    height: 100% !important;
+}
+
 .sm-btn {
     height: 2rem !important;
     min-height: 2rem !important;
