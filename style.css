@@ -122,9 +122,9 @@ html {
 .sm-btn {
     height: 2rem !important; /* 32px */
     min-height: 2rem !important;
-    padding: 0 0.625rem !important;
+    padding: 0 !important;
     font-size: 0.875rem !important;
-    min-width: 3.75rem !important; /* 60px */
+    min-width: 2rem !important; /* Square 32px */
 }
 
 /* Ensure buttons have sufficient contrast */
@@ -227,17 +227,22 @@ header {
     max-height: 70vh !important;
 }
 
-#chip_column {
+#chip_grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
     gap: 0.5rem !important;
+    margin-bottom: 1rem !important;
 }
 
-#chip_column button {
-    width: 100% !important;
+.chip-btn {
+    flex: 1 1 45% !important; /* 2 per row roughly */
+    min-width: 8rem !important;
+    font-size: 0.75rem !important;
+    padding: 0.5rem !important;
     text-align: left !important;
     justify-content: flex-start !important;
-    white-space: normal !important;
     height: auto !important;
-    padding: 0.5rem !important;
+    white-space: normal !important;
 }
 
 /* 12. MOBILE RESPONSIVENESS (Must be last to ensure priority) */
@@ -273,7 +278,7 @@ header {
         max-width: 24rem !important;
         right: 0 !important;
         left: auto !important;
-        max-height: 50vh !important;
+        max-height: 80vh !important;
         padding: 0.75rem !important;
     }
     #resource_accordion ul, #resource_accordion li {

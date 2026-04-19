@@ -1282,11 +1282,11 @@ def build_ui() -> "gr.Blocks":
             with gr.Column(scale=3):
                 gr.Markdown("### 🛡️ BCGEU Steward Assistant")
             with gr.Column(scale=1):
-                with gr.Accordion("📚 Resources", open=False, elem_id="resource_accordion") as resource_accordion:
+                with gr.Accordion("📚 Questions & Resources", open=False, elem_id="resource_accordion") as resource_accordion:
                     if INTEGRITY_WARNING:
                         gr.Markdown(f"⚠️ {INTEGRITY_WARNING}")
-                    with gr.Column(elem_id="chip_column"):
-                        chip_btns = [gr.Button(q, size="sm") for q in EXAMPLE_QUESTIONS]
+                    with gr.Row(elem_id="chip_grid"):
+                        chip_btns = [gr.Button(q, size="sm", elem_classes="chip-btn") for q in EXAMPLE_QUESTIONS]
                     gr.HTML(build_pdf_download_links())
                     gr.Markdown(
                         f"[📁 Browse Knowledge Base on GitHub]({GITHUB_LABOUR_LAW_URL})"
