@@ -14,12 +14,6 @@ html {
     position: relative !important;
 }
 
-@media (max-width: 33.75rem) {
-    .compact-row {
-        flex-wrap: wrap !important;
-    }
-}
-
 /* 3. Persona Segmented Control (Pill style) */
 #persona_selector.block {
     background: transparent !important;
@@ -147,6 +141,7 @@ html {
 /* 6. Input Row Alignment - Align Textbox and Button heights */
 #input_row {
     align-items: center !important;
+    flex-wrap: nowrap !important; /* Prevent wrapping on mobile */
 }
 
 #msg_input textarea {
@@ -160,8 +155,83 @@ html {
     min-height: 3.75rem !important;
 }
 
-/* 7. Mobile responsiveness */
+/* 7. Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* 8. High contrast mode support */
+@media (prefers-contrast: high) {
+    #persona_selector label.selected,
+    #persona_selector label:has(input:checked) {
+        border: 0.125rem solid currentColor !important;
+    }
+    
+    #send_btn {
+        border: 0.125rem solid currentColor !important;
+    }
+}
+
+/* 9. Screen reader only text (if needed) */
+.sr-only {
+    position: absolute !important;
+    width: 0.0625rem !important;
+    height: 0.0625rem !important;
+    padding: 0 !important;
+    margin: -0.0625rem !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* 10. Clean UI - Hide Gradio Boilerplate */
+footer {
+    display: none !important;
+}
+
+/* Hide floating header elements (Settings/API) if present */
+header {
+    display: none !important;
+}
+
+/* If the header is actually needed for layout, just hide the buttons inside it */
+.show-api, .built-with {
+    display: none !important;
+}
+
+/* 11. Floating Resource Accordion Overlay */
+#resource_accordion {
+    position: relative !important;
+    overflow: visible !important;
+}
+
+#resource_accordion > div:last-child {
+    position: absolute !important;
+    top: 100% !important;
+    right: 0 !important;
+    width: 28rem !important; /* 448px wide reference card */
+    z-index: 2000 !important;
+    background: var(--background-fill-primary) !important;
+    border: 0.0625rem solid var(--border-color-primary) !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 0.625rem 0.9375rem -0.1875rem rgba(0, 0, 0, 0.1), 0 0.25rem 0.375rem -0.125rem rgba(0, 0, 0, 0.05) !important;
+    padding: 0.625rem !important;
+    overflow-y: auto !important;
+    max-height: 70vh !important;
+}
+
+/* 12. MOBILE RESPONSIVENESS (Must be last to ensure priority) */
 @media (max-width: 33.75rem) { /* 540px */
+    .compact-row {
+        flex-wrap: wrap !important;
+    }
     #reviewer_toggle.block {
         min-width: unset !important;
     }
@@ -179,7 +249,11 @@ html {
         height: 1.125rem !important;
     }
     #chatbot {
-        height: 60vh !important; /* Reduced from 65vh to ensure footer visibility */
+        height: 60vh !important;
+    }
+    #send_btn {
+        min-width: 5rem !important;
+        max-width: 6rem !important;
     }
     #resource_accordion > div:last-child {
         width: 95vw !important;
@@ -200,76 +274,4 @@ html {
         padding: 0.2rem 0.4rem !important;
         min-height: unset !important;
     }
-}
-
-/* 8. Reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-
-/* 9. High contrast mode support */
-@media (prefers-contrast: high) {
-    #persona_selector label.selected,
-    #persona_selector label:has(input:checked) {
-        border: 0.125rem solid currentColor !important;
-    }
-    
-    #send_btn {
-        border: 0.125rem solid currentColor !important;
-    }
-}
-
-/* 10. Screen reader only text (if needed) */
-.sr-only {
-    position: absolute !important;
-    width: 0.0625rem !important;
-    height: 0.0625rem !important;
-    padding: 0 !important;
-    margin: -0.0625rem !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
-}
-
-/* 11. Clean UI - Hide Gradio Boilerplate */
-footer {
-    display: none !important;
-}
-
-/* Hide floating header elements (Settings/API) if present */
-header {
-    display: none !important;
-}
-
-/* If the header is actually needed for layout, just hide the buttons inside it */
-.show-api, .built-with {
-    display: none !important;
-}
-
-/* 12. Floating Resource Accordion Overlay */
-#resource_accordion {
-    position: relative !important;
-    overflow: visible !important;
-}
-
-#resource_accordion > div:last-child {
-    position: absolute !important;
-    top: 100% !important;
-    right: 0 !important;
-    width: 28rem !important; /* 448px wide reference card */
-    z-index: 2000 !important;
-    background: var(--background-fill-primary) !important;
-    border: 0.0625rem solid var(--border-color-primary) !important;
-    border-radius: 0.5rem !important;
-    box-shadow: 0 0.625rem 0.9375rem -0.1875rem rgba(0, 0, 0, 0.1), 0 0.25rem 0.375rem -0.125rem rgba(0, 0, 0, 0.05) !important;
-    padding: 0.625rem !important;
-    overflow-y: auto !important;
-    max-height: 70vh !important;
 }
