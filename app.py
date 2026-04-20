@@ -1247,18 +1247,8 @@ _CUSTOM_JS = """
                 e.preventDefault();
                 const sendBtn = document.querySelector('#send_btn');
                 if (sendBtn) sendBtn.click();
-            }
         }
     }, true);
-
-    // 2. Inject Accessibility Titles (Workaround for Gradio 6.0 constraints)
-    const observer = new MutationObserver(() => {
-        const exportBtn = document.querySelector('#export_btn');
-        const importBtn = document.querySelector('#import_btn');
-        if (exportBtn && !exportBtn.title) exportBtn.title = "Save agreement to file";
-        if (importBtn && !importBtn.title) importBtn.title = "Load agreement from file";
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
 })()
 """
 
