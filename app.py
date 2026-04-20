@@ -1229,12 +1229,12 @@ _SAFE_VEXILON_VERSION = html.escape(VEXILON_VERSION)
 _URL_VEXILON_VERSION = urllib.parse.quote(VEXILON_VERSION)
 
 ATTRIBUTION_HTML = f"""
-<div class='footer-links' style='text-align: center; color: #6b7280; font-size: 0.85rem; margin-top: 1rem;'>
-    <a href='{VEXILON_REPO_URL}' target='_blank' rel='noopener noreferrer' style='color: #2563eb; text-decoration: none;'>GitHub (code)</a>
-    <span style='margin-left: 0.5rem; opacity: 0.7;'>•</span>
-    <a href='{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md' target='_blank' rel='noopener noreferrer' style='color: #2563eb; text-decoration: none;'>Privacy (PIPA)</a>
-    <span style='margin-left: 0.5rem; opacity: 0.7;'>•</span>
-    <a href='{VEXILON_REPO_URL}/pkgs/container/vexilon/versions?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION}' target='_blank' rel='noopener noreferrer' style='color: #2563eb; text-decoration: none;'>{_SAFE_VEXILON_VERSION}</a>
+<div class='footer-links'>
+    <a href='{VEXILON_REPO_URL}' target='_blank' rel='noopener noreferrer'>GitHub (code)</a>
+    <span>•</span>
+    <a href='{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md' target='_blank' rel='noopener noreferrer'>Privacy (PIPA)</a>
+    <span>•</span>
+    <a href='{VEXILON_REPO_URL}/pkgs/container/vexilon/versions?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION}' target='_blank' rel='noopener noreferrer'>{_SAFE_VEXILON_VERSION}</a>
 </div>
 """
 _CUSTOM_JS = """

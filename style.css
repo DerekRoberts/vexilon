@@ -226,6 +226,24 @@ header {
 }
 
 /* Ensure footer links don't change color after being visited */
+.footer-links {
+    text-align: center !important;
+    color: #6b7280 !important;
+    font-size: 0.85rem !important;
+    margin-top: 1rem !important;
+    padding-bottom: env(safe-area-inset-bottom, 1rem) !important;
+}
+
+.footer-links a {
+    color: #2563eb !important;
+    text-decoration: none !important;
+}
+
+.footer-links span {
+    margin-left: 0.5rem !important;
+    opacity: 0.7 !important;
+}
+
 .footer-links a:visited, #resource_accordion a, #resource_accordion a:visited {
     color: #2563eb !important;
     text-decoration: underline !important;
