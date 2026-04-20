@@ -97,7 +97,7 @@ GITHUB_LABOUR_LAW_URL = os.getenv(
 )
 
 # Raw URL base for downloading pre-computed index from GitHub.
-_CSS_PATH = Path(__file__).parent / "style.css"
+# Raw URL base for downloading pre-computed index from GitHub.
 _PERSPECTIVE_CACHE = OrderedDict()
 _MAX_PERSPECTIVE_CACHE_SIZE = 1000
 _PERSPECTIVE_CACHE_LOCK = threading.Lock()
@@ -1247,15 +1247,56 @@ _CUSTOM_JS = """
                 e.preventDefault();
                 const sendBtn = document.querySelector('#send_btn');
                 if (sendBtn) sendBtn.click();
+            }
         }
     }, true);
 })()
 """
 
+_CUSTOM_CSS = """
+/* Vexilon Accessibility Styles (WCAG 2.1 AA Compliant) */
+
+/* 1. Root font size for relative units */
+html {
+    font-size: 100%; /* 16px base, respects user preferences */
+}
+
+/* 2. Unified row alignment */
+.compact-row {
+    flex-wrap: nowrap !important;
+}
+
+/* 3. Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* 4. Clean UI - Hide Gradio Boilerplate */
+footer {
+    display: none !important;
+}
+
+/* Hide floating header elements (Settings/API) if present */
+header {
+    display: none !important;
+}
+
+/* If the header is actually needed for layout, just hide the buttons inside it */
+.show-api, .built-with {
+    display: none !important;
+}
+"""
+
 def build_ui() -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
     import gradio as gr
-    css_code = _CSS_PATH.read_text() if _CSS_PATH.exists() else ""
+    import gradio as gr
 
     with gr.Blocks(title="Vexilon: BCGEU Steward Assistant") as demo:
         # ── Header ────────────────────────────────────────────────────────────
@@ -1297,7 +1338,7 @@ def build_ui() -> "gr.Blocks":
                     )
                     send_btn = gr.Button("Send", scale=1, variant="primary", min_width=64, elem_id="send_btn")
 
-            with gr.Tab("📚 Resources & Examples", id="resources_tab"):
+            with gr.Tab("📚 Resources", id="resources_tab"):
                 if INTEGRITY_WARNING:
                     gr.Markdown(f"⚠️ {INTEGRITY_WARNING}")
                 
@@ -1451,7 +1492,7 @@ if __name__ == "__main__":
         server_port=int(os.getenv("PORT", 7860)),
         share=False,
         allowed_paths=allowed_paths,
-        css=_CSS_PATH.read_text() if _CSS_PATH.exists() else "",
+        css=_CUSTOM_CSS,
         theme=gr.themes.Default(primary_hue="orange", secondary_hue="slate"),
         auth=auth_creds,
         js=_CUSTOM_JS,
