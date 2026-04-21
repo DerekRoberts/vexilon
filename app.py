@@ -25,7 +25,29 @@ import threading
 import logging
 import asyncio
 import urllib.parse
+import html
+import json
+import os
+import re
+import time
+import datetime
+import tempfile
+import textwrap
 from collections import OrderedDict
+from collections.abc import AsyncIterator, Iterator
+from pathlib import Path
+
+# ─── Third-party ─────────────────────────────────────────────────────────────
+import numpy as np
+import anthropic
+import faiss
+import gradio as gr
+
+# Ensure the HuggingFace model cache is writable and persistent.
+# Inside the container (WORKDIR /app), this resolves to /app/hf_cache.
+# Locally, it resolves to ./hf_cache in the repo root.
+if not os.getenv("HF_HOME"):
+    os.environ["HF_HOME"] = str(Path("./hf_cache").absolute())
 
 # Configure structured logging (Issue #196)
 logging.basicConfig(
@@ -65,30 +87,103 @@ TESTS_DIR = LABOUR_LAW_DIR / "tests"
 _chunks: list[dict] = []
 _index: "faiss.IndexFlatIP | None" = None
 
-logger.info("[boot] Python started, importing stdlib...")
-import json
-import os
-import re
-import time
-from collections.abc import AsyncIterator, Iterator
-from pathlib import Path
-import datetime
-import tempfile
-import textwrap
-# Ensure the HuggingFace model cache is writable and persistent.
-# Inside the container (WORKDIR /app), this resolves to /app/hf_cache.
-# Locally, it resolves to ./hf_cache in the repo root.
-if not os.getenv("HF_HOME"):
-    os.environ["HF_HOME"] = str(Path("./hf_cache").absolute())
+logger.info("[boot] Vexilon initializing...")
 
-# ─── Third-party: Deferred Imports ───────────────────────────────────────────
-# (numpy, anthropic, faiss, sentence_transformers, gradio)
-# are imported inside functions to keep startup and test-loading fast.
-logger.info("[boot] All boilerplate complete.")
+# ─── UI Assets ────────────────────────────────────────────────────────────────
+_CUSTOM_JS = """
+(() => {
+    // 1. Handle Enter key submission
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            const textarea = document.querySelector('#msg_input textarea');
+            if (textarea && document.activeElement === textarea) {
+                e.preventDefault();
+                const sendBtn = document.querySelector('#send_btn');
+                if (sendBtn) sendBtn.click();
+            }
+        }
+    }, true);
+})()
+"""
+
+_CUSTOM_CSS = """
+/* Vexilon Accessibility Styles (WCAG 2.1 AA Compliant) */
+
+/* 1. Root font size for relative units */
+html {
+    font-size: 100%; /* 16px base, respects user preferences */
+}
+
+/* 2. Unified row alignment */
+.compact-row {
+    flex-wrap: nowrap !important;
+}
+
+/* 3. Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* 4. Clean UI - Hide Gradio Boilerplate */
+footer {
+    display: none !important;
+}
+
+/* Hide floating header elements (Settings/API) if present */
+header {
+    display: none !important;
+}
+
+/* If the header is actually needed for layout, just hide the buttons inside it */
+.show-api, .built-with {
+    display: none !important;
+}
+"""
+
+# ─── Vexilon Version Info ───────────────────────────────────────────────────
+def get_vexilon_info():
+    """Extract version and runtime info for the UI and logs."""
+    import platform
+    try:
+        # Try to get version from environment or fallback
+        version = os.getenv("VEXILON_VERSION", "Development build (fallback)")
+        source = "env" if "VEXILON_VERSION" in os.environ else "fallback"
+    except Exception:
+        version = "Development build (error)"
+        source = "error"
+
+    py_ver = sys.version.split()[0]
+    os_info = platform.system()
+
+    return {"ver": version, "src": source, "py": py_ver, "os": os_info}
+
+_info = get_vexilon_info()
+VEXILON_VERSION = _info["ver"]
+_SAFE_VEXILON_VERSION = html.escape(VEXILON_VERSION)
+_URL_VEXILON_VERSION = urllib.parse.quote(VEXILON_VERSION)
+
+ATTRIBUTION_HTML = f"""
+<div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding-bottom: env(safe-area-inset-bottom, 1rem);">
+    <a href="https://github.com/DerekRoberts/vexilon" target="_blank" style="color: #3b82f6; text-decoration: none;">GitHub (code)</a>
+    &nbsp;&nbsp;•&nbsp;&nbsp;
+    <a href="https://github.com/DerekRoberts/vexilon/blob/main/docs/PRIVACY.md" target="_blank" style="color: #3b82f6; text-decoration: none;">Privacy (PIPA)</a>
+    &nbsp;&nbsp;•&nbsp;&nbsp;
+    <a href="https://github.com/DerekRoberts/vexilon/pkgs/container/vexilon/versions?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION}" target="_blank" style="color: #3b82f6; text-decoration: none; margin-left: 0.5rem;">{_SAFE_VEXILON_VERSION}</a>
+</div>
+"""
+
 
 # ─── Configuration ───────────────────────────────────────────────────────────
 VEXILON_REPO_URL = os.getenv("VEXILON_REPO_URL", "https://github.com/DerekRoberts/vexilon")
 _GITHUB_RAW_BASE = os.getenv("VEXILON_RAW_URL_BASE", "https://raw.githubusercontent.com/DerekRoberts/vexilon/main")
+VEXILON_USERNAME = os.getenv("VEXILON_USERNAME", "admin")
+VEXILON_PASSWORD = os.getenv("VEXILON_PASSWORD")
 
 # Public GitHub raw URL base for labour_law PDFs.
 # Used for folder/file links in the UI.
@@ -243,45 +338,6 @@ INTEGRITY_WARNING: str | None = None
 
 # Two-Bot Self-Review Pipeline (Issue #104)
 USE_REVIEWER = os.getenv("USE_REVIEWER", "false").lower() == "true"
-def get_vexilon_info():
-    """
-    1. Get Version (Priority: Env Var -> Baked File -> Fallback)
-    2. Get Python and OS metadata
-    3. Print a beautiful startup banner
-    """
-    import platform
-
-    # Priority 1: Env Var
-    version = os.getenv("VEXILON_VERSION")
-    source = "External/CI"
-
-    if not version:
-        # Priority 2: Baked-in Build File
-        try:
-            with open("/app/build_version.txt", "r") as f:
-                version = f.read().strip()
-                source = "Local Build"
-        except FileNotFoundError:
-            # Priority 3: Fallback (Never dev!)
-            version = "Development build"
-            source = "fallback"
-
-    py_ver = sys.version.split()[0]
-    os_info = platform.system()
-
-    # The Banner
-    logger.info("=" * 50)
-    logger.info(f" VEXILON VERSION : {version} ({source})")
-    logger.info(f" PYTHON VERSION  : {py_ver}")
-    logger.info(f" RUNTIME OS      : {os_info}")
-    logger.info("=" * 50)
-
-    return {"ver": version, "src": source, "py": py_ver, "os": os_info}
-# Initialise version and logging at imports
-_info = get_vexilon_info()
-VEXILON_VERSION = _info["ver"]
-VEXILON_USERNAME = os.getenv("VEXILON_USERNAME", "admin")
-VEXILON_PASSWORD = os.getenv("VEXILON_PASSWORD")
 
 # ─── Typing ──────────────────────────────────────────────────────────────────
 from typing import TYPE_CHECKING
@@ -349,21 +405,18 @@ def build_pdf_download_links() -> str:
 
     lines = ["**Download Documents:**"]
     for f in files:
-        stem = f.stem
-        source_name = _get_source_name(stem)
-
-        # Shorten common names and fix capitalization for cleaner UI
-        display_name = source_name.replace("BCGEU ", "").replace("Bcgeu ", "")
-        display_name = display_name.replace("Bc ", "BC ")
+        # Use pathlib to get cleaner names and resolve Gradio's /file= path
+        display_name = f.stem.replace("_", " ").title()
+        display_name = display_name.replace("Bcgeu", "BCGEU")
         display_name = display_name.replace("Main Agreement", "Agreement")
-        display_name = display_name.replace("Labour Relations Code", "Labour Code")
-
-        # Use relative path for Gradio's /gradio_api/file= endpoint
-        file_path = str(f.relative_to(Path(".")))
-        encoded_path = urllib.parse.quote(file_path)
-        lines.append(f"* [{display_name}](/gradio_api/file={encoded_path})")
+        
+        # URL encode the relative path for Gradio's internal file serving
+        rel_path = f.relative_to(Path("."))
+        encoded_path = urllib.parse.quote(str(rel_path))
+        lines.append(f"* [{display_name}](/file={encoded_path})")
 
     return "\n".join(lines)
+
 DEVELOPER_MODE = os.getenv("DEVELOPER_MODE", "false").lower() == "true"
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
@@ -1223,80 +1276,11 @@ EXAMPLE_QUESTIONS = [
     "Show me the Harassment Threshold test.",
     "Does my employer have a social media policy?",
 ]
-import html
-import urllib.parse
-_SAFE_VEXILON_VERSION = html.escape(VEXILON_VERSION)
-_URL_VEXILON_VERSION = urllib.parse.quote(VEXILON_VERSION)
 
-ATTRIBUTION_HTML = f"""
-<div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding-bottom: env(safe-area-inset-bottom, 1rem);">
-    <a href='{VEXILON_REPO_URL}' target='_blank' rel='noopener noreferrer' style='color: #2563eb; text-decoration: none;'>GitHub (code)</a>
-    <span style='margin-left: 0.5rem; opacity: 0.7;'>•</span>
-    <a href='{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md' target='_blank' rel='noopener noreferrer' style='color: #2563eb; text-decoration: none; margin-left: 0.5rem;'>Privacy (PIPA)</a>
-    <span style='margin-left: 0.5rem; opacity: 0.7;'>•</span>
-    <a href='{VEXILON_REPO_URL}/pkgs/container/vexilon/versions?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION}' target='_blank' rel='noopener noreferrer' style='color: #2563eb; text-decoration: none; margin-left: 0.5rem;'>{_SAFE_VEXILON_VERSION}</a>
-</div>
-"""
-_CUSTOM_JS = """
-(() => {
-    // 1. Handle Enter key submission
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            const textarea = document.querySelector('#msg_input textarea');
-            if (textarea && document.activeElement === textarea) {
-                e.preventDefault();
-                const sendBtn = document.querySelector('#send_btn');
-                if (sendBtn) sendBtn.click();
-            }
-        }
-    }, true);
-})()
-"""
 
-_CUSTOM_CSS = """
-/* Vexilon Accessibility Styles (WCAG 2.1 AA Compliant) */
-
-/* 1. Root font size for relative units */
-html {
-    font-size: 100%; /* 16px base, respects user preferences */
-}
-
-/* 2. Unified row alignment */
-.compact-row {
-    flex-wrap: nowrap !important;
-}
-
-/* 3. Reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-
-/* 4. Clean UI - Hide Gradio Boilerplate */
-footer {
-    display: none !important;
-}
-
-/* Hide floating header elements (Settings/API) if present */
-header {
-    display: none !important;
-}
-
-/* If the header is actually needed for layout, just hide the buttons inside it */
-.show-api, .built-with {
-    display: none !important;
-}
-"""
 
 def build_ui() -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
-    import gradio as gr
-    import gradio as gr
 
     with gr.Blocks(title="Vexilon: BCGEU Steward Assistant") as demo:
         # ── Header ────────────────────────────────────────────────────────────
@@ -1362,7 +1346,6 @@ def build_ui() -> "gr.Blocks":
             persona_mode: str,
             **kwargs,
         ) -> AsyncIterator[tuple[list[dict], str]]:
-            import gradio as gr
             
             # Persistent UI — no hiding components
             request = kwargs.get("request")
