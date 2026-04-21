@@ -126,7 +126,7 @@ def get_vexilon_info():
 
     try:
         # Try to get version from environment or fallback
-        version = os.getenv("VEXILON_VERSION", "Development build (fallback)")
+        version = os.getenv("VEXILON_VERSION", "Dev build")
         source = "env" if "VEXILON_VERSION" in os.environ else "fallback"
     except Exception:
         version = "Development build (error)"
@@ -145,9 +145,9 @@ _URL_VEXILON_VERSION = urllib.parse.quote(VEXILON_VERSION)
 
 ATTRIBUTION_HTML = f"""
 <div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding-bottom: env(safe-area-inset-bottom, 1rem);">
-    <a href="https://github.com/DerekRoberts/vexilon" target="_blank" style="color: #3b82f6; text-decoration: none;">GitHub (code)</a>
+    <a href="https://github.com/DerekRoberts/vexilon" target="_blank" style="color: #3b82f6; text-decoration: none;">GitHub</a>
     &nbsp;&nbsp;•&nbsp;&nbsp;
-    <a href="https://github.com/DerekRoberts/vexilon/blob/main/docs/PRIVACY.md" target="_blank" style="color: #3b82f6; text-decoration: none;">Privacy (PIPA)</a>
+    <a href="https://github.com/DerekRoberts/vexilon/blob/main/docs/PRIVACY.md" target="_blank" style="color: #3b82f6; text-decoration: none;">Privacy</a>
     &nbsp;&nbsp;•&nbsp;&nbsp;
     <a href="https://github.com/DerekRoberts/vexilon/pkgs/container/vexilon/versions?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION}" target="_blank" style="color: #3b82f6; text-decoration: none; margin-left: 0.5rem;">{_SAFE_VEXILON_VERSION}</a>
 </div>
