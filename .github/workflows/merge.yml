@@ -21,6 +21,11 @@ jobs:
       pull-requests: read
       issues: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Resolve image
         id: resolve
         uses: bcgov/actions/image-tracker@main
@@ -32,7 +37,25 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          TAG=$(echo '${{ steps.resolve.outputs.bundle }}' | jq -r '.vexilon')
+          # Selection Hierarchy:
+          # 1. Manual Input (image_tag)
+          # 2. Image Tracker Output (bundle.vexilon)
+          # 3. Last Resort: Commit SHA
+          
+          TAG="${{ github.event.inputs.image_tag }}"
+          
+          if [ -z "$TAG" ] || [ "$TAG" == "null" ]; then
+            BUNDLE_JSON='${{ steps.resolve.outputs.bundle }}'
+            # If bundle is empty or invalid, jq will return empty due to '// empty'
+            TAG=$(echo "${BUNDLE_JSON:-{}}" | jq -r '.vexilon // empty' 2>/dev/null || echo "")
+          fi
+
+          if [ -z "$TAG" ] || [ "$TAG" == "null" ]; then
+            echo "::warning:: Image resolution failed. Falling back to commit SHA: sha-${{ github.sha }}"
+            TAG="sha-${{ github.sha }}"
+          fi
+
+          echo "Final image selection: $TAG"
           ./.github/scripts/deploy.sh "$TAG" --prod
 
       - name: Verify Space boots successfully
