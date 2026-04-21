@@ -106,7 +106,23 @@ _CUSTOM_JS = """
 })()
 """
 
-_CUSTOM_CSS = ""
+_CUSTOM_CSS = """
+#chatbot {
+    margin-bottom: 0.3125rem !important;
+    height: calc(100vh - 18rem) !important;
+}
+
+/* Mobile responsiveness: use fixed percentage height to prevent overflow */
+@media (max-width: 33.75rem) {
+    #chatbot {
+        height: 60vh !important;
+    }
+}
+
+/* Hide Gradio boilerplate for a premium feel */
+footer { display: none !important; }
+.show-api, .built-with { display: none !important; }
+"""
 
 
 
@@ -1268,6 +1284,7 @@ def build_ui() -> "gr.Blocks":
                     show_label=False,
                     scale=1,
                     height="calc(100vh - 18rem)",
+                    elem_id="chatbot",
                 )
 
         # ── Input row ─────────────────────────────────────────────────────────
@@ -1440,6 +1457,7 @@ if __name__ == "__main__":
         share=False,
         allowed_paths=allowed_paths,
         theme=gr.themes.Default(primary_hue="orange", secondary_hue="slate"),
+        css=_CUSTOM_CSS,
         auth=auth_creds,
         js=_CUSTOM_JS,
     )
