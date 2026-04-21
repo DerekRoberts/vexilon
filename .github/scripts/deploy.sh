@@ -1,6 +1,6 @@
 # Usage: ./.github/scripts/deploy.sh <image_ref> [--prod] [--dry-run]
 # <image_ref> can be a tag (e.g. 'sha-abc123') or a digest (e.g. 'sha256:abc123...')
-# Default: Targets "DerekRoberts/vexilon-test" (PROD).
+# Default: Targets "DerekRoberts/vexilon" (PROD).
 # Use --prod as second argument to target "DerekRoberts/vexilon".
 
 # Strict mode + Trace
