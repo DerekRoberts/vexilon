@@ -1685,4 +1685,5 @@ if __name__ == "__main__":
         auth=auth_creds,
         js=_CUSTOM_JS,
         pwa=True,
+        show_footer=False,
     )
