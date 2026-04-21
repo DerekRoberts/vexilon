@@ -111,14 +111,10 @@ footer {
     display: none !important;
 }
 html, body {
-    height: 100% !important;
-    overflow: hidden !important;
     margin: 0 !important;
     padding: 0 !important;
 }
 .gradio-container {
-    height: 100% !important;
-    overflow: auto !important;
     margin: 0 !important;
     padding: 0 !important;
 }
@@ -1464,7 +1460,7 @@ EXAMPLE_QUESTIONS = [
 def build_ui() -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
 
-    with gr.Blocks(title="Vexilon: BCGEU Steward Assistant", fill_height=False) as demo:  # Prevents infinite growth loop in HuggingFace iframes
+    with gr.Blocks(title="Vexilon: BCGEU Steward Assistant", fill_height=False) as demo:
         # ── Header ────────────────────────────────────────────────────────────
         gr.Markdown("### BCGEU Steward Assistant")
 
@@ -1485,7 +1481,7 @@ def build_ui() -> "gr.Blocks":
                     label="Steward Assistant",
                     show_label=False,
                     scale=1,
-                    height="100%",
+                    height=700,
                     elem_id="chatbot",
                 )
 
