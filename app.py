@@ -111,14 +111,13 @@ footer {
     display: none !important;
 }
 html, body {
-    height: 100vh !important;
+    height: 100% !important;
     overflow: hidden !important;
     margin: 0 !important;
     padding: 0 !important;
 }
 .gradio-container {
-    height: 100dvh;
-    max-height: 100dvh;
+    height: 100% !important;
     overflow: auto !important;
     margin: 0 !important;
     padding: 0 !important;
