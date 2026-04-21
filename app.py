@@ -1695,5 +1695,21 @@ if __name__ == "__main__":
         auth=auth_creds,
         js=_CUSTOM_JS,
         css=_CUSTOM_CSS,
+        head="""
+        <script>
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const container = document.querySelector('.gradio-container');
+                if (container) {
+                    const height = window.innerHeight;
+                    container.style.height = height + 'px';
+                    container.style.maxHeight = height + 'px';
+                    container.style.overflow = 'auto';
+                    console.log("[Vexilon] Viewport locked at " + height + "px");
+                }
+            }, 500);
+        });
+        </script>
+        """,
         pwa=True,
     )
