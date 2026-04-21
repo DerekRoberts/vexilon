@@ -106,7 +106,11 @@ _CUSTOM_JS = """
 })()
 """
 
-_CUSTOM_CSS = ""
+_CUSTOM_CSS = """
+footer {
+    display: none !important;
+}
+"""
 
 
 
@@ -1670,5 +1674,6 @@ if __name__ == "__main__":
         theme=gr.themes.Default(primary_hue="orange", secondary_hue="slate"),
         auth=auth_creds,
         js=_CUSTOM_JS,
+        css=_CUSTOM_CSS,
         pwa=True,
     )
