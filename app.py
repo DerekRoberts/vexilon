@@ -191,8 +191,7 @@ GITHUB_LABOUR_LAW_URL = os.getenv(
     "VEXILON_KNOWLEDGE_URL", f"{VEXILON_REPO_URL}/tree/main/data/labour_law"
 )
 
-# Raw URL base for downloading pre-computed index from GitHub.
-# Raw URL base for downloading pre-computed index from GitHub.
+# Perspective Query Cache
 _PERSPECTIVE_CACHE = OrderedDict()
 _MAX_PERSPECTIVE_CACHE_SIZE = 1000
 _PERSPECTIVE_CACHE_LOCK = threading.Lock()
@@ -1304,7 +1303,7 @@ def build_ui() -> "gr.Blocks":
                     label="Steward Assistant",
                     show_label=False,
                     scale=1,
-                    height="calc(100vh - 18rem)",
+                    height="60vh",
                 )
 
         # ── Input row ─────────────────────────────────────────────────────────
@@ -1395,7 +1394,7 @@ def build_ui() -> "gr.Blocks":
         # ── Chip click handlers — populate input and auto-submit ──────────────
         for chip in chip_btns:
             chip.click(
-                fn=lambda q: (q, gr.Tabs(selected="chat_tab")),
+                fn=lambda q: (q, gr.update(selected="chat_tab")),
                 inputs=[chip],
                 outputs=[msg_input, tabs],
             ).then(
@@ -1471,7 +1470,6 @@ if __name__ == "__main__":
     logger.info(f"[startup] Vexilon UI initialized. Ready to serve at port {os.getenv('PORT', 7860)}.")
     logger.info(f"[startup] Version: {VEXILON_VERSION} | Threads: {os.getenv('OMP_NUM_THREADS', 'Auto')}")
     
-    import gradio as gr
     app.launch(
         server_name="0.0.0.0",
         server_port=int(os.getenv("PORT", 7860)),
