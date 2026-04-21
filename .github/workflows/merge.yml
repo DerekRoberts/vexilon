@@ -37,25 +37,12 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Selection Hierarchy:
-          # 1. Manual Input (image_tag)
-          # 2. Image Tracker Output (bundle.vexilon)
-          # 3. Last Resort: Commit SHA
-          
-          TAG="${{ github.event.inputs.image_tag }}"
-          
-          if [ -z "$TAG" ] || [ "$TAG" == "null" ]; then
-            BUNDLE_JSON='${{ steps.resolve.outputs.bundle }}'
-            # If bundle is empty or invalid, jq will return empty due to '// empty'
-            TAG=$(echo "${BUNDLE_JSON:-{}}" | jq -r '.vexilon // empty' 2>/dev/null || echo "")
-          fi
+          # Priority: Manual override -> Automated resolution -> Commit SHA
+          TAG="${{ inputs.image_tag }}"
+          [ -z "$TAG" ] && TAG=$(echo '${{ steps.resolve.outputs.bundle }}' | jq -r '.vexilon // empty')
+          [ -z "$TAG" ] && TAG="sha-${{ github.sha }}"
 
-          if [ -z "$TAG" ] || [ "$TAG" == "null" ]; then
-            echo "::warning:: Image resolution failed. Falling back to commit SHA: sha-${{ github.sha }}"
-            TAG="sha-${{ github.sha }}"
-          fi
-
-          echo "Final image selection: $TAG"
+          echo "Deploying: $TAG"
           ./.github/scripts/deploy.sh "$TAG" --prod
 
       - name: Verify Space boots successfully
