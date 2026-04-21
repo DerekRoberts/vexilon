@@ -1303,7 +1303,7 @@ def build_ui() -> "gr.Blocks":
                     label="Steward Assistant",
                     show_label=False,
                     scale=1,
-                    height="60vh",
+                    height="calc(100vh - 18rem)",
                 )
 
         # ── Input row ─────────────────────────────────────────────────────────
