@@ -57,17 +57,10 @@ git checkout --orphan hf-snapshot
 git reset # Clears the index
 
 # Create the Stub Dockerfile
-# If IMAGE_REF is a full reference (contains /), use it as is.
-if [[ "$IMAGE_REF" == */* ]]; then
-    FULL_IMAGE="$IMAGE_REF"
-else
-    # Digests use @ syntax, tags use : syntax
-    [[ "$IMAGE_REF" == sha256:* ]] && separator='@' || separator=':'
-    FULL_IMAGE="ghcr.io/derekroberts/vexilon${separator}$IMAGE_REF"
-fi
-
+# Digests use @ syntax, tags use : syntax
+[[ "$IMAGE_REF" == sha256:* ]] && separator='@' || separator=':'
 cat <<EOF > Dockerfile
-FROM $FULL_IMAGE
+FROM ghcr.io/derekroberts/vexilon${separator}$IMAGE_REF
 EOF
 
 if [ "$DRY_RUN" == "true" ]; then
@@ -92,8 +85,7 @@ git add Dockerfile README.md app.py
 git commit -m "promote: $IMAGE_REF from $ORIGINAL_REF"
 
 # Auth and Push
-git remote remove hf 2>/dev/null || true
-git remote add hf "https://huggingface.co/spaces/${SPACE_NAME}"
+git remote add hf "https://huggingface.co/spaces/${SPACE_NAME}" 2>/dev/null || true
 git config --local credential.https://huggingface.co.helper '!f() { echo "username=api"; echo "password=${HF_TOKEN}"; }; f'
 git push hf hf-snapshot:main --force --no-verify
 
