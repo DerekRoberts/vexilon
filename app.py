@@ -106,7 +106,14 @@ _CUSTOM_JS = """
 })()
 """
 
-_CUSTOM_CSS = ""
+_CUSTOM_CSS = """
+#chatbot {
+    height: calc(100vh - 21rem) !important;
+    max-height: calc(100vh - 21rem) !important;
+    overflow-y: auto !important;
+}
+footer { display: none !important; }
+"""
 
 
 
