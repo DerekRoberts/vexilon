@@ -166,7 +166,7 @@ if VEXILON_VERSION != "Dev build":
     )
 
 ATTRIBUTION_HTML = f"""
-<div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding-bottom: env(safe-area-inset-bottom, 1rem);">
+<div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding-bottom: env(safe-area-inset-bottom, 0.25rem);">
     {"".join(_attribution_parts)}
 </div>
 """
