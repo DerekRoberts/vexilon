@@ -112,7 +112,7 @@ _CUSTOM_CSS = """
     max-height: calc(100vh - 21rem) !important;
     overflow-y: auto !important;
 }
-footer { display: none !important; }
+footer, .gradio-footer { display: none !important; }
 """
 
 
