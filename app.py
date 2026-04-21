@@ -121,7 +121,7 @@ def get_vexilon_info():
 
     try:
         # Try to get version from environment or fallback
-        version = os.getenv("VEXILON_VERSION", "Dev build")
+        version = os.getenv("VEXILON_VERSION", "Dev mode")
         source = "env" if "VEXILON_VERSION" in os.environ else "fallback"
     except Exception:
         version = "Dev build (error)"
@@ -156,12 +156,11 @@ _attribution_parts = [
     f'<a href="{_privacy_url}" target="_blank" style="color: #3b82f6; text-decoration: none;">Privacy</a>',
 ]
 
-if VEXILON_VERSION != "Dev build":
-    _attribution_parts.append("&nbsp;&nbsp;•&nbsp;&nbsp;")
-    _attribution_parts.append(
-        f'<a href="{_container_url}?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION}" '
-        f'target="_blank" style="color: #3b82f6; text-decoration: none;">{_SAFE_VEXILON_VERSION}</a>'
-    )
+_attribution_parts.append("&nbsp;&nbsp;•&nbsp;&nbsp;")
+_attribution_parts.append(
+    f'<a href="{_container_url}?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION}" '
+    f'target="_blank" style="color: #3b82f6; text-decoration: none;">{_SAFE_VEXILON_VERSION}</a>'
+)
 
 ATTRIBUTION_HTML = f"""
 <div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding-bottom: env(safe-area-inset-bottom, 0.25rem);">
