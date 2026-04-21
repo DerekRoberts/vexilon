@@ -1465,7 +1465,7 @@ EXAMPLE_QUESTIONS = [
 def build_ui() -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
 
-    with gr.Blocks(title="Vexilon: BCGEU Steward Assistant", fill_height=True) as demo:
+    with gr.Blocks(title="Vexilon: BCGEU Steward Assistant", fill_height=False) as demo:
         # ── Header ────────────────────────────────────────────────────────────
         gr.Markdown("### BCGEU Steward Assistant")
 
