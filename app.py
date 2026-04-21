@@ -156,10 +156,14 @@ _attribution_parts = [
     f'<a href="{_privacy_url}" target="_blank" style="color: #3b82f6; text-decoration: none;">Privacy</a>',
 ]
 
+# Dumb URL logic: Link to general package page in dev, specific version in prod
+_version_url = _container_url
+if VEXILON_VERSION != "Dev mode":
+    _version_url += f"/versions?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION}"
+
 _attribution_parts.append("&nbsp;&nbsp;•&nbsp;&nbsp;")
 _attribution_parts.append(
-    f'<a href="{_container_url}?filters%5Bversion_type%5D=tagged&query={_URL_VEXILON_VERSION}" '
-    f'target="_blank" style="color: #3b82f6; text-decoration: none;">{_SAFE_VEXILON_VERSION}</a>'
+    f'<a href="{_version_url}" target="_blank" style="color: #3b82f6; text-decoration: none;">{_SAFE_VEXILON_VERSION}</a>'
 )
 
 ATTRIBUTION_HTML = f"""
