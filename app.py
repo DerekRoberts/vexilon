@@ -110,24 +110,6 @@ _CUSTOM_CSS = """
 footer {
     display: none !important;
 }
-.fill-tabs {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1 !important;
-}
-.fill-tabs > .tabitem {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1 !important;
-}
-.fill-tabs > .tabitem > .column {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1 !important;
-}
-#chatbot {
-    flex-grow: 1 !important;
-}
 """
 
 
@@ -1471,84 +1453,84 @@ def build_ui() -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
 
     with gr.Blocks(title="Vexilon: BCGEU Steward Assistant", fill_height=True) as demo:
-        with gr.Column(scale=1):
-            # ── Header ────────────────────────────────────────────────────────────
+        # Header and Role Selector
+        with gr.Row(elem_classes="compact-row"):
             gr.Markdown("### BCGEU Steward Assistant")
+            persona_selector = gr.Dropdown(
+                choices=["Lookup", "Grieve", "Manage"],
+                value="Lookup",
+                label="Operational Role",
+                show_label=False,
+                container=False,
+                elem_id="persona_selector",
+                scale=1,
+            )
 
-            with gr.Tabs(elem_classes="fill-tabs") as tabs:
-                with gr.Tab("Assistant", id="chat_tab", scale=1):
-                    # ── Role Selector ─────────────────────────────────────────────────────
-                    persona_selector = gr.Dropdown(
-                        choices=["Lookup", "Grieve", "Manage"],
-                        value="Lookup",
-                        label="Operational Role",
-                        show_label=False,
-                        container=False,
-                        elem_id="persona_selector",
+        # ── Chat interface (Native Fill Height) ───────────────────────────────
+        chatbot = gr.Chatbot(
+            label="Steward Assistant",
+            show_label=False,
+            scale=1,
+            elem_id="chatbot",
+        )
+
+        # ── Input row ─────────────────────────────────────────────────────────
+        with gr.Row(elem_classes="compact-row"):
+            msg_input = gr.Textbox(
+                placeholder="Ask about the agreement...",
+                label="Your Question",
+                max_lines=6,
+                scale=5,
+                show_label=False,
+                container=False,
+                lines=1,
+                elem_id="msg_input",
+            )
+            send_btn = gr.Button(
+                "Send",
+                scale=1,
+                variant="primary",
+                min_width=64,
+                elem_id="send_btn",
+            )
+
+        # ── Resources & Utilities ─────────────────────────────────────────────
+        with gr.Accordion("Resources & Utilities", open=False, id="resources_accordion"):
+            if INTEGRITY_WARNING:
+                gr.Markdown(f"{INTEGRITY_WARNING}")
+
+            gr.Markdown("#### Quick Questions")
+            with gr.Row():
+                chip_btns = [
+                    gr.Button(q, size="sm", min_width=150)
+                    for q in EXAMPLE_QUESTIONS
+                ]
+
+            with gr.Row():
+                with gr.Column():
+                    gr.Markdown("#### Reference Documents")
+                    gr.Markdown(build_pdf_download_links())
+                    gr.Markdown(
+                        f"[Browse Full Knowledge Base on GitHub]({GITHUB_LABOUR_LAW_URL})"
                     )
 
-                    # ── Chat interface ────────────────────────────────────────────────────
-                    chatbot = gr.Chatbot(
-                        label="Steward Assistant",
-                        show_label=False,
-                        scale=1,
-                        
-                        elem_id="chatbot",
+                with gr.Column():
+                    gr.Markdown("#### Conversation Options")
+                    gr.Markdown(
+                        "Save your current chat history or load a previous session."
                     )
-
-                    # ── Input row ─────────────────────────────────────────────────────────
-                    with gr.Row(elem_classes="compact-row"):
-                        msg_input = gr.Textbox(
-                            placeholder="Ask about the agreement...",
-                            label="Your Question",
-                            max_lines=6,
-                            scale=5,
-                            show_label=False,
-                            container=False,
-                            lines=1,
-                            elem_id="msg_input",
-                        )
-                        send_btn = gr.Button(
-                            "Send",
-                            scale=1,
-                            variant="primary",
-                            min_width=64,
-                            elem_id="send_btn",
-                        )
-
-                with gr.Tab("Resources", id="resources_tab"):
-                    if INTEGRITY_WARNING:
-                        gr.Markdown(f"{INTEGRITY_WARNING}")
-
-                    gr.Markdown("#### Quick Questions")
                     with gr.Row():
-                        chip_btns = [
-                            gr.Button(q, size="sm", min_width=150)
-                            for q in EXAMPLE_QUESTIONS
-                        ]
-
-                    with gr.Accordion("Reference Documents", open=False):
-                        gr.Markdown(build_pdf_download_links())
-                        gr.Markdown(
-                            f"[Browse Full Knowledge Base on GitHub]({GITHUB_LABOUR_LAW_URL})"
+                        export_btn = gr.DownloadButton(
+                            "Save",
+                            variant="secondary",
+                            size="sm",
                         )
-
-                    with gr.Accordion("Conversation Utilities", open=False):
-                        gr.Markdown(
-                            "Save your current chat history or load a previous session."
+                        import_btn = gr.UploadButton(
+                            "Load",
+                            file_types=[".md"],
+                            variant="secondary",
+                            size="sm",
                         )
-                        with gr.Row():
-                            export_btn = gr.DownloadButton(
-                                "Save Conversation",
-                                variant="secondary",
-                                size="sm",
-                            )
-                            import_btn = gr.UploadButton(
-                                "Load Conversation",
-                                file_types=[".md"],
-                                variant="secondary",
-                                size="sm",
-                            )
 
         # ── Submit handlers ───────────────────────────────────────────────────
         async def submit(
@@ -1703,34 +1685,5 @@ if __name__ == "__main__":
         auth=auth_creds,
         js=_CUSTOM_JS,
         css=_CUSTOM_CSS,
-
-        head="""
-        <script>
-        window.addEventListener('load', function() {
-            // Detect if we are trapped in an iframe (e.g. Hugging Face)
-            const isIframe = window.self !== window.top;
-            
-            const lockViewport = function() {
-                const container = document.querySelector('.gradio-container');
-                if (container) {
-                    const height = window.innerHeight;
-                    container.style.height = height + 'px';
-                    container.style.maxHeight = height + 'px';
-                    container.style.overflow = 'auto';
-                    console.log("[Vexilon] Viewport " + (isIframe ? "LOCKED" : "synced") + " at " + height + "px");
-                }
-            };
-            
-            // 500ms delay ensures Gradio flex-layout is stable before we freeze the frame
-            setTimeout(lockViewport, 500);
-            
-            // Only re-sync on resize if NOT in an iframe. 
-            // In an iframe, resizing is often a symptom of the growth loop we are trying to kill.
-            if (!isIframe) {
-                window.addEventListener('resize', lockViewport);
-            }
-        });
-        </script>
-        """,
         pwa=True,
     )
