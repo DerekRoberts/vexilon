@@ -422,7 +422,7 @@ def build_pdf_download_links() -> str:
         # URL encode the relative path for Gradio's internal file serving
         rel_path = f.relative_to(Path("."))
         encoded_path = urllib.parse.quote(str(rel_path))
-        lines.append(f"* [{display_name}](/file={encoded_path})")
+        lines.append(f"[{display_name}](/file={encoded_path})<br>")
 
     return "\n".join(lines)
 
