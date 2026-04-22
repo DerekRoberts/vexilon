@@ -1,9 +1,23 @@
 import os
+import sys
+import html
+import urllib.parse
 import gradio as gr
+
+def get_vexilon_info():
+    version = os.getenv("VEXILON_VERSION", "Dev mode")
+    return version
 
 def chat_fn(message, history, persona):
     # A generic placeholder for the future RAG functionality
     return f"Vexilon ({persona} Mode) received: {message}"
+
+VEXILON_VERSION = get_vexilon_info()
+VEXILON_REPO_URL = os.getenv("VEXILON_REPO_URL", "https://github.com/DerekRoberts/vexilon")
+_container_url = f"{VEXILON_REPO_URL}/pkgs/container/vexilon/versions"
+_version_url = _container_url
+if VEXILON_VERSION != "Dev mode":
+    _version_url += f"/versions?filters%5Bversion_type%5D=tagged&query={urllib.parse.quote(VEXILON_VERSION)}"
 
 with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
     with gr.Row():
@@ -23,13 +37,13 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
         fill_height=True
     )
 
-    gr.HTML("""
+    gr.HTML(f"""
         <div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding-top: 10px;">
-            <a href="https://github.com/DerekRoberts/vexilon" target="_blank" style="color: #3b82f6; text-decoration: none;">GitHub</a>
+            <a href="{VEXILON_REPO_URL}" target="_blank" style="color: #3b82f6; text-decoration: none;">GitHub</a>
             &nbsp;&nbsp;•&nbsp;&nbsp;
-            <a href="https://github.com/DerekRoberts/vexilon/blob/main/docs/PRIVACY.md" target="_blank" style="color: #3b82f6; text-decoration: none;">Privacy</a>
+            <a href="{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md" target="_blank" style="color: #3b82f6; text-decoration: none;">Privacy</a>
             &nbsp;&nbsp;•&nbsp;&nbsp;
-            <span>Dev mode</span>
+            <a href="{_version_url}" target="_blank" style="color: #3b82f6; text-decoration: none;">{html.escape(VEXILON_VERSION)}</a>
         </div>
     """)
 
