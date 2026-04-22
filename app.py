@@ -8,47 +8,78 @@ def get_vexilon_info():
     return version
 
 def chat_fn(message, history, persona):
-    # A generic placeholder for the future RAG functionality
-    return f"BCGEU Navigator ({persona} Mode) received: {message}"
+    # This matches the original Vexilon chat logic structure
+    history.append({"role": "user", "content": message})
+    response = f"BCGEU Navigator ({persona} Mode) received: {message}"
+    history.append({"role": "assistant", "content": response})
+    return "", history
 
 VEXILON_VERSION = get_vexilon_info()
 VEXILON_REPO_URL = os.getenv("VEXILON_REPO_URL", "https://github.com/DerekRoberts/vexilon")
-_container_url = f"{VEXILON_REPO_URL}/pkgs/container/vexilon/versions"
-_version_url = _container_url
-if VEXILON_VERSION != "Dev mode":
-    _version_url += f"/versions?filters%5Bversion_type%5D=tagged&query={urllib.parse.quote(VEXILON_VERSION)}"
+_version_url = f"{VEXILON_REPO_URL}/pkgs/container/vexilon/versions"
 
-# Standard examples
-EXAMPLES = [
-    ["What are the steps for a Step 1 grievance?", "Lookup"],
-    ["How do I report a safety hazard?", "Lookup"],
-    ["What are the shift premium rates?", "Lookup"],
-    ["Tell me about the sick leave policy?", "Lookup"]
-]
+# Custom CSS just for the height—nothing decorative
+CSS = """
+footer {display: none !important;}
+.main-container { height: 100vh !important; }
+"""
 
-# The "Vanilla Startup Guide" approach: Pure ChatInterface
-demo = gr.ChatInterface(
-    fn=chat_fn,
-    title="BCGEU Navigator",
-    description=f"""
-        <div style="text-align: center; color: #6b7280; font-size: 0.85rem;">
-            <a href="{VEXILON_REPO_URL}" target="_blank" style="color: #3b82f6; text-decoration: none;">GitHub</a>
-            &nbsp;&nbsp;•&nbsp;&nbsp;
-            <a href="{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md" target="_blank" style="color: #3b82f6; text-decoration: none;">Privacy</a>
-            &nbsp;&nbsp;•&nbsp;&nbsp;
-            <a href="{_version_url}" target="_blank" style="color: #3b82f6; text-decoration: none;">{html.escape(VEXILON_VERSION)}</a>
-        </div>
-    """,
-    additional_inputs=[
-        gr.Dropdown(
-            choices=["Lookup", "Grieve", "Manage"],
-            value="Lookup",
-            label="Operational Role"
+with gr.Blocks(title="BCGEU Navigator", css=CSS, fill_height=True) as demo:
+    with gr.Column(elem_classes="main-container"):
+        # 1. Clean Inline Header
+        with gr.Row():
+            gr.HTML("<div style='display: flex; height: 100%; align-items: center;'><h3 style='margin: 0;'>BCGEU Navigator</h3></div>")
+            persona = gr.Dropdown(
+                choices=["Lookup", "Grieve", "Manage"],
+                value="Lookup",
+                show_label=False,
+                container=False,
+                min_width=100
+            )
+        
+        # 2. The Chatbot (fills available space)
+        chatbot = gr.Chatbot(
+            show_label=False, 
+            type="messages", 
+            scale=1
         )
-    ],
-    examples=EXAMPLES,
-    fill_height=True
-)
+        
+        # 3. Input Row
+        with gr.Row():
+            msg = gr.Textbox(
+                show_label=False,
+                placeholder="Type a message...",
+                container=False,
+                scale=7
+            )
+            submit = gr.Button("Send", variant="primary", scale=1)
+
+        # 4. Standard Examples (as chips)
+        gr.Examples(
+            examples=[
+                "What are the steps for a Step 1 grievance?",
+                "How do I report a safety hazard?",
+                "What are the shift premium rates?",
+                "Tell me about the sick leave policy?"
+            ],
+            inputs=msg,
+            label=None
+        )
+
+        # 5. Clean Footer
+        gr.HTML(f"""
+            <div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding-bottom: 10px;">
+                <a href="{VEXILON_REPO_URL}" target="_blank" style="color: #3b82f6; text-decoration: none;">GitHub</a>
+                &nbsp;&nbsp;•&nbsp;&nbsp;
+                <a href="{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md" target="_blank" style="color: #3b82f6; text-decoration: none;">Privacy</a>
+                &nbsp;&nbsp;•&nbsp;&nbsp;
+                <a href="{_version_url}" target="_blank" style="color: #3b82f6; text-decoration: none;">{html.escape(VEXILON_VERSION)}</a>
+            </div>
+        """)
+
+    # Event handlers
+    msg.submit(chat_fn, [msg, chatbot, persona], [msg, chatbot])
+    submit.click(chat_fn, [msg, chatbot, persona], [msg, chatbot])
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 7860))
