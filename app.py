@@ -13,6 +13,8 @@ import urllib.parse
 from collections import OrderedDict
 from collections.abc import AsyncIterator
 from pathlib import Path
+import threading
+import tempfile
 from threading import Lock
 
 import numpy as np
@@ -46,6 +48,9 @@ INTEGRITY_WARNING: str | None = None
 
 VEXILON_VERSION = os.getenv("VEXILON_VERSION", "Dev mode")
 VEXILON_REPO_URL = os.getenv("VEXILON_REPO_URL", "https://github.com/DerekRoberts/vexilon")
+GITHUB_LABOUR_LAW_URL = os.getenv(
+    "VEXILON_KNOWLEDGE_URL", f"{VEXILON_REPO_URL}/tree/main/data/labour_law"
+)
 
 # Models
 DEFAULT_MODEL_LLM = os.getenv("VEXILON_DEFAULT_MODEL", "claude-haiku-4-5-20251001")
@@ -165,6 +170,59 @@ async def rag_review_stream(message: str, history: list[dict], persona_mode: str
         async for text in stream.text_stream:
             yield text
 
+# ─── UI Utility Functions ───────────────────────────────────────────────────
+def _get_download_source_files() -> list[Path]:
+    """Scan LABOUR_LAW_DIR for PDF files (human downloads). Excludes tests/."""
+    if not LABOUR_LAW_DIR.exists(): return []
+    tests_dir = LABOUR_LAW_DIR / "tests"
+    pdfs = [p for p in LABOUR_LAW_DIR.rglob("*.pdf") if not p.is_relative_to(tests_dir)]
+    return sorted(list(set(pdfs)), key=lambda p: str(p))
+
+def build_pdf_download_links() -> str:
+    """Scan labour_law for PDFs and return a Markdown list of download links."""
+    files = _get_download_source_files()
+    if not files: return ""
+    lines = ["**Download Documents:**"]
+    for f in files:
+        display_name = f.stem.replace("_", " ").title()
+        display_name = display_name.replace("Bcgeu", "BCGEU").replace("Main Agreement", "Agreement")
+        rel_path = f.relative_to(Path("."))
+        encoded_path = urllib.parse.quote(str(rel_path))
+        lines.append(f"* [{display_name}](/file={encoded_path})")
+    return "\n".join(lines)
+
+def history_to_markdown(history: list[dict]) -> str:
+    """Convert chat history to a Markdown string for export."""
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    md = f"# Vexilon Conversation Export - {timestamp}\n\n"
+    for turn in history:
+        role = turn["role"].capitalize()
+        content = turn["content"]
+        if isinstance(content, list):
+            text_parts = [part.get("text", "") if isinstance(part, dict) else str(part) for part in content]
+            content = "".join(text_parts)
+        md += f"### {role}\n{content}\n\n"
+    return md
+
+def markdown_to_history(file_path: str) -> list[dict]:
+    """Parse a Markdown conversation file back into a list of dicts."""
+    with open(file_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    history, current_role, current_content = [], None, []
+    for line in lines:
+        new_role = None
+        if line.startswith("### User"): new_role = "user"
+        elif line.startswith("### Assistant"): new_role = "assistant"
+        if new_role:
+            if current_role:
+                history.append({"role": current_role, "content": "\n".join(current_content).strip()})
+            current_role, current_content = new_role, []
+        elif current_role:
+            current_content.append(line.rstrip("\n"))
+    if current_role:
+        history.append({"role": current_role, "content": "\n".join(current_content).strip()})
+    return history
+
 # ─── Gradio App Logic ───────────────────────────────────────────────────────
 def startup(force_rebuild: bool = False):
     global _index, _chunks, INTEGRITY_WARNING
@@ -215,6 +273,9 @@ CLOSE_ACCORDION_JS = """
 
 _CSS = "footer { display: none !important; }"
 
+if __name__ == "__main__":
+    startup()
+
 with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
     with gr.Row():
         gr.HTML("<div style='display: flex; height: 100%; align-items: center;'><h3 style='margin: 0;'>BCGEU Navigator</h3></div>")
@@ -244,6 +305,39 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
                     js=CLOSE_ACCORDION_JS
                 )
 
+    with gr.Accordion("Resources & Utilities", open=False, elem_id="resources-accordion"):
+        if INTEGRITY_WARNING:
+            gr.Markdown(f"⚠️ {INTEGRITY_WARNING}")
+        gr.Markdown(build_pdf_download_links())
+        gr.Markdown(f"[Browse Full Knowledge Base on GitHub]({GITHUB_LABOUR_LAW_URL})")
+        with gr.Row():
+            export_btn = gr.DownloadButton("⬇️ Save Conversation", variant="secondary", size="sm")
+            import_btn = gr.UploadButton("⬆️ Load Conversation", file_types=[".md"], variant="secondary", size="sm")
+
+    # ── Export / Import Handlers ──────────────────────────────────────────
+    def handle_export(history):
+        if not history: return None
+        md_str = history_to_markdown(history)
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+        filename = f"vexilon_chat_{timestamp}.md"
+        save_path = os.path.join(tempfile.gettempdir(), filename)
+        with open(save_path, "w", encoding="utf-8") as f:
+            f.write(md_str)
+        threading.Timer(600, lambda: os.path.exists(save_path) and os.remove(save_path)).start()
+        return save_path
+
+    export_btn.click(fn=handle_export, inputs=[chatbot], outputs=[export_btn])
+
+    def handle_import(file):
+        if file is None: return gr.update()
+        try:
+            return markdown_to_history(file.name)
+        except Exception:
+            logger.error("[ui] Import failed", exc_info=True)
+            return gr.update()
+
+    import_btn.upload(fn=handle_import, inputs=[import_btn], outputs=[chatbot])
+
     gr.HTML(f"""
         <div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding: 10px 0;">
             <a href="{VEXILON_REPO_URL}" target="_blank" style="color: #3b82f6; text-decoration: none;">GitHub</a>
@@ -258,6 +352,5 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
     submit.click(chat_fn, [msg, chatbot, persona], [msg, chatbot, examples_accordion], js=CLOSE_ACCORDION_JS)
 
 if __name__ == "__main__":
-    startup()
     port = int(os.getenv("PORT", 7860))
     demo.launch(server_name="0.0.0.0", server_port=port, css=_CSS)
