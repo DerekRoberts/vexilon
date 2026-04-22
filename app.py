@@ -215,7 +215,9 @@ CLOSE_ACCORDION_JS = """
 
 _CSS = """
 footer { display: none !important; }
-button.icon-button:not([aria-label]):not([title]) { display: none !important; }
+/* Hide Share (no label) and Clear (aria-label='Clear') */
+.chatbot button.icon-button:not([aria-label]), 
+.chatbot button.icon-button[aria-label="Clear"] { display: none !important; }
 """
 
 with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
