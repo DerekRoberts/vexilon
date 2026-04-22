@@ -329,22 +329,26 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
         msg = gr.Textbox(show_label=False, placeholder="Type a message...", container=False, scale=7)
         submit = gr.Button("Send", variant="primary", scale=1)
 
-    with gr.Accordion("Quick Questions", open=False, elem_id="quick-questions-accordion") as examples_accordion:
+    with gr.Accordion("Steward Toolbox", open=False, elem_id="steward-toolbox") as toolbox:
+        gr.Markdown("### Quick Questions")
         with gr.Row():
             for q in EXAMPLES:
                 example_btn = gr.Button(q, size="sm", variant="secondary")
                 example_btn.click(
                     chat_fn, 
                     [gr.State(q), chatbot, persona], 
-                    [msg, chatbot, examples_accordion],
-                    js=CLOSE_ACCORDION_JS
+                    [msg, chatbot, toolbox],
+                    js=CLOSE_ACCORDION_JS.replace("quick-questions-accordion", "steward-toolbox")
                 )
 
-    with gr.Accordion("Resources & Utilities", open=False, elem_id="resources-accordion"):
+        gr.Markdown("---")
         if INTEGRITY_WARNING:
             gr.Markdown(f"⚠️ {INTEGRITY_WARNING}")
-        gr.Markdown(build_pdf_download_links())
+        gr.Markdown(f"### Reference Documents\n{build_pdf_download_links()}")
         gr.Markdown(f"[Browse Full Knowledge Base on GitHub]({GITHUB_LABOUR_LAW_URL})")
+        
+        gr.Markdown("---")
+        gr.Markdown("### Conversation Tools")
         with gr.Row():
             export_btn = gr.DownloadButton("⬇️ Save Conversation", variant="secondary", size="sm")
             import_btn = gr.UploadButton("⬆️ Load Conversation", file_types=[".md"], variant="secondary", size="sm")
@@ -383,8 +387,8 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
         </div>
     """)
 
-    msg.submit(chat_fn, [msg, chatbot, persona], [msg, chatbot, examples_accordion], js=CLOSE_ACCORDION_JS)
-    submit.click(chat_fn, [msg, chatbot, persona], [msg, chatbot, examples_accordion], js=CLOSE_ACCORDION_JS)
+    msg.submit(chat_fn, [msg, chatbot, persona], [msg, chatbot, toolbox], js=CLOSE_ACCORDION_JS.replace("quick-questions-accordion", "steward-toolbox"))
+    submit.click(chat_fn, [msg, chatbot, persona], [msg, chatbot, toolbox], js=CLOSE_ACCORDION_JS.replace("quick-questions-accordion", "steward-toolbox"))
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 7860))
