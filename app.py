@@ -1588,9 +1588,9 @@ def build_ui() -> "gr.Blocks":
         # ── Chip click handlers — populate input and auto-submit ──────────────
         for chip in chip_btns:
             chip.click(
-                fn=lambda q: (q, gr.update(selected="chat_tab")),
+                fn=lambda q: q,
                 inputs=[chip],
-                outputs=[msg_input, tabs],
+                outputs=[msg_input],
             ).then(
                 fn=submit,
                 inputs=submit_inputs,
