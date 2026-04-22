@@ -111,9 +111,16 @@ footer {
     display: none !important;
 }
 
-/* Allow Chatbot to squish infinitely on short monitors to prevent clipping */
-.chatbot {
+/* 
+ * ULTIMATE VIEWPORT SQUISH OVERRIDE
+ * Gradio's Chatbot has a hardcoded min-height of ~400px.
+ * On short viewports (< 500px), this forces elements off the bottom of the screen.
+ * These rules violently disable those minimums so the Chatbot can squish infinitely,
+ * guaranteeing the input box and accordions ALWAYS stay on screen.
+ */
+#chatbot, #chatbot > .wrap, #chatbot > .wrap > .wrapper, #chatbot .bubble-wrap {
     min-height: 0 !important;
+    flex-basis: 0 !important;
 }
 """
 
@@ -1498,12 +1505,21 @@ def build_ui() -> "gr.Blocks":
             
         chat_interface = gr.ChatInterface(
             fn=chat_fn,
-            chatbot=gr.Chatbot(show_label=False, scale=1, render=False),
+            chatbot=gr.Chatbot(show_label=False, elem_id="chatbot", scale=1, render=False),
             additional_inputs=[persona_selector],
-            examples=[[q, "Lookup"] for q in EXAMPLE_QUESTIONS],
             title=None,
             fill_height=True,
         )
+        
+        with gr.Accordion("Quick Questions", open=False):
+            with gr.Row(elem_classes="examples-row"):
+                for q in EXAMPLE_QUESTIONS:
+                    btn = gr.Button(q, size="sm", variant="secondary")
+                    btn.click(
+                        fn=lambda text: text,
+                        inputs=[gr.State(q)],
+                        outputs=[chat_interface.textbox]
+                    )
         
         with gr.Accordion("Reference Documents & Utilities", open=False):
             gr.Markdown(build_pdf_download_links())
