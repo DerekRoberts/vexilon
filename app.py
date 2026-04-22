@@ -1472,16 +1472,6 @@ async def chat_fn(message: str, history: list[dict], persona_mode: str, request:
 def build_ui() -> "gr.Blocks":
     """Assemble and return the Gradio Blocks application."""
     
-    # Use the expected pattern: gr.ChatInterface
-    persona_selector = gr.Dropdown(
-        choices=["Lookup", "Grieve", "Manage"],
-        value="Lookup",
-        label="Operational Role",
-        show_label=False,
-        container=False,
-        elem_id="persona_selector",
-    )
-    
     # We wrap in Blocks so we can still provide the custom header and footer utilities
     with gr.Blocks(title="Vexilon: BCGEU Steward Assistant", fill_height=True) as demo:
         gr.Markdown("### BCGEU Steward Assistant")
@@ -1490,7 +1480,14 @@ def build_ui() -> "gr.Blocks":
             
         chat_interface = gr.ChatInterface(
             fn=chat_fn,
-            additional_inputs=[persona_selector],
+            additional_inputs=[
+                gr.Dropdown(
+                    choices=["Lookup", "Grieve", "Manage"],
+                    value="Lookup",
+                    label="Operational Role",
+                )
+            ],
+            additional_inputs_accordion=gr.Accordion("Role Options", open=True),
             examples=[[q, "Lookup"] for q in EXAMPLE_QUESTIONS],
             title=None,
             fill_height=True,
