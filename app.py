@@ -19,6 +19,7 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
     
     gr.ChatInterface(
         fn=chat_fn,
+        chatbot=gr.Chatbot(show_label=False),
         additional_inputs=[persona],
         fill_height=True
     )
