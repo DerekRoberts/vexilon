@@ -107,10 +107,18 @@ Run the **`watch`** service to enable hot-reloading. When you modify `app.py`, `
 
 ```bash
 export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
-podman compose up --build watch
+podman compose up --profile dev watch
 ```
 
 The container uses a multi-stage build and pre-indexes the agreement at build time for zero-downtime startup.
+
+**Alternative: Skip tests and run app directly**
+To run the app without running tests first (faster for iteration):
+
+```bash
+export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
+podman compose up vexilon
+```
 
 **Alternatives:**
 
@@ -131,7 +139,7 @@ Check with `echo $ANTHROPIC_API_KEY` and re-export before running:
 
 ````bash
 export ANTHROPIC_API_KEY=<YOUR_ANTHROPIC_API_KEY>
-podman-compose up
+podman compose up
 ````
 
 ## Usage
@@ -287,7 +295,7 @@ HF_TOKEN=YOUR_HF_TOKEN ./.github/scripts/deploy.sh sha-$(git rev-parse --short H
 
 ### Running tests
 
-Vexilon uses a **Quality Gate** pattern in `compose.yml` — the app will not start unless the test suite passes.
+Vexilon can run tests independently. The app no longer requires tests to pass before launching.
 
 #### Test tiers
 
