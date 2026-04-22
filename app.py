@@ -206,7 +206,7 @@ def build_pdf_download_links() -> str:
     """Scan labour_law for PDFs and return a Markdown list of download links."""
     files = _get_download_source_files()
     if not files: return ""
-    lines = ["**Download Documents:**"]
+    lines = []
     for f in files:
         display_name = f.stem.replace("_", " ").title()
         display_name = display_name.replace("Bcgeu", "BCGEU").replace("Main Agreement", "Agreement")
