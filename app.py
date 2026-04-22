@@ -1,3 +1,4 @@
+# BCGEU Navigator - UI Heartbeat
 import os
 import html
 import urllib.parse
