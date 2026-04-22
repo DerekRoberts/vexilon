@@ -1495,7 +1495,7 @@ def build_ui() -> "gr.Blocks":
             )
 
         # ── Resources & Utilities ─────────────────────────────────────────────
-        with gr.Accordion("Resources & Utilities", open=False, id="resources_accordion"):
+        with gr.Accordion("Resources & Utilities", open=False, elem_id="resources_accordion"):
             if INTEGRITY_WARNING:
                 gr.Markdown(f"{INTEGRITY_WARNING}")
 
