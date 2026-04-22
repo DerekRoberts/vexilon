@@ -7,14 +7,15 @@ def chat_fn(message, history, persona):
 
 with gr.Blocks(title="Vexilon", fill_height=True) as demo:
     with gr.Row():
-        gr.Markdown("### Vexilon", scale=3)
-        persona = gr.Dropdown(
-            choices=["Lookup", "Grieve", "Manage"],
-            value="Lookup",
-            show_label=False,
-            container=False,
-            scale=1
-        )
+        with gr.Column(scale=3):
+            gr.Markdown("### Vexilon")
+        with gr.Column(scale=1):
+            persona = gr.Dropdown(
+                choices=["Lookup", "Grieve", "Manage"],
+                value="Lookup",
+                show_label=False,
+                container=False
+            )
     
     gr.ChatInterface(
         fn=chat_fn,
