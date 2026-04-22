@@ -19,6 +19,14 @@ VEXILON_VERSION = get_vexilon_info()
 VEXILON_REPO_URL = os.getenv("VEXILON_REPO_URL", "https://github.com/DerekRoberts/vexilon")
 _version_url = f"{VEXILON_REPO_URL}/pkgs/container/vexilon/versions"
 
+# Simplified list for manual gr.Examples targeting a single Textbox
+EXAMPLES = [
+    "What are the steps for a Step 1 grievance?",
+    "How do I report a safety hazard?",
+    "What are the shift premium rates?",
+    "Tell me about the sick leave policy?"
+]
+
 with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
     # 1. Clean Inline Header
     with gr.Row():
@@ -34,7 +42,6 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
     # 2. The Chatbot (fills available space)
     chatbot = gr.Chatbot(
         show_label=False, 
-        type="messages", 
         scale=1,
         min_height=400
     )
@@ -51,12 +58,7 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
 
     # 4. Standard Examples (as chips)
     gr.Examples(
-        examples=[
-            "What are the steps for a Step 1 grievance?",
-            "How do I report a safety hazard?",
-            "What are the shift premium rates?",
-            "Tell me about the sick leave policy?"
-        ],
+        examples=EXAMPLES,
         inputs=msg,
         label=None
     )
