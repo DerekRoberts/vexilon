@@ -118,9 +118,8 @@ footer {
  * These rules violently disable those minimums so the Chatbot can squish infinitely,
  * guaranteeing the input box and accordions ALWAYS stay on screen.
  */
-#chatbot, #chatbot > .wrap, #chatbot > .wrap > .wrapper, #chatbot .bubble-wrap {
+#chatbot {
     min-height: 0 !important;
-    flex-basis: 0 !important;
 }
 """
 
