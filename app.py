@@ -412,7 +412,7 @@ def build_pdf_download_links() -> str:
     if not files:
         return ""
 
-    lines = ["**Download Documents:**"]
+    lines = ["**Download Documents:**\n<ul style='padding-left: 18px; margin-top: 6px; margin-bottom: 0;'>"]
     for f in files:
         # Use pathlib to get cleaner names and resolve Gradio's /file= path
         display_name = f.stem.replace("_", " ").title()
@@ -422,7 +422,9 @@ def build_pdf_download_links() -> str:
         # URL encode the relative path for Gradio's internal file serving
         rel_path = f.relative_to(Path("."))
         encoded_path = urllib.parse.quote(str(rel_path))
-        lines.append(f"[{display_name}](/file={encoded_path})<br>")
+        lines.append(f"<li style='margin-bottom: 4px;'><a href='/file={encoded_path}' target='_blank'>{display_name}</a></li>")
+        
+    lines.append("</ul>")
 
     return "\n".join(lines)
 
