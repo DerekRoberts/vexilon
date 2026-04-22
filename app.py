@@ -213,12 +213,7 @@ CLOSE_ACCORDION_JS = """
 }
 """
 
-_CSS = """
-footer { display: none !important; }
-/* Hide Share (no label) and Clear (aria-label='Clear') */
-.chatbot button.icon-button:not([aria-label]), 
-.chatbot button.icon-button[aria-label="Clear"] { display: none !important; }
-"""
+_CSS = "footer { display: none !important; }"
 
 with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
     with gr.Row():
