@@ -30,12 +30,13 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
             min_width=100
         )
     
-    gr.ChatInterface(
-        fn=chat_fn,
-        chatbot=gr.Chatbot(show_label=False),
-        additional_inputs=[persona],
-        fill_height=True
-    )
+    with gr.Column(scale=1):
+        gr.ChatInterface(
+            fn=chat_fn,
+            chatbot=gr.Chatbot(show_label=False),
+            additional_inputs=[persona],
+            fill_height=True
+        )
 
     gr.HTML(f"""
         <div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding-top: 10px;">
