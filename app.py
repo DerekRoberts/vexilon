@@ -1,4 +1,4 @@
-# BCGEU Navigator - UI Version: 2026-04-22_12-53
+# BCGEU Navigator - UI Version: 2026-04-22_12-54
 import os
 import html
 import urllib.parse
@@ -11,9 +11,15 @@ def get_vexilon_info():
 def chat_fn(message, history, persona):
     if history is None:
         history = []
+    
+    # Safety fallback for the persona mode
+    persona_mode = persona if persona else "Lookup"
+    
     history.append({"role": "user", "content": message})
-    response = f"BCGEU Navigator ({persona} Mode) received: {message}"
+    response = f"BCGEU Navigator ({persona_mode} Mode) received: {message}"
     history.append({"role": "assistant", "content": response})
+    
+    # Returning the update to ensure the accordion closes as a fallback to JS
     return "", history, gr.update(open=False)
 
 VEXILON_VERSION = get_vexilon_info()
@@ -37,6 +43,7 @@ CLOSE_ACCORDION_JS = """
 """
 
 with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
+    # 1. Clean Inline Header
     with gr.Row():
         gr.HTML("<div style='display: flex; height: 100%; align-items: center;'><h3 style='margin: 0;'>BCGEU Navigator</h3></div>")
         persona = gr.Dropdown(
@@ -44,15 +51,18 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
             value="Lookup",
             show_label=False,
             container=False,
-            min_width=100
+            min_width=100,
+            interactive=True
         )
     
+    # 2. The Chatbot
     chatbot = gr.Chatbot(
         show_label=False, 
         scale=1,
         min_height=400
     )
     
+    # 3. Input Row
     with gr.Row():
         msg = gr.Textbox(
             show_label=False,
@@ -62,6 +72,7 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
         )
         submit = gr.Button("Send", variant="primary", scale=1)
 
+    # 4. Manual Example Buttons
     with gr.Accordion("Quick Questions", open=False, elem_id="quick-questions-accordion") as examples_accordion:
         with gr.Row():
             for q in EXAMPLES:
@@ -73,6 +84,7 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
                     js=CLOSE_ACCORDION_JS
                 )
 
+    # 5. Clean Footer
     gr.HTML(f"""
         <div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding: 10px 0;">
             <a href="{VEXILON_REPO_URL}" target="_blank" style="color: #3b82f6; text-decoration: none;">GitHub</a>
@@ -83,6 +95,7 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
         </div>
     """)
 
+    # Event handlers for manual input
     msg.submit(chat_fn, [msg, chatbot, persona], [msg, chatbot, examples_accordion], js=CLOSE_ACCORDION_JS)
     submit.click(chat_fn, [msg, chatbot, persona], [msg, chatbot, examples_accordion], js=CLOSE_ACCORDION_JS)
 
