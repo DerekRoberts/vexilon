@@ -7,7 +7,7 @@ def chat_fn(message, history, persona):
 
 with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
     with gr.Row(variant="compact"):
-        gr.HTML("<h3 style='margin: 0; padding-top: 10px; line-height: 1.2;'>BCGEU Navigator</h3>")
+        gr.HTML("<div style='height: 40px; display: flex; align-items: center;'><span style='font-size: 1.25rem; font-weight: bold;'>BCGEU Navigator</span></div>")
         persona = gr.Dropdown(
             choices=["Lookup", "Grieve", "Manage"],
             value="Lookup",
