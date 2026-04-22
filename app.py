@@ -15,7 +15,7 @@ with gr.Blocks(title="Vexilon", fill_height=True) as demo:
         )
         gr.Markdown("Choose a role to change how Vexilon responds.")
 
-    chatbot = gr.Chatbot(fill_height=True, label="Vexilon")
+    chatbot = gr.Chatbot(label="Vexilon")
     
     # Standard ChatInterface logic in a manual wrapper
     gr.ChatInterface(
