@@ -1,4 +1,4 @@
-# BCGEU Navigator - UI Version: 2026-04-22_13-03
+# BCGEU Navigator - UI Version: 2026-04-22_13-12
 import os
 import html
 import urllib.parse
@@ -28,11 +28,12 @@ EXAMPLES = [
     "Tell me about the sick leave policy?"
 ]
 
+# Live-verified JS logic: Gradio 6 accordions use a custom button toggle, not native <details>
 CLOSE_ACCORDION_JS = """
 () => {
-    const accordion = document.querySelector('#quick-questions-accordion');
-    if (accordion) {
-        accordion.open = false;
+    const btn = document.querySelector('#quick-questions-accordion .label-wrap');
+    if (btn && btn.classList.contains('open')) {
+        btn.click();
     }
 }
 """
@@ -57,6 +58,7 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
         msg = gr.Textbox(show_label=False, placeholder="Type a message...", container=False, scale=7)
         submit = gr.Button("Send", variant="primary", scale=1)
 
+    # Note: elem_id is used by the JS hook to find the button child
     with gr.Accordion("Quick Questions", open=False, elem_id="quick-questions-accordion") as examples_accordion:
         with gr.Row():
             for q in EXAMPLES:
