@@ -62,8 +62,7 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
         examples_handler = gr.Examples(
             examples=EXAMPLES,
             inputs=msg,
-            label=None,
-            run_on_click=True
+            label=None
         )
 
     # 5. Clean Footer
