@@ -56,12 +56,13 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
         )
         submit = gr.Button("Send", variant="primary", scale=1)
 
-    # 4. Standard Examples (as chips)
-    gr.Examples(
-        examples=EXAMPLES,
-        inputs=msg,
-        label=None
-    )
+    # 4. Standard Examples (in a compact accordion)
+    with gr.Accordion("Quick Questions", open=False):
+        gr.Examples(
+            examples=EXAMPLES,
+            inputs=msg,
+            label=None
+        )
 
     # 5. Clean Footer
     gr.HTML(f"""
