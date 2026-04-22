@@ -23,6 +23,16 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
         fill_height=True
     )
 
+    gr.HTML("""
+        <div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding-top: 10px;">
+            <a href="https://github.com/DerekRoberts/vexilon" target="_blank" style="color: #3b82f6; text-decoration: none;">GitHub</a>
+            &nbsp;&nbsp;•&nbsp;&nbsp;
+            <a href="https://github.com/DerekRoberts/vexilon/blob/main/docs/PRIVACY.md" target="_blank" style="color: #3b82f6; text-decoration: none;">Privacy</a>
+            &nbsp;&nbsp;•&nbsp;&nbsp;
+            <span>Dev mode</span>
+        </div>
+    """)
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 7860))
     demo.launch(
