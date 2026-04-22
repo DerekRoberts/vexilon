@@ -21,10 +21,10 @@ if VEXILON_VERSION != "Dev mode":
 
 # Standard examples from the original Vexilon UI
 EXAMPLES = [
-    "What are the steps for a Step 1 grievance?",
-    "How do I report a safety hazard?",
-    "What are the shift premium rates?",
-    "Tell me about the sick leave policy."
+    ["What are the steps for a Step 1 grievance?", "Lookup"],
+    ["How do I report a safety hazard?", "Lookup"],
+    ["What are the shift premium rates?", "Lookup"],
+    ["Tell me about the sick leave policy?", "Lookup"]
 ]
 
 with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
