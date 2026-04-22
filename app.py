@@ -295,7 +295,17 @@ CLOSE_ACCORDION_JS = """
 }
 """
 
-_CSS = "footer { display: none !important; }"
+_CSS = """
+footer { display: none !important; }
+/* Hanging indent for the Resources & Utilities list items */
+#resources-accordion .prose ul {
+    list-style-position: outside;
+    padding-left: 1.5rem;
+}
+#resources-accordion .prose li {
+    margin-bottom: 0.5rem;
+}
+"""
 
 if __name__ == "__main__":
     startup()
