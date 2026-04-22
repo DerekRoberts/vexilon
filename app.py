@@ -329,7 +329,7 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
         msg = gr.Textbox(show_label=False, placeholder="Type a message...", container=False, scale=7)
         submit = gr.Button("Send", variant="primary", scale=1)
 
-    with gr.Accordion("Steward Toolbox", open=False, elem_id="steward-toolbox") as toolbox:
+    with gr.Accordion("Toolbox", open=False, elem_id="steward-toolbox") as toolbox:
         gr.Markdown("### Quick Questions")
         with gr.Row():
             for q in EXAMPLES:
