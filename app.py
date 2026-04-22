@@ -22,10 +22,11 @@ VEXILON_REPO_URL = os.getenv("VEXILON_REPO_URL", "https://github.com/DerekRobert
 _version_url = f"{VEXILON_REPO_URL}/pkgs/container/vexilon/versions"
 
 EXAMPLES = [
-    "What are the steps for a Step 1 grievance?",
-    "How do I report a safety hazard?",
-    "What are the shift premium rates?",
-    "Tell me about the sick leave policy?"
+    "What are the just cause requirements for discipline?",
+    "What rights do stewards have in investigation meetings?",
+    "What is the nexus test for establishing a link in off-duty conduct cases?",
+    "Show me the Harassment Threshold test.",
+    "Does my employer have a social media policy?"
 ]
 
 # Live-verified JS logic: Gradio 6 accordions use a custom button toggle, not native <details>
