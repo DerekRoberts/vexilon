@@ -1,14 +1,22 @@
 import os
 import gradio as gr
 
-def chat_fn(message, history):
+def chat_fn(message, history, persona):
     # A generic placeholder for the future RAG functionality
-    return f"Vexilon (Bland Mode) received: {message}"
+    return f"Vexilon ({persona} Mode) received: {message}"
 
 demo = gr.ChatInterface(
     fn=chat_fn,
     title="Vexilon",
     description="Standard Gradio Interface",
+    additional_inputs=[
+        gr.Dropdown(
+            choices=["Lookup", "Grieve", "Manage"],
+            value="Lookup",
+            label="Operational Role"
+        )
+    ],
+    fill_height=True
 )
 
 if __name__ == "__main__":
