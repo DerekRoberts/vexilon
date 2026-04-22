@@ -1493,7 +1493,7 @@ def build_ui() -> "gr.Blocks":
             
         chat_interface = gr.ChatInterface(
             fn=chat_fn,
-            chatbot=gr.Chatbot(show_label=False, elem_id="chatbot"),
+            chatbot=gr.Chatbot(show_label=False, elem_id="chatbot", scale=1),
             additional_inputs=[persona_selector],
             title=None,
             fill_height=True,
