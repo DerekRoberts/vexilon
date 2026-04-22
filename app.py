@@ -210,6 +210,7 @@ def build_pdf_download_links() -> str:
     for f in files:
         display_name = f.stem.replace("_", " ").title()
         display_name = display_name.replace("Bcgeu", "BCGEU").replace("Main Agreement", "Agreement")
+        display_name = display_name.replace("Bc ", "BC ").replace(" Bc", " BC")
         rel_path = f.relative_to(Path("."))
         encoded_path = urllib.parse.quote(str(rel_path))
         lines.append(f"* [{display_name}](/file={encoded_path})")
