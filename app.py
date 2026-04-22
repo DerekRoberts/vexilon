@@ -1492,7 +1492,7 @@ def build_ui() -> "gr.Blocks":
                         label="Steward Assistant",
                         show_label=False,
                         scale=1,
-                        height="100%",
+                        
                         elem_id="chatbot",
                     )
 
