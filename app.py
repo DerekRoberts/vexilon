@@ -5,10 +5,10 @@ def chat_fn(message, history, persona):
     # A generic placeholder for the future RAG functionality
     return f"Vexilon ({persona} Mode) received: {message}"
 
-with gr.Blocks(title="Vexilon", fill_height=True) as demo:
+with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
     with gr.Row():
         with gr.Column(scale=3):
-            gr.Markdown("### Vexilon")
+            gr.Markdown("### BCGEU Navigator")
         with gr.Column(scale=1):
             persona = gr.Dropdown(
                 choices=["Lookup", "Grieve", "Manage"],
