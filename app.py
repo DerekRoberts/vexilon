@@ -1485,6 +1485,7 @@ def build_ui() -> "gr.Blocks":
                 show_label=False,
                 container=False,
                 scale=1,
+                elem_id="persona_selector",
             )
 
         if INTEGRITY_WARNING:
