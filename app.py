@@ -8,7 +8,8 @@ def get_vexilon_info():
     return version
 
 def chat_fn(message, history, persona):
-    # This matches the original Vexilon chat logic structure
+    if history is None:
+        history = []
     history.append({"role": "user", "content": message})
     response = f"BCGEU Navigator ({persona} Mode) received: {message}"
     history.append({"role": "assistant", "content": response})
@@ -18,64 +19,58 @@ VEXILON_VERSION = get_vexilon_info()
 VEXILON_REPO_URL = os.getenv("VEXILON_REPO_URL", "https://github.com/DerekRoberts/vexilon")
 _version_url = f"{VEXILON_REPO_URL}/pkgs/container/vexilon/versions"
 
-# Custom CSS just for the height—nothing decorative
-CSS = """
-footer {display: none !important;}
-.main-container { height: 100vh !important; }
-"""
-
-with gr.Blocks(title="BCGEU Navigator", css=CSS, fill_height=True) as demo:
-    with gr.Column(elem_classes="main-container"):
-        # 1. Clean Inline Header
-        with gr.Row():
-            gr.HTML("<div style='display: flex; height: 100%; align-items: center;'><h3 style='margin: 0;'>BCGEU Navigator</h3></div>")
-            persona = gr.Dropdown(
-                choices=["Lookup", "Grieve", "Manage"],
-                value="Lookup",
-                show_label=False,
-                container=False,
-                min_width=100
-            )
-        
-        # 2. The Chatbot (fills available space)
-        chatbot = gr.Chatbot(
-            show_label=False, 
-            type="messages", 
-            scale=1
+with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
+    # 1. Clean Inline Header
+    with gr.Row():
+        gr.HTML("<div style='display: flex; height: 100%; align-items: center;'><h3 style='margin: 0;'>BCGEU Navigator</h3></div>")
+        persona = gr.Dropdown(
+            choices=["Lookup", "Grieve", "Manage"],
+            value="Lookup",
+            show_label=False,
+            container=False,
+            min_width=100
         )
-        
-        # 3. Input Row
-        with gr.Row():
-            msg = gr.Textbox(
-                show_label=False,
-                placeholder="Type a message...",
-                container=False,
-                scale=7
-            )
-            submit = gr.Button("Send", variant="primary", scale=1)
-
-        # 4. Standard Examples (as chips)
-        gr.Examples(
-            examples=[
-                "What are the steps for a Step 1 grievance?",
-                "How do I report a safety hazard?",
-                "What are the shift premium rates?",
-                "Tell me about the sick leave policy?"
-            ],
-            inputs=msg,
-            label=None
+    
+    # 2. The Chatbot (fills available space)
+    chatbot = gr.Chatbot(
+        show_label=False, 
+        type="messages", 
+        scale=1,
+        min_height=400
+    )
+    
+    # 3. Input Row
+    with gr.Row():
+        msg = gr.Textbox(
+            show_label=False,
+            placeholder="Type a message...",
+            container=False,
+            scale=7
         )
+        submit = gr.Button("Send", variant="primary", scale=1)
 
-        # 5. Clean Footer
-        gr.HTML(f"""
-            <div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding-bottom: 10px;">
-                <a href="{VEXILON_REPO_URL}" target="_blank" style="color: #3b82f6; text-decoration: none;">GitHub</a>
-                &nbsp;&nbsp;•&nbsp;&nbsp;
-                <a href="{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md" target="_blank" style="color: #3b82f6; text-decoration: none;">Privacy</a>
-                &nbsp;&nbsp;•&nbsp;&nbsp;
-                <a href="{_version_url}" target="_blank" style="color: #3b82f6; text-decoration: none;">{html.escape(VEXILON_VERSION)}</a>
-            </div>
-        """)
+    # 4. Standard Examples (as chips)
+    gr.Examples(
+        examples=[
+            "What are the steps for a Step 1 grievance?",
+            "How do I report a safety hazard?",
+            "What are the shift premium rates?",
+            "Tell me about the sick leave policy?"
+        ],
+        inputs=msg,
+        label=None
+    )
+
+    # 5. Clean Footer
+    gr.HTML(f"""
+        <div style="text-align: center; color: #6b7280; font-size: 0.85rem; padding: 10px 0;">
+            <a href="{VEXILON_REPO_URL}" target="_blank" style="color: #3b82f6; text-decoration: none;">GitHub</a>
+            &nbsp;&nbsp;•&nbsp;&nbsp;
+            <a href="{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md" target="_blank" style="color: #3b82f6; text-decoration: none;">Privacy</a>
+            &nbsp;&nbsp;•&nbsp;&nbsp;
+            <a href="{_version_url}" target="_blank" style="color: #3b82f6; text-decoration: none;">{html.escape(VEXILON_VERSION)}</a>
+        </div>
+    """)
 
     # Event handlers
     msg.submit(chat_fn, [msg, chatbot, persona], [msg, chatbot])
