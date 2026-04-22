@@ -33,6 +33,12 @@ from vexilon.indexing import (
 )
 
 # ─── Global State & Config ──────────────────────────────────────────────────
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 logger = logging.getLogger(__name__)
 _chunks: list[dict] = []
 _index: "faiss.IndexFlatIP | None" = None
