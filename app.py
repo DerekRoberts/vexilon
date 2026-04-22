@@ -13,13 +13,14 @@ def chat_fn(message, history, persona):
     history.append({"role": "user", "content": message})
     response = f"BCGEU Navigator ({persona} Mode) received: {message}"
     history.append({"role": "assistant", "content": response})
-    return "", history
+    # Return empty message, updated history, and an update to close the accordion
+    return "", history, gr.update(open=False)
 
 VEXILON_VERSION = get_vexilon_info()
 VEXILON_REPO_URL = os.getenv("VEXILON_REPO_URL", "https://github.com/DerekRoberts/vexilon")
 _version_url = f"{VEXILON_REPO_URL}/pkgs/container/vexilon/versions"
 
-# Simplified list for manual gr.Examples targeting a single Textbox
+# Simplified list for manual gr.Examples
 EXAMPLES = [
     "What are the steps for a Step 1 grievance?",
     "How do I report a safety hazard?",
@@ -39,7 +40,7 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
             min_width=100
         )
     
-    # 2. The Chatbot (fills available space)
+    # 2. The Chatbot
     chatbot = gr.Chatbot(
         show_label=False, 
         scale=1,
@@ -57,11 +58,12 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
         submit = gr.Button("Send", variant="primary", scale=1)
 
     # 4. Standard Examples (in a compact accordion)
-    with gr.Accordion("Quick Questions", open=False):
-        gr.Examples(
+    with gr.Accordion("Quick Questions", open=False) as examples_accordion:
+        examples_handler = gr.Examples(
             examples=EXAMPLES,
             inputs=msg,
-            label=None
+            label=None,
+            run_on_click=True
         )
 
     # 5. Clean Footer
@@ -76,8 +78,10 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
     """)
 
     # Event handlers
-    msg.submit(chat_fn, [msg, chatbot, persona], [msg, chatbot])
-    submit.click(chat_fn, [msg, chatbot, persona], [msg, chatbot])
+    msg.submit(chat_fn, [msg, chatbot, persona], [msg, chatbot, examples_accordion])
+    submit.click(chat_fn, [msg, chatbot, persona], [msg, chatbot, examples_accordion])
+    # Connect the examples handler to the same closure logic
+    examples_handler.dataset.click(chat_fn, [msg, chatbot, persona], [msg, chatbot, examples_accordion])
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 7860))
