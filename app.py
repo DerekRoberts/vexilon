@@ -145,6 +145,8 @@ def get_persona_prompt(mode_name: str) -> str:
 # ─── RAG Pipeline Functions ─────────────────────────────────────────────────
 async def condense_query(message: str, history: list[dict]) -> str:
     """Turn the conversation history and new message into a standalone search query."""
+    if isinstance(message, list):
+        message = "".join([p.get("text", "") if isinstance(p, dict) else str(p) for p in message])
     if not history: return message
     client = anthropic.AsyncAnthropic()
     
@@ -266,14 +268,23 @@ def startup(force_rebuild: bool = False):
             INTEGRITY_WARNING = f"⚠️ Index Incomplete: {len(report['failed_files'])} documents failed."
 
 async def chat_fn(message, history, persona):
+    # Convert Gradio 6 ChatMessage objects to dictionaries for backend compatibility
+    if history:
+        history = [
+            h if isinstance(h, dict) else {"role": h.role, "content": h.content}
+            for h in history
+        ]
     history = history or []
     if not message:
-        yield "", history, gr.update()
+        yield gr.update(value=""), history, gr.update()
         return
     
     # 1. Update history with user message
+    if isinstance(message, list):
+        message = "".join([p.get("text", "") if isinstance(p, dict) else str(p) for p in message])
+        
     new_history = history + [{"role": "user", "content": message}]
-    yield "", new_history, gr.update(open=False)
+    yield gr.update(value=""), new_history, gr.update(open=False)
     
     # 2. Stream assistant response
     accumulated = ""
@@ -281,7 +292,7 @@ async def chat_fn(message, history, persona):
         accumulated += chunk
         # Update history with current accumulated response
         current_history = new_history + [{"role": "assistant", "content": accumulated}]
-        yield "", current_history, gr.update(open=False)
+        yield gr.update(), current_history, gr.update(open=False)
 
 # ─── UI Layout ──────────────────────────────────────────────────────────────
 EXAMPLES = [
@@ -392,8 +403,8 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
         </div>
     """)
 
-    msg.submit(chat_fn, [msg, chatbot, persona], [msg, chatbot, toolbox], js=CLOSE_ACCORDION_JS.replace("quick-questions-accordion", "steward-toolbox"))
-    submit.click(chat_fn, [msg, chatbot, persona], [msg, chatbot, toolbox], js=CLOSE_ACCORDION_JS.replace("quick-questions-accordion", "steward-toolbox"))
+    msg.submit(chat_fn, [msg, chatbot, persona], [msg, chatbot, toolbox])
+    submit.click(chat_fn, [msg, chatbot, persona], [msg, chatbot, toolbox])
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 7860))
