@@ -281,7 +281,6 @@ def startup(force_rebuild: bool = False):
             INTEGRITY_WARNING = f"⚠️ Index Incomplete: {len(report['failed_files'])} documents failed."
 
 async def chat_fn(message, history, persona):
-    print(f"[DEBUG] chat_fn triggered for: {message[:20]}...")
     if not message:
         yield "", history, gr.update()
         return
