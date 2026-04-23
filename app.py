@@ -323,7 +323,7 @@ footer { display: none !important; }
     margin-bottom: 0.5rem;
 }
 /* Aggressive button suppression for Gradio 6.x UI stability */
-.message-buttons, .share-button, .undo-button, .retry-button, .copy-button {
+.message-buttons, .share-button, .undo-button, .retry-button, .copy-button, .clear-button, button[aria-label="Clear"] {
     display: none !important;
 }
 """
