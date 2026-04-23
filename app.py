@@ -281,6 +281,7 @@ def startup(force_rebuild: bool = False):
             INTEGRITY_WARNING = f"⚠️ Index Incomplete: {len(report['failed_files'])} documents failed."
 
 async def chat_fn(message, history, persona):
+    print(f"[DEBUG] chat_fn triggered for: {message[:20]}...")
     if not message:
         yield "", history, gr.update()
         return
@@ -410,8 +411,8 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
         </div>
     """)
 
-    msg.submit(chat_fn, [msg, chatbot, persona], [msg, chatbot, toolbox], js=CLOSE_ACCORDION_JS.replace("quick-questions-accordion", "steward-toolbox"))
-    submit.click(chat_fn, [msg, chatbot, persona], [msg, chatbot, toolbox], js=CLOSE_ACCORDION_JS.replace("quick-questions-accordion", "steward-toolbox"))
+    msg.submit(chat_fn, [msg, chatbot, persona], [msg, chatbot, toolbox])
+    submit.click(chat_fn, [msg, chatbot, persona], [msg, chatbot, toolbox])
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 7860))
