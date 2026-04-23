@@ -312,8 +312,7 @@ footer { display: none !important; }
 }
 """
 
-if __name__ == "__main__":
-    startup()
+startup()
 
 with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
     with gr.Row():
