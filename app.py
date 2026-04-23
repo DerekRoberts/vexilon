@@ -166,15 +166,26 @@ async def condense_query(message: str, history: list[dict]) -> str:
         return message
 
 async def get_multi_perspective_context(message: str, history: list[dict]) -> tuple[list[str], str]:
+    logger.info(f"[rag] Condensing query for: {message[:50]}...")
     condensed = await condense_query(message, history)
-    # Simplified retrieval call
+    logger.info(f"[rag] Condensed query: {condensed}")
+    
     queries = [condensed]
+    logger.info(f"[rag] Searching index with {len(queries)} perspectives...")
     all_relevant_chunks = await asyncio.to_thread(search_index_batch, _index, _chunks, queries, [10])
+    
+    if not all_relevant_chunks or not all_relevant_chunks[0]:
+        logger.warning("[rag] No relevant chunks found!")
+        return queries, ""
+        
     context = "\n\n".join([f"[Source: {c['source']}]\n{c['text']}" for c in all_relevant_chunks[0]])
+    logger.info(f"[rag] Context prepared ({len(context)} chars)")
     return queries, context
 
 async def rag_review_stream(message: str, history: list[dict], persona_mode: str = "Lookup") -> AsyncIterator[str]:
+    logger.info(f"[rag] Starting stream for persona: {persona_mode}")
     if _index is None:
+        logger.error("[rag] Cannot start stream: Index is None!")
         yield "⚠️ Index not ready."
         return
 
@@ -185,14 +196,22 @@ async def rag_review_stream(message: str, history: list[dict], persona_mode: str
     system_prompt = get_persona_prompt(persona_mode)
     prompt = f"Context from Knowledge Base:\n{context}\n\nQuestion: {message}"
     
-    async with client.messages.stream(
-        model=CLAUDE_MODEL,
-        max_tokens=2048,
-        system=system_prompt,
-        messages=[{"role": "user", "content": prompt}],
-    ) as stream:
-        async for text in stream.text_stream:
-            yield text
+    logger.info(f"[rag] Opening Anthropic stream with model: {CLAUDE_MODEL}")
+    try:
+        async with client.messages.stream(
+            model=CLAUDE_MODEL,
+            max_tokens=2048,
+            system=system_prompt,
+            messages=[{"role": "user", "content": prompt}],
+        ) as stream:
+            logger.info("[rag] Stream opened, waiting for text_stream...")
+            async for text in stream.text_stream:
+                # logger.debug(f"[rag] Received chunk: {len(text)} chars")
+                yield text
+            logger.info("[rag] Stream completed successfully.")
+    except Exception as e:
+        logger.error(f"[rag] Anthropic stream error: {e}", exc_info=True)
+        raise e
 
 # ─── UI Utility Functions ───────────────────────────────────────────────────
 def _get_download_source_files() -> list[Path]:
