@@ -315,11 +315,11 @@ CLOSE_ACCORDION_JS = """
 _CSS = """
 footer { display: none !important; }
 /* Hanging indent for the Resources & Utilities list items */
-#resources-accordion .prose ul {
+#steward-toolbox .prose ul {
     list-style-position: outside;
     padding-left: 1.5rem;
 }
-#resources-accordion .prose li {
+#steward-toolbox .prose li {
     margin-bottom: 0.5rem;
 }
 /* Aggressive button suppression for Gradio 6.x UI stability */
