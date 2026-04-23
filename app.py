@@ -326,11 +326,6 @@ footer { display: none !important; }
 .message-buttons, .share-button, .undo-button, .retry-button, .copy-button, .clear-button, button[aria-label="Clear"] {
     display: none !important;
 }
-/* Prevent infinite growth in iframes while maintaining responsiveness */
-.is-iframe .gradio-chatbot {
-    max-height: 75vh !important;
-    height: auto !important;
-}
 """
 
 if __name__ == "__main__":
@@ -338,9 +333,23 @@ if __name__ == "__main__":
 
 _HEAD = """
 <script>
-    if (window.self !== window.top) {
-        document.documentElement.classList.add('is-iframe');
-    }
+    (function() {
+        if (window.self !== window.top) {
+            document.documentElement.classList.add('is-iframe');
+            var lockHeight = function() {
+                var chatbot = document.querySelector('.gradio-chatbot');
+                if (chatbot) {
+                    // Lock height to 70% of the INITIAL window height to prevent growth loops
+                    var h = Math.min(window.innerHeight * 0.7, 900);
+                    chatbot.style.setProperty('height', h + 'px', 'important');
+                    chatbot.style.setProperty('max-height', h + 'px', 'important');
+                } else {
+                    setTimeout(lockHeight, 200);
+                }
+            };
+            lockHeight();
+        }
+    })();
 </script>
 """
 
