@@ -1,0 +1,65 @@
+name: Deploy PROD
+
+on:
+  release:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  deploy-prod:
+    if: github.event.release.draft == false
+    runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      contents: read
+      packages: read
+      pull-requests: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Resolve image
+        id: resolve
+        uses: bcgov/actions/image-tracker@main
+        with:
+          package: vexilon
+          token: ${{ github.token }}
+
+      - name: Verify image matches release tag
+        run: |
+          RESOLVED_TAG=$(echo '${{ steps.resolve.outputs.bundle }}' | jq -r '.vexilon')
+          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          echo "Resolved Tag: $RESOLVED_TAG"
+          echo "Release Tag:  $RELEASE_TAG"
+          
+          if [[ -z "$RESOLVED_TAG" ]]; then
+            echo "::error::Could not resolve image tag via image-tracker."
+            exit 1
+          fi
+          
+          if [[ "$RESOLVED_TAG" != "$RELEASE_TAG" ]]; then
+            echo "::error::Resolved tag ($RESOLVED_TAG) does not match release tag ($RELEASE_TAG). This may happen if the container image build is still in progress or failed."
+            exit 1
+          fi
+
+      - name: Push image-based stub to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          TAG=$(echo '${{ steps.resolve.outputs.bundle }}' | jq -r '.vexilon')
+          ./.github/scripts/deploy.sh "$TAG" --prod
+
+      - name: Verify Space boots successfully
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: ./.github/scripts/verify_deployment.sh "DerekRoberts/vexilon"
+
+      - name: Notify Owners on Failure
+        if: failure()
+        uses: bcgov/actions/workflow-notifier@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "PROD Deployment Failure: Vexilon"
+          labels: "critical,deployment,prod"

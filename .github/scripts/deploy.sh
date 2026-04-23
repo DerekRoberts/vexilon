@@ -1,24 +1,56 @@
-# Usage: ./.github/scripts/deploy.sh <image_ref> [space_name] [--dry-run]
-# <image_ref>  : Tag (e.g. 'sha-abc123') or digest (e.g. 'sha256:abc123...')
-# [space_name] : Hugging Face Space ID (Default: DerekRoberts/vexilon)
+# Usage: ./.github/scripts/deploy.sh <image_ref> [--prod] [--dry-run]
+# <image_ref> can be a tag (e.g. 'sha-abc123') or a digest (e.g. 'sha256:abc123...')
+# Default: Targets "DerekRoberts/landru" (TEST).
+# Use --prod as second argument to target "DerekRoberts/vexilon".
 
 # Strict mode + Trace
 set -euo pipefail
 
-IMAGE_REF="${1:-}"
-SPACE_NAME="${2:-DerekRoberts/vexilon}"
+# Usage function
+usage() {
+    echo "Usage: $0 <image_ref> [--prod] [--dry-run]"
+    echo "  <image_ref>: Tag or digest of the image to deploy"
+    echo "  --prod: Target 'DerekRoberts/vexilon' (default is TEST 'DerekRoberts/landru')"
+    echo "  --dry-run: Show what would be done without performing it"
+    exit 1
+}
+
+IMAGE_REF=""
+SPACE_NAME="DerekRoberts/landru"
 DRY_RUN=false
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --prod)
+            echo "[safety] Production mode enabled."
+            SPACE_NAME="DerekRoberts/vexilon"
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            usage
+            ;;
+        *)
+            if [ -z "$IMAGE_REF" ]; then
+                IMAGE_REF="$1"
+            else
+                echo "Error: Multiple image references provided: $IMAGE_REF and $1"
+                usage
+            fi
+            shift
+            ;;
+    esac
+done
 
 if [ -z "$IMAGE_REF" ]; then
     echo "Error: Image reference (e.g. 'sha-abc123' or 'sha256:abc123...') must be provided."
-    echo "Usage: $0 <image_ref> [space_name] [--dry-run]"
-    exit 1
+    usage
 fi
-
-# Detect --dry-run in any position
-for arg in "$@"; do
-    [[ "$arg" == "--dry-run" ]] && DRY_RUN=true
-done
 
 if [ -z "${HF_TOKEN:-}" ] && [ "$DRY_RUN" == "false" ]; then
     echo "Error: HF_TOKEN environment variable must be set."
