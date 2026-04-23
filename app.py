@@ -322,6 +322,10 @@ footer { display: none !important; }
 #resources-accordion .prose li {
     margin-bottom: 0.5rem;
 }
+/* Aggressive button suppression for Gradio 6.x UI stability */
+.message-buttons, .share-button, .undo-button, .retry-button, .copy-button {
+    display: none !important;
+}
 """
 
 if __name__ == "__main__":
@@ -339,7 +343,16 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
             interactive=True
         )
     
-    chatbot = gr.Chatbot(show_label=False, scale=1, height="70vh", min_height=400)
+    chatbot = gr.Chatbot(
+        show_label=False, 
+        scale=1, 
+        height="70vh", 
+        min_height=400,
+        show_copy_button=False,
+        show_share_button=False,
+        show_undo_button=False,
+        show_retry_button=False
+    )
     
     with gr.Row():
         msg = gr.Textbox(show_label=False, placeholder="Type a message...", container=False, scale=7)
