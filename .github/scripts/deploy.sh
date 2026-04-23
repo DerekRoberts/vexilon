@@ -6,25 +6,51 @@
 # Strict mode + Trace
 set -euo pipefail
 
-IMAGE_REF="${1:-}"
-MODE="${2:-}"
+# Usage function
+usage() {
+    echo "Usage: $0 <image_ref> [--prod] [--dry-run]"
+    echo "  <image_ref>: Tag or digest of the image to deploy"
+    echo "  --prod: Target 'DerekRoberts/vexilon' (default is TEST 'DerekRoberts/landru')"
+    echo "  --dry-run: Show what would be done without performing it"
+    exit 1
+}
+
+IMAGE_REF=""
+SPACE_NAME="DerekRoberts/landru"
 DRY_RUN=false
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --prod)
+            echo "[safety] Production mode enabled."
+            SPACE_NAME="DerekRoberts/vexilon"
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            usage
+            ;;
+        *)
+            if [ -z "$IMAGE_REF" ]; then
+                IMAGE_REF="$1"
+            else
+                echo "Error: Multiple image references provided: $IMAGE_REF and $1"
+                usage
+            fi
+            shift
+            ;;
+    esac
+done
 
 if [ -z "$IMAGE_REF" ]; then
     echo "Error: Image reference (e.g. 'sha-abc123' or 'sha256:abc123...') must be provided."
-    exit 1
+    usage
 fi
-
-SPACE_NAME="DerekRoberts/landru"
-if [[ "$MODE" == "--prod" ]]; then
-    echo "[safety] Production mode enabled."
-    SPACE_NAME="DerekRoberts/vexilon"
-fi
-
-# Detect --dry-run in any position
-for arg in "$@"; do
-    [[ "$arg" == "--dry-run" ]] && DRY_RUN=true
-done
 
 if [ -z "${HF_TOKEN:-}" ] && [ "$DRY_RUN" == "false" ]; then
     echo "Error: HF_TOKEN environment variable must be set."
