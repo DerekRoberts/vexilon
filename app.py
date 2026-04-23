@@ -47,9 +47,6 @@ _index: "faiss.IndexFlatIP | None" = None
 INTEGRITY_WARNING: str | None = None
 
 VEXILON_VERSION = os.getenv("VEXILON_VERSION", "Dev mode")
-if len(VEXILON_VERSION) > 12:
-    VEXILON_VERSION = VEXILON_VERSION[:7]
-
 VEXILON_REPO_URL = os.getenv("VEXILON_REPO_URL", "https://github.com/DerekRoberts/vexilon")
 GITHUB_LABOUR_LAW_URL = os.getenv(
     "VEXILON_KNOWLEDGE_URL", f"{VEXILON_REPO_URL}/tree/main/data/labour_law"
@@ -386,7 +383,7 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
             &nbsp;&nbsp;•&nbsp;&nbsp;
             <a href="{VEXILON_REPO_URL}/blob/main/docs/PRIVACY.md" target="_blank" style="color: #3b82f6; text-decoration: none;">Privacy</a>
             &nbsp;&nbsp;•&nbsp;&nbsp;
-            <a href="{VEXILON_REPO_URL}" target="_blank" style="color: #3b82f6; text-decoration: none;">{VEXILON_VERSION}</a>
+            <a href="{VEXILON_REPO_URL}" target="_blank" style="color: #3b82f6; text-decoration: none;">{VEXILON_VERSION[:7] if len(VEXILON_VERSION) > 12 else VEXILON_VERSION}</a>
         </div>
     """)
 
