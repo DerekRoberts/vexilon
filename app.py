@@ -272,11 +272,15 @@ async def chat_fn(message, history, persona):
     
     # 2. Stream assistant response
     accumulated = ""
-    async for chunk in rag_review_stream(message, history, persona):
-        accumulated += chunk
-        # Update history with current accumulated response
-        current_history = new_history + [{"role": "assistant", "content": accumulated}]
-        yield "", current_history, gr.update(open=False)
+    try:
+        async for chunk in rag_review_stream(message, history, persona):
+            accumulated += chunk
+            current_history = new_history + [{"role": "assistant", "content": accumulated}]
+            yield "", current_history, gr.update(open=False)
+    except Exception as e:
+        logger.error(f"[ui] Chat failed: {e}", exc_info=True)
+        error_history = new_history + [{"role": "assistant", "content": f"❌ Error: {str(e)}"}]
+        yield "", error_history, gr.update(open=True)
 
 # ─── UI Layout ──────────────────────────────────────────────────────────────
 EXAMPLES = [
@@ -323,7 +327,7 @@ with gr.Blocks(title="BCGEU Navigator", fill_height=True) as demo:
             interactive=True
         )
     
-    chatbot = gr.Chatbot(show_label=False, scale=1, height="70vh", min_height=400)
+    chatbot = gr.Chatbot(show_label=False, scale=1, height=650, min_height=400)
     
     with gr.Row():
         msg = gr.Textbox(show_label=False, placeholder="Type a message...", container=False, scale=7)
