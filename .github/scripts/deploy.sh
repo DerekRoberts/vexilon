@@ -1,18 +1,24 @@
-# Usage: ./.github/scripts/deploy.sh <image_ref> [space_name] [--dry-run]
-# <image_ref>  : Tag (e.g. 'sha-abc123') or digest (e.g. 'sha256:abc123...')
-# [space_name] : Hugging Face Space ID (Default: DerekRoberts/vexilon)
+# Usage: ./.github/scripts/deploy.sh <image_ref> [--prod] [--dry-run]
+# <image_ref> can be a tag (e.g. 'sha-abc123') or a digest (e.g. 'sha256:abc123...')
+# Default: Targets "DerekRoberts/landru" (TEST).
+# Use --prod as second argument to target "DerekRoberts/vexilon".
 
 # Strict mode + Trace
 set -euo pipefail
 
 IMAGE_REF="${1:-}"
-SPACE_NAME="${2:-DerekRoberts/vexilon}"
+MODE="${2:-}"
 DRY_RUN=false
 
 if [ -z "$IMAGE_REF" ]; then
     echo "Error: Image reference (e.g. 'sha-abc123' or 'sha256:abc123...') must be provided."
-    echo "Usage: $0 <image_ref> [space_name] [--dry-run]"
     exit 1
+fi
+
+SPACE_NAME="DerekRoberts/landru"
+if [[ "$MODE" == "--prod" ]]; then
+    echo "[safety] Production mode enabled."
+    SPACE_NAME="DerekRoberts/vexilon"
 fi
 
 # Detect --dry-run in any position
