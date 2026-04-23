@@ -7,7 +7,7 @@ on:
         description: 'Image tag to deploy, e.g. sha-abc123def...'
         required: false
   push:
-    branches: [feat/**]
+    branches: [main]
 
 permissions: {}
 
