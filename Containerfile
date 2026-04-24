@@ -90,7 +90,9 @@ RUN --mount=type=cache,target=/app/.pdf_cache_mount,uid=1001,gid=1001 \
 
 # ── Final Environment ────────────────────────────────────────────────────────
 ARG VERSION
+ARG REPO_URL
 ENV VEXILON_VERSION=$VERSION
+ENV VEXILON_REPO_URL=$REPO_URL
 
 EXPOSE 7860
 
