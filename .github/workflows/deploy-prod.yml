@@ -39,8 +39,8 @@ jobs:
             exit 1
           fi
           
-          if [[ "$RESOLVED_TAG" != "$RELEASE_TAG" ]]; then
-            echo "::error::Resolved tag ($RESOLVED_TAG) does not match release tag ($RELEASE_TAG). This may happen if the container image build is still in progress or failed."
+          if [[ "$RESOLVED_TAG" != "$RELEASE_TAG" ]] && [[ ! "$RESOLVED_TAG" =~ ^sha- ]]; then
+            echo "::error::Resolved tag ($RESOLVED_TAG) does not match release tag ($RELEASE_TAG) and is not a valid SHA tag. This may happen if the container image build failed."
             exit 1
           fi
 
