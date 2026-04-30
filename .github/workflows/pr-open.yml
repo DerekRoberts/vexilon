@@ -134,14 +134,24 @@ jobs:
     if: needs.check.outputs.triggered == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      packages: read
 
     steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Pull and Start Container
         env:
           # Resolve the real PR head commit SHA independently — validates the SHA pattern
           IMAGE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          declare -l IMAGE="ghcr.io/${{ github.repository }}:sha-${IMAGE_SHA}"
+          # Force lowercase for GHCR namespace compliance
+          IMAGE=$(echo "ghcr.io/${{ github.repository }}:sha-${IMAGE_SHA}" | tr '[:upper:]' '[:lower:]')
           podman pull $IMAGE
           podman run -d -p 7860:7860 --name vexilon-${{ github.event.pull_request.number || github.run_id }} -e ANTHROPIC_API_KEY=sk-ant-test123 $IMAGE
 
