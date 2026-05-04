@@ -2,7 +2,6 @@
 FROM python:3.14-slim AS base
 
 # Silence Hugging Face nag messages globally
-LABEL rebuild_trigger="$(date)"
 ENV HF_HOME=/hf_cache \
     EMBED_MODEL=/hf_cache
 
@@ -70,9 +69,9 @@ RUN mkdir -p /app/reports /app/.pytest_cache && chown -R 1000:1000 /app/reports 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
 FROM base AS runner
 
-# Enforce offline mode for production runtime
+# Keep embedding model offline; HF_HUB_OFFLINE is intentionally omitted
+# so the inference client can reach the HF Router at runtime.
 ENV TRANSFORMERS_OFFLINE=1 \
-    HF_HUB_OFFLINE=1 \
     PATH="/app/.venv/bin:$PATH"
 
 # Copy everything as root (read-only for the application user)

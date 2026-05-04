@@ -1,4 +1,3 @@
-# Force rebuild: Mon 04 May 2026 11:32:04 AM PDT
 import sys
 import os
 import re
@@ -280,9 +279,6 @@ def get_llm_client():
     if _llm_client is None:
         provider = get_llm_provider()
         if provider == "huggingface":
-            # The base image sets HF_HUB_OFFLINE=1 to keep the embedding model
-            # from phoning home, but it also blocks the inference client.
-            os.environ.pop("HF_HUB_OFFLINE", None)
             _llm_client = AsyncInferenceClient(
                 model=DEFAULT_MODEL_LLM,
                 token=os.environ.get("HF_TOKEN")
