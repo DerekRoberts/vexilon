@@ -148,9 +148,7 @@ services:
     build:
       <<: *common-build
       target: test_builder
-    volumes:
-      - ./tests:/app/tests:z
-      - ./.pdf_cache:/app/.pdf_cache:z
+    volumes: *dev-volumes
     environment:
       <<: *common-env
       PYTHONPATH: /app
