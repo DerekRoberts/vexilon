@@ -81,7 +81,7 @@ def _get_default_model():
     if provider == "ollama":
         val = os.getenv("OLLAMA_MODEL")
         return val if (val and val.strip()) else OLLAMA_MODEL_ID
-    return "Qwen/Qwen3-4B-Instruct-2507"
+    return "Qwen/Qwen2.5-7B-Instruct"
 
 DEFAULT_MODEL_LLM = os.getenv("AGNAV_DEFAULT_MODEL", _get_default_model())
 CLAUDE_MODEL = os.getenv("AGNAV_CLAUDE_MODEL", DEFAULT_MODEL_LLM)
@@ -280,7 +280,7 @@ def get_async_openai_client():
         if provider == "huggingface":
             _llm_client = AsyncOpenAI(
                 base_url="https://router.huggingface.co/v1",
-                api_key=os.getenv("HF_TOKEN") or "none"
+                api_key=os.getenv("HF_TOKEN")
             )
         elif provider == "ollama":
             ollama_host = os.getenv("OLLAMA_HOST", "ollama:11434")
