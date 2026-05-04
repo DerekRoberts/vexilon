@@ -20,6 +20,7 @@ from threading import Lock
 import numpy as np
 import openai
 from openai import AsyncOpenAI
+from huggingface_hub import AsyncInferenceClient
 import faiss
 import gradio as gr
 
@@ -273,14 +274,14 @@ If all claims are verified, respond with "ALL_CLAIMS_VERIFIED".
 If there are disputed claims, list them with explanations."""
 
 _llm_client = None
-def get_async_openai_client():
+def get_llm_client():
     global _llm_client
     if _llm_client is None:
         provider = get_llm_provider()
         if provider == "huggingface":
-            _llm_client = AsyncOpenAI(
-                base_url="https://router.huggingface.co/v1",
-                api_key=os.getenv("HF_TOKEN")
+            _llm_client = AsyncInferenceClient(
+                model=DEFAULT_MODEL_LLM,
+                token=os.getenv("HF_TOKEN")
             )
         elif provider == "ollama":
             ollama_host = os.getenv("OLLAMA_HOST", "ollama:11434")
@@ -306,28 +307,43 @@ def _build_messages(messages: list, system: str | list = None) -> list:
     return full_messages
 
 async def unified_chat_create(model: str, messages: list, system: str | list = None, max_tokens: int = 1024) -> str:
-    client = get_async_openai_client()
+    client = get_llm_client()
     full_messages = _build_messages(messages, system)
-    resp = await client.chat.completions.create(
-        model=model,
-        max_tokens=max_tokens,
-        messages=full_messages,
-        timeout=300.0,
-        extra_body={"think": False}
-    )
+    
+    if isinstance(client, AsyncInferenceClient):
+        resp = await client.chat_completion(
+            model=model,
+            messages=full_messages,
+            max_tokens=max_tokens
+        )
+    else:
+        resp = await client.chat.completions.create(
+            model=model,
+            max_tokens=max_tokens,
+            messages=full_messages,
+            timeout=300.0
+        )
     return resp.choices[0].message.content
 
 async def unified_chat_stream(model: str, messages: list, system: str | list = None, max_tokens: int = 2048) -> AsyncIterator[str]:
-    client = get_async_openai_client()
+    client = get_llm_client()
     full_messages = _build_messages(messages, system)
-    stream = await client.chat.completions.create(
-        model=model,
-        max_tokens=max_tokens,
-        messages=full_messages,
-        stream=True,
-        timeout=300.0,
-        extra_body={"think": False}
-    )
+    
+    if isinstance(client, AsyncInferenceClient):
+        stream = await client.chat_completion(
+            model=model,
+            messages=full_messages,
+            max_tokens=max_tokens,
+            stream=True
+        )
+    else:
+        stream = await client.chat.completions.create(
+            model=model,
+            max_tokens=max_tokens,
+            messages=full_messages,
+            stream=True,
+            timeout=300.0
+        )
     # Stateful buffer for filtering <think> blocks (handles split-token tags)
     in_think_block = False
     buffer = ""

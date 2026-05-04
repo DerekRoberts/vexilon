@@ -2,8 +2,7 @@
 FROM python:3.14-slim AS base
 
 # Silence Hugging Face nag messages globally
-ENV HF_HUB_DISABLE_IMPLICIT_TOKEN=1 \
-    HF_HOME=/hf_cache \
+ENV HF_HOME=/hf_cache \
     EMBED_MODEL=/hf_cache
 
 # Install common runtime dependencies
