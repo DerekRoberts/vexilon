@@ -64,6 +64,28 @@ GITHUB_LABOUR_LAW_URL = os.getenv(
     "AGNAV_KNOWLEDGE_URL", f"{AGNAV_REPO_URL}/tree/main/data/labour_law"
 )
 
+# Hot-patch the environment to undo the "Global Silencer" baked into the image
+os.environ.pop("HF_HUB_DISABLE_IMPLICIT_TOKEN", None)
+
+def get_llm_token():
+    """Manually resolve HF token from all possible sources to bypass image silencers."""
+    # 1. Explicit HF_TOKEN
+    t = os.getenv("HF_TOKEN")
+    if t: return t
+    
+    # 2. Standard Hugging Face Hub token
+    t = os.getenv("HUGGINGFACE_HUB_TOKEN") or os.getenv("HUGGINGFACEHUB_API_TOKEN")
+    if t: return t
+    
+    # 3. Internal Space Identity File
+    token_path = "/var/run/secrets/huggingface.co/token"
+    if os.path.exists(token_path):
+        try:
+            return Path(token_path).read_text().strip()
+        except Exception:
+            pass
+    return None
+
 # Models & Providers
 def get_llm_provider() -> str:
     # 1. Explicit override (keeps the 'prod' profile working)
@@ -281,7 +303,7 @@ def get_llm_client():
         if provider == "huggingface":
             _llm_client = AsyncInferenceClient(
                 model=DEFAULT_MODEL_LLM,
-                token=get_token()
+                token=get_llm_token()
             )
         elif provider == "ollama":
             ollama_host = os.getenv("OLLAMA_HOST", "ollama:11434")
