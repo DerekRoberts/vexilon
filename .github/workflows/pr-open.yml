@@ -41,21 +41,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Start Podman Socket
-        run: systemctl --user start podman.socket
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Prepare Reports Directory
-        run: mkdir -p reports
+      - name: Build and Cache (Unit Tests)
+        uses: docker/bake-action@v5
+        with:
+          load: true
+          files: compose.yml
+          targets: tests-unit
+          set: |
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
 
       - name: Run Containerized Unit Tests
-        run: podman compose --profile test up --build --abort-on-container-exit tests-unit
+        run: |
+          mkdir -p reports
+          docker compose --profile test up --abort-on-container-exit tests-unit
 
       - name: Dump Logs on Failure
         if: failure()
-        run: podman compose --profile test logs tests-unit
+        run: docker compose --profile test logs tests-unit
 
       - name: Upload Coverage
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: reports/
@@ -72,11 +81,21 @@ jobs:
         with:
           lfs: true
 
-      - name: Start Podman Socket
-        run: systemctl --user start podman.socket
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Cache (Validator)
+        uses: docker/bake-action@v5
+        with:
+          load: true
+          files: compose.yml
+          targets: cache-validator
+          set: |
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
 
       - name: Validate Cache Manifest
-        run: podman compose run --rm cache-validator
+        run: docker compose run --rm cache-validator
 
   tests-functional:
     name: Integration & E2E Tests
@@ -89,19 +108,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Start Podman Socket
-        run: systemctl --user start podman.socket
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Cache (Functional Tests)
+        uses: docker/bake-action@v5
+        with:
+          load: true
+          files: compose.yml
+          targets: tests-functional
+          set: |
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
 
       - name: Run Functional Integration and E2E Tests
-        run: podman compose --profile ci up --build --abort-on-container-exit tests-functional
+        run: docker compose --profile ci up --abort-on-container-exit tests-functional
 
       - name: Dump Logs on Failure
         if: failure()
-        run: podman compose --profile ci logs
+        run: docker compose --profile ci logs
 
       - name: Cleanup
         if: always()
-        run: podman compose --profile ci down -v || true
+        run: docker compose --profile ci down -v || true
 
   build:
     name: Build & Push to GHCR
