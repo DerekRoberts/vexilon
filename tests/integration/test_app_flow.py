@@ -18,9 +18,13 @@ async def test_full_rag_flow_integration(monkeypatch, mock_llm_client, tmp_path)
     monkeypatch.setenv("AGNAV_CACHE_DIR", str(cache_dir))
     monkeypatch.setenv("AGNAV_DATA_DIR", str(test_data_dir))
     
-    # Now import inside the test to pick up the env vars
-    import app
+    # Force reload to pick up new env vars
+    import importlib
     import agnav.indexing as indexing
+    import app
+    importlib.reload(indexing)
+    importlib.reload(app)
+    
     """
     Tests the system from Markdown loading to streaming response.
     Uses the real MD agreement and real embedding model.
