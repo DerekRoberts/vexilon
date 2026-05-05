@@ -21,8 +21,8 @@ To reduce the "Information Gap" for union stewards by providing a mobile-first, 
 |---|---|---|
 | **Interface** | Gradio 6 | Rapid, high-performance web UI with native streaming support. |
 | **Logic** | Python 3.12 | Standard for LLM orchestration and RAG pipelines. |
-| **LLM (PROD)** | Hugging Face Router | Access to Qwen/Qwen2.5-7B-Instruct via high-speed "Flash" API. |
-| **LLM (DEV)** | Ollama | Local execution of Qwen2.5-7B-Instruct for zero-config, offline development. |
+| **LLM (PROD)** | Hugging Face Router | Access to Qwen/Qwen3-4B-Instruct-2507 via high-speed "Flash" API. |
+| **LLM (DEV)** | Ollama | Local execution of qwen3:4b-instruct for zero-config, offline development. |
 | **Embeddings** | `BAAI/bge-small-en-v1.5` | State-of-the-art local CPU embeddings; avoids 3GB CUDA dependencies. |
 | **Vector Store** | FAISS | Ultra-fast, in-memory CPU vector index; requires no database server. |
 | **Deployment** | Podman / HF Spaces | Containerized deployment with immutable production parity. |
@@ -41,19 +41,26 @@ AgNav features three operational personas that adapt the AI's "brain" to the ste
 
 ## 5. Security & Reliability
 
-- **Basic Auth:** Optional layer for protecting private HF Spaces deployments.
-- **Prompt Injection Protection:** A 16-pattern regex-based sanitizer that blocks "jailbreak" attempts and system-prompt overrides.
-- **Rate Limiting:** Multi-tier (Minute/Hour) protection to prevent API abuse and cost overruns.
-- **Ephemeral RAM-Only Storage:** FAISS index and conversation history exist only in memory; no records are written to disk.
+- **Prompt Injection Protection:** A multi-layered defense using a 16-pattern regex-based sanitizer. It blocks:
+    - Intent overrides (*"ignore previous instructions"*, *"forget the rules"*)
+    - Roleplay attempts (*"you are now a..."*, *"pretend to be..."*)
+    - Technical bypasses (*"jailbreak"*, *"developer mode"*, *"sudo mode"*)
+    - Structural attacks (*"[[SYSTEM]]"*, *"### system instructions"*)
+- **Rate Limiting:** Multi-tier protection (5/min, 100/hour) to prevent API abuse and cost overruns.
+- **Ephemeral RAM-Only Storage:** The FAISS index and conversation history exist only in memory; no records are written to disk.
+- **PIPA Compliance:** Content-blind architecture ensures no user queries or bot responses are logged.
 
 ---
 
 ## 6. The Forensic Markdown Pipeline
 
-AgNav moves beyond messy PDF-to-text extraction by using a specialized Markdown ingestion strategy:
-1. **Geometric Reconstruction:** PyMuPDF extracts text based on physical page coordinates.
-2. **Structural Restructuring:** An LLM pass adds hierarchical Markdown headers (# Article, ## Section) based on the original document structure.
-3. **Integrity Audit:** A side-by-side verification report (`.integrity.md`) ensures no words were lost or added during conversion.
+AgNav moves beyond messy PDF-to-text extraction by using a specialized "Forensic" ingestion strategy:
+1. **Geometric Reconstruction:** PyMuPDF extracts text based on physical page coordinates, ensuring correct word ordering for complex multi-column layouts.
+2. **Zero-Reasoning Transcription:** An LLM pass adds hierarchical Markdown headers (# Article, ## Section) under strict "PARANOID DETERMINISM" rules:
+    - **VERBATIM ONLY:** Forbidden from changing, adding, or removing a single substantive word.
+    - **NO IMPROVEMENT:** Do not fix typos; if the raw text is broken, preserve it.
+    - **NO NOISE:** Removal of page numbers, URLs, and footers is the only structural change allowed.
+3. **Integrity Audit:** A side-by-side verification report (`.integrity.md`) uses diffing to ensure the resulting Markdown preserves 100% of the substantive source content.
 
 ---
 
@@ -61,7 +68,7 @@ AgNav moves beyond messy PDF-to-text extraction by using a specialized Markdown 
 
 | Component | Rate | Estimated Monthly (moderate use) |
 |---|---|---|
-| **Hugging Face Router** | Qwen2.5-7B-Instruct (Flash) | ~$5–15 CAD |
+| **Hugging Face Router** | Qwen3-4B-Instruct-2507 (Flash) | ~$5–10 CAD |
 | **Embeddings** | `bge-small-en-v1.5` | $0 (Runs locally on CPU) |
 | **Total** | | **~$5–15 CAD/month** |
 
@@ -76,12 +83,14 @@ To ensure follow-up questions work reliably (e.g., "What about for part-time?"),
 
 ---
 
-## 9. Verification Bot
-
-AgNav includes an optional automated reviewer that double-checks its own answers:
-1. **Trigger:** Runs immediately after a response finishes streaming.
-2. **Verification:** A second LLM pass compares the generated answer against the retrieved quotes.
-3. **Flagging:** If a claim is unsupported by the text, a "Verification Note" is appended to the response.
+AgNav includes an automated "Adversarial Reviewer" that double-checks its own answers:
+1. **Trigger:** Runs as an asynchronous background task immediately after a response finishes streaming.
+2. **Verification:** A second LLM pass (configured via `VERIFY_MODEL`) compares the generated answer against the retrieved quotes.
+3. **Categories:**
+    - **VERIFIED:** The claim is explicitly supported by the verbatim quote.
+    - **DISPUTED:** The claim is unsupported or contradicts the retrieved text.
+    - **UNCERTAIN:** The citation is unclear or incomplete.
+4. **Flagging:** If any claim is disputed, a "Verification Note" is appended to the response, warning the steward to check the source.
 
 ---
 
@@ -94,7 +103,7 @@ AgNav includes an optional automated reviewer that double-checks its own answers
 | `AGNAV_USERNAME` | `admin` | Basic Auth username |
 | `AGNAV_PASSWORD` | *(None)* | Basic Auth password (enables auth if set) |
 | `AGNAV_LLM_PROVIDER` | `huggingface` | `huggingface` or `ollama` |
-| `AGNAV_DEFAULT_MODEL` | `Qwen/Qwen2.5-7B-Instruct` | Primary LLM for responses |
+| `AGNAV_DEFAULT_MODEL` | `Qwen/Qwen3-4B-Instruct-2507` | Primary LLM for responses |
 | `HF_TOKEN` | *(Required for HF)* | Hugging Face API token |
 | `PORT` | `7860` | Gradio port |
 | `SIMILARITY_TOP_K` | `40` | Number of chunks retrieved |

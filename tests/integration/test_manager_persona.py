@@ -6,7 +6,7 @@ def test_manager_mode_in_selector(monkeypatch, mock_llm_client):
     """
     Verifies that 'Manage' is available in the persona selector.
     """
-    monkeypatch.setattr(app, "get_async_openai_client", lambda: mock_llm_client)
+    monkeypatch.setattr(app, "get_llm_client", lambda: mock_llm_client)
     monkeypatch.setattr(app, "_index", "not-none")
     
     demo = app.build_ui()
@@ -36,4 +36,4 @@ def test_manager_persona_prompt(monkeypatch):
     assert "Senior Strategic Management Consultant" in prompt
     assert "INADVERTENT BENEFIT WARNING" in prompt
     assert "Operational Framework" in prompt
-    assert "> \"...\"" in prompt # Verbatim quote rule
+    assert "> \"verbatim text\"" in prompt # Verbatim quote rule

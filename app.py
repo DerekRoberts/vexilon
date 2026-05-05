@@ -20,6 +20,7 @@ from threading import Lock
 import numpy as np
 import openai
 from openai import AsyncOpenAI
+from huggingface_hub import AsyncInferenceClient, get_token
 import faiss
 import gradio as gr
 
@@ -43,7 +44,7 @@ from agnav.indexing import (
 # ─── Global State & Config ──────────────────────────────────────────────────
 # Single Source of Truth for local development models.
 # Change this here to update the entire stack (including the puller).
-OLLAMA_MODEL_ID = "qwen3:1.7b"
+OLLAMA_MODEL_ID = "qwen3:4b-instruct"
 
 # Configure structured logging
 logging.basicConfig(
@@ -81,7 +82,7 @@ def _get_default_model():
     if provider == "ollama":
         val = os.getenv("OLLAMA_MODEL")
         return val if (val and val.strip()) else OLLAMA_MODEL_ID
-    return "Qwen/Qwen2.5-7B-Instruct"
+    return "Qwen/Qwen3-4B-Instruct-2507"
 
 DEFAULT_MODEL_LLM = os.getenv("AGNAV_DEFAULT_MODEL", _get_default_model())
 CLAUDE_MODEL = os.getenv("AGNAV_CLAUDE_MODEL", DEFAULT_MODEL_LLM)
@@ -273,18 +274,21 @@ If all claims are verified, respond with "ALL_CLAIMS_VERIFIED".
 If there are disputed claims, list them with explanations."""
 
 _llm_client = None
-def get_async_openai_client():
+def get_llm_client():
     global _llm_client
     if _llm_client is None:
         provider = get_llm_provider()
         if provider == "huggingface":
-            _llm_client = AsyncOpenAI(
-                base_url="https://router.huggingface.co/v1",
-                api_key=os.getenv("HF_TOKEN")
+            _llm_client = AsyncInferenceClient(
+                model=DEFAULT_MODEL_LLM,
+                token=os.environ.get("HF_TOKEN")
             )
         elif provider == "ollama":
+            ollama_host = os.getenv("OLLAMA_HOST", "ollama:11434")
+            if "://" not in ollama_host:
+                ollama_host = f"http://{ollama_host}"
             _llm_client = AsyncOpenAI(
-                base_url="http://ollama:11434/v1",
+                base_url=f"{ollama_host.rstrip('/')}/v1",
                 api_key="ollama"
             )
         else:
@@ -303,28 +307,43 @@ def _build_messages(messages: list, system: str | list = None) -> list:
     return full_messages
 
 async def unified_chat_create(model: str, messages: list, system: str | list = None, max_tokens: int = 1024) -> str:
-    client = get_async_openai_client()
+    client = get_llm_client()
     full_messages = _build_messages(messages, system)
-    resp = await client.chat.completions.create(
-        model=model,
-        max_tokens=max_tokens,
-        messages=full_messages,
-        timeout=300.0,
-        extra_body={"think": False}
-    )
+    
+    if isinstance(client, AsyncInferenceClient):
+        resp = await client.chat_completion(
+            model=model,
+            messages=full_messages,
+            max_tokens=max_tokens
+        )
+    else:
+        resp = await client.chat.completions.create(
+            model=model,
+            max_tokens=max_tokens,
+            messages=full_messages,
+            timeout=300.0
+        )
     return resp.choices[0].message.content
 
 async def unified_chat_stream(model: str, messages: list, system: str | list = None, max_tokens: int = 2048) -> AsyncIterator[str]:
-    client = get_async_openai_client()
+    client = get_llm_client()
     full_messages = _build_messages(messages, system)
-    stream = await client.chat.completions.create(
-        model=model,
-        max_tokens=max_tokens,
-        messages=full_messages,
-        stream=True,
-        timeout=300.0,
-        extra_body={"think": False}
-    )
+    
+    if isinstance(client, AsyncInferenceClient):
+        stream = await client.chat_completion(
+            model=model,
+            messages=full_messages,
+            max_tokens=max_tokens,
+            stream=True
+        )
+    else:
+        stream = await client.chat.completions.create(
+            model=model,
+            max_tokens=max_tokens,
+            messages=full_messages,
+            stream=True,
+            timeout=300.0
+        )
     # Stateful buffer for filtering <think> blocks (handles split-token tags)
     in_think_block = False
     buffer = ""
@@ -475,7 +494,7 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
         condensed = await condense_query(message, history)
 
     # Issue #361: Heuristic for complexity - Skip perspectives in DEV for speed
-    if not IS_DEV and len(condensed.split()) > 10:
+    if (not IS_DEV or os.getenv("AGNAV_FORCE_PERSPECTIVES") == "true") and len(condensed.split()) > 10:
         queries = await generate_perspective_queries(condensed, history)
     else:
         queries = [condensed]
@@ -580,13 +599,14 @@ def startup(force_rebuild: bool = False):
 
     _test_registry.load(TESTS_DIR)
     # Ensure cache directory is writable
-    os.makedirs(".pdf_cache", exist_ok=True)
+    from agnav import indexing
+    indexing.PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     try:
-        test_file = Path(".pdf_cache/permissions_test")
+        test_file = indexing.PDF_CACHE_DIR / "permissions_test"
         test_file.touch()
         test_file.unlink()
     except Exception as e:
-        logger.warning(f"[startup] .pdf_cache is not writable: {e}. Indexing may fail.")
+        logger.warning(f"[startup] {indexing.PDF_CACHE_DIR} is not writable: {e}. Indexing may fail.")
 
     _fetch_pdf_cache_if_missing()
     _index, _chunks = load_precomputed_index()
@@ -613,7 +633,12 @@ async def chat_handler(message, history, persona, request: gr.Request = None):
     yield new_history, gr.update(value="", interactive=False, placeholder="Steward is thinking..."), gr.update(interactive=False), gr.update()
 
     # 2. Rate Limit & Security Check
-    user_id = request.client.host if request else "default"
+    user_id = "default"
+    if request:
+        # Handle Hugging Face / Proxy transparently by checking X-Forwarded-For
+        forwarded = request.headers.get("x-forwarded-for")
+        user_id = forwarded.split(",")[0] if forwarded else request.client.host
+
     allowed, rate_msg = _rate_limiter.is_allowed(user_id)
     if not allowed:
         yield new_history + [{"role": "assistant", "content": rate_msg}], gr.update(interactive=True, placeholder="Type a message..."), gr.update(interactive=True), gr.update()
@@ -822,8 +847,7 @@ if __name__ == "__main__":
     allowed_paths = [
         str(LABOUR_LAW_DIR.resolve()), 
         str(Path("docs").resolve()),
-        str(Path("data").resolve()),
-        os.getcwd()
+        str(Path("data/labour_law").resolve()),
     ]
     
     # Restore basic auth if configured in environment
