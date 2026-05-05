@@ -11,204 +11,185 @@ concurrency:
 permissions: {}
 
 jobs:
-  testing:
-    runs-on: ubuntu-latest
-    environment: test
+  check:
+    name: Check Triggers
+    if: (! github.event.pull_request.draft)
+    runs-on: ubuntu-slim
     permissions:
       contents: read
-      packages: read
       pull-requests: read
+    outputs:
+      triggered: ${{ steps.diff.outputs.triggered }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          lfs: true
+      - id: diff
+        uses: bcgov/actions/diff-triggers@main
+        with:
+          triggers: '["./Containerfile", "./pyproject.toml", "./app.py", "./agnav/", "./scripts/", "./prompts/", "./data/", "./tests/", "./.github/workflows/"]'
+
+  tests-unit:
+    name: Unit Tests
+    needs: check
+    if: needs.check.outputs.triggered == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Resolve image
-        id: resolve
-        if: ${{ !inputs.image_tag }}
-        uses: bcgov/actions/image-tracker@feat/image-tracker-robust-fetch
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and Cache (Unit Tests)
+        uses: docker/bake-action@v7
+        with:
+          load: true
+          files: compose.yml
+          targets: tests-unit
+          set: |
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
+
+      - name: Run Containerized Unit Tests
+        run: |
+          mkdir -p reports
+          docker compose --profile test up --build --abort-on-container-exit tests-unit
+
+      - name: Dump Logs on Failure
+        if: failure()
+        run: docker compose --profile test logs tests-unit
+
+      - name: Upload Coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: reports/
+
+  validate-cache:
+    name: Validate FAISS Cache
+    needs: tests-unit
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          lfs: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and Cache (Validator)
+        uses: docker/bake-action@v7
+        with:
+          load: true
+          files: compose.yml
+          targets: cache-validator
+          set: |
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
+
+      - name: Validate Cache Manifest
+        run: docker compose run --build --rm cache-validator
+
+  tests-functional:
+    name: Integration & E2E Tests
+    needs: tests-unit
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and Cache (Functional Tests)
+        uses: docker/bake-action@v7
+        with:
+          load: true
+          files: compose.yml
+          targets: tests-functional
+          set: |
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
+
+      - name: Run Functional Integration and E2E Tests
+        run: docker compose --profile ci up --build --abort-on-container-exit tests-functional
+
+      - name: Dump Logs on Failure
+        if: failure()
+        run: docker compose --profile ci logs
+
+      - name: Cleanup
+        if: always()
+        run: docker compose --profile ci down -v || true
+
+  build:
+    name: Build & Push to GHCR
+    needs: tests-unit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+      packages: write
+    outputs:
+      triggered: ${{ steps.builder.outputs.triggered }}
+    steps:
+      - name: Build and Push
+        id: builder
+        uses: bcgov/action-builder-ghcr@main
         with:
           package: agnav
-          token: ${{ github.token }}
-          inventory_depth: 20
-# jobs:
-#   check:
-#     name: Check Triggers
-#     if: (! github.event.pull_request.draft)
-#     runs-on: ubuntu-slim
-#     permissions:
-#       contents: read
-#       pull-requests: read
-#     outputs:
-#       triggered: ${{ steps.diff.outputs.triggered }}
-#     steps:
-#       - uses: actions/checkout@v6
-#         with:
-#           lfs: true
-#       - id: diff
-#         uses: bcgov/actions/diff-triggers@main
-#         with:
-#           triggers: '["./Containerfile", "./pyproject.toml", "./app.py", "./agnav/", "./scripts/", "./prompts/", "./data/", "./tests/", "./.github/workflows/"]'
+          build_context: .
+          build_file: Containerfile
+          build_args: |
+            VERSION=sha-${{ github.event.pull_request.head.sha }}
+            REPO_URL=https://github.com/${{ github.repository }}
 
-#   tests-unit:
-#     name: Unit Tests
-#     needs: check
-#     if: needs.check.outputs.triggered == 'true'
-#     runs-on: ubuntu-24.04
-#     permissions:
-#       contents: read
-#     timeout-minutes: 10
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v6
+  trivy:
+    name: Trivy Security Scan
+    needs: tests-unit
+    continue-on-error: true
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      security-events: write
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run Trivy vulnerability scanner in repo mode
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          format: "sarif"
+          output: "trivy-results.sarif"
+          ignore-unfixed: true
+          scan-type: "fs"
+          scanners: "vuln,secret,misconfig"
+          severity: "CRITICAL,HIGH"
 
-#       - name: Set up Docker Buildx
-#         uses: docker/setup-buildx-action@v4
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: "trivy-results.sarif"
 
-#       - name: Build and Cache (Unit Tests)
-#         uses: docker/bake-action@v7
-#         with:
-#           load: true
-#           files: compose.yml
-#           targets: tests-unit
-#           set: |
-#             *.cache-from=type=gha
-#             *.cache-to=type=gha,mode=max
-
-#       - name: Run Containerized Unit Tests
-#         run: |
-#           mkdir -p reports
-#           docker compose --profile test up --build --abort-on-container-exit tests-unit
-
-#       - name: Dump Logs on Failure
-#         if: failure()
-#         run: docker compose --profile test logs tests-unit
-
-#       - name: Upload Coverage
-#         uses: actions/upload-artifact@v7
-#         with:
-#           name: coverage-report
-#           path: reports/
-
-#   validate-cache:
-#     name: Validate FAISS Cache
-#     needs: tests-unit
-#     runs-on: ubuntu-24.04
-#     permissions:
-#       contents: read
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v6
-#         with:
-#           lfs: true
-
-#       - name: Set up Docker Buildx
-#         uses: docker/setup-buildx-action@v4
-
-#       - name: Build and Cache (Validator)
-#         uses: docker/bake-action@v7
-#         with:
-#           load: true
-#           files: compose.yml
-#           targets: cache-validator
-#           set: |
-#             *.cache-from=type=gha
-#             *.cache-to=type=gha,mode=max
-
-#       - name: Validate Cache Manifest
-#         run: docker compose run --build --rm cache-validator
-
-#   tests-functional:
-#     name: Integration & E2E Tests
-#     needs: tests-unit
-#     runs-on: ubuntu-24.04
-#     permissions:
-#       contents: read
-#     timeout-minutes: 15
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v6
-
-#       - name: Set up Docker Buildx
-#         uses: docker/setup-buildx-action@v4
-
-#       - name: Build and Cache (Functional Tests)
-#         uses: docker/bake-action@v7
-#         with:
-#           load: true
-#           files: compose.yml
-#           targets: tests-functional
-#           set: |
-#             *.cache-from=type=gha
-#             *.cache-to=type=gha,mode=max
-
-#       - name: Run Functional Integration and E2E Tests
-#         run: docker compose --profile ci up --build --abort-on-container-exit tests-functional
-
-#       - name: Dump Logs on Failure
-#         if: failure()
-#         run: docker compose --profile ci logs
-
-#       - name: Cleanup
-#         if: always()
-#         run: docker compose --profile ci down -v || true
-
-#   build:
-#     name: Build & Push to GHCR
-#     needs: tests-unit
-#     runs-on: ubuntu-24.04
-#     timeout-minutes: 20
-#     permissions:
-#       attestations: write
-#       contents: read
-#       id-token: write
-#       packages: write
-#     outputs:
-#       triggered: ${{ steps.builder.outputs.triggered }}
-#     steps:
-#       - name: Build and Push
-#         id: builder
-#         uses: bcgov/action-builder-ghcr@main
-#         with:
-#           package: agnav
-#           build_context: .
-#           build_file: Containerfile
-#           build_args: |
-#             VERSION=sha-${{ github.event.pull_request.head.sha }}
-#             REPO_URL=https://github.com/${{ github.repository }}
-
-#   trivy:
-#     name: Trivy Security Scan
-#     needs: tests-unit
-#     continue-on-error: true
-#     runs-on: ubuntu-slim
-#     permissions:
-#       contents: read
-#       security-events: write
-#     timeout-minutes: 1
-#     steps:
-#       - uses: actions/checkout@v6
-#       - name: Run Trivy vulnerability scanner in repo mode
-#         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-#         with:
-#           format: "sarif"
-#           output: "trivy-results.sarif"
-#           ignore-unfixed: true
-#           scan-type: "fs"
-#           scanners: "vuln,secret,misconfig"
-#           severity: "CRITICAL,HIGH"
-
-#       - name: Upload Trivy scan results to GitHub Security tab
-#         uses: github/codeql-action/upload-sarif@v4
-#         with:
-#           sarif_file: "trivy-results.sarif"
-
-#   results:
-#     name: Results
-#     needs: [build, tests-unit, tests-functional, validate-cache, trivy]
-#     if: always()
-#     runs-on: ubuntu-slim
-#     steps:
-#       - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'canceled')
-#         run: |
-#           echo "At least one required job has failed or was canceled."
-#           exit 1
-#       - run: echo "All critical checks passed or were intentionally skipped."
+  results:
+    name: Results
+    needs: [build, tests-unit, tests-functional, validate-cache, trivy]
+    if: always()
+    runs-on: ubuntu-slim
+    steps:
+      - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'canceled')
+        run: |
+          echo "At least one required job has failed or was canceled."
+          exit 1
+      - run: echo "All critical checks passed or were intentionally skipped."
