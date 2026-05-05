@@ -141,14 +141,14 @@ services:
         ollama pull $$TARGET_MODEL
 
   # ── tests-functional (Integration + E2E) ─────────────────────────────────────
+  # Uses the image's baked-in FAISS index — no host mounts needed.
   tests-functional:
     <<: *service-defaults
-    user: app
     profiles: [ci]
     build:
       <<: *common-build
       target: test_builder
-    volumes: *dev-volumes
+    volumes: []
     environment:
       <<: *common-env
       PYTHONPATH: /app
