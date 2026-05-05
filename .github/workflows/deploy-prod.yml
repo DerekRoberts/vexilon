@@ -30,7 +30,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          TAG=$(echo '${{ steps.resolve.outputs.bundle }}' | jq -r '.agnav')
+          TAG="${{ steps.resolve.outputs.tag }}"
           ./.github/scripts/deploy.sh "MinionTech/vexilon" "$TAG"
 
       - name: Verify Space boots successfully
