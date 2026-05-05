@@ -847,8 +847,7 @@ if __name__ == "__main__":
     allowed_paths = [
         str(LABOUR_LAW_DIR.resolve()), 
         str(Path("docs").resolve()),
-        str(Path("data").resolve()),
-        os.getcwd()
+        str(Path("data/labour_law").resolve()),
     ]
     
     # Restore basic auth if configured in environment

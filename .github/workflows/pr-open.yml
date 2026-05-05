@@ -121,6 +121,11 @@ jobs:
             *.cache-from=type=gha
             *.cache-to=type=gha,mode=max
 
+      - name: Fix Permissions for .pdf_cache
+        run: |
+          mkdir -p .pdf_cache
+          chmod -R 777 .pdf_cache
+
       - name: Run Functional Integration and E2E Tests
         run: docker compose --profile ci up --build --abort-on-container-exit tests-functional
 
