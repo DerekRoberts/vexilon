@@ -147,7 +147,7 @@ services:
     profiles: [ci]
     build:
       <<: *common-build
-      target: test_builder
+      target: functional_builder
     volumes: []
     environment:
       <<: *common-env
