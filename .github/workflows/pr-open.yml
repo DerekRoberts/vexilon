@@ -3,9 +3,6 @@ name: PR Open
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  push:
-    branches:
-      - main
 
 concurrency:
   group: pr-${{ github.event.number }}
@@ -159,40 +156,40 @@ jobs:
             VERSION=sha-${{ github.event.pull_request.head.sha }}
             REPO_URL=https://github.com/${{ github.repository }}
 
-  # trivy:
-  #   name: Trivy Security Scan
-  #   needs: tests-unit
-  #   continue-on-error: true
-  #   runs-on: ubuntu-slim
-  #   permissions:
-  #     contents: read
-  #     security-events: write
-  #   timeout-minutes: 1
-  #   steps:
-  #     - uses: actions/checkout@v6
-  #     - name: Run Trivy vulnerability scanner in repo mode
-  #       uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-  #       with:
-  #         format: "sarif"
-  #         output: "trivy-results.sarif"
-  #         ignore-unfixed: true
-  #         scan-type: "fs"
-  #         scanners: "vuln,secret,misconfig"
-  #         severity: "CRITICAL,HIGH"
+  trivy:
+    name: Trivy Security Scan
+    needs: tests-unit
+    continue-on-error: true
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      security-events: write
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run Trivy vulnerability scanner in repo mode
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          format: "sarif"
+          output: "trivy-results.sarif"
+          ignore-unfixed: true
+          scan-type: "fs"
+          scanners: "vuln,secret,misconfig"
+          severity: "CRITICAL,HIGH"
 
-  #     - name: Upload Trivy scan results to GitHub Security tab
-  #       uses: github/codeql-action/upload-sarif@v4
-  #       with:
-  #         sarif_file: "trivy-results.sarif"
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: "trivy-results.sarif"
 
-  # results:
-  #   name: Results
-  #   needs: [build, tests-unit, tests-functional, validate-cache, trivy]
-  #   if: always()
-  #   runs-on: ubuntu-slim
-  #   steps:
-  #     - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'canceled')
-  #       run: |
-  #         echo "At least one required job has failed or was canceled."
-  #         exit 1
-  #     - run: echo "All critical checks passed or were intentionally skipped."
+  results:
+    name: Results
+    needs: [build, tests-unit, tests-functional, validate-cache, trivy]
+    if: always()
+    runs-on: ubuntu-slim
+    steps:
+      - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'canceled')
+        run: |
+          echo "At least one required job has failed or was canceled."
+          exit 1
+      - run: echo "All critical checks passed or were intentionally skipped."
