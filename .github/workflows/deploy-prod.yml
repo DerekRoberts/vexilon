@@ -28,6 +28,7 @@ jobs:
           package: agnav
           token: ${{ github.token }}
           revision: ${{ github.sha }}
+          max_depth: 20
 
       - name: Push image-based stub to Hugging Face Space
         env:
