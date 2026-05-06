@@ -18,12 +18,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Resolve image
         id: resolve
         uses: bcgov/actions/image-tracker@feat/image-tracker-digest-resolver
         with:
-          package: vexilon/agnav
+          package: agnav
           token: ${{ github.token }}
           revision: ${{ github.sha }}
 
@@ -31,7 +33,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          TAG=$(echo '${{ steps.resolve.outputs.bundle }}' | jq -r '.["vexilon/agnav"]')
+          TAG=$(echo '${{ steps.resolve.outputs.images }}' | jq -r '.agnav')
           ./.github/scripts/deploy.sh "MinionTech/vexilon" "$TAG"
 
       - name: Verify Space boots successfully
