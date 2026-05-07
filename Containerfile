@@ -52,7 +52,7 @@ COPY data/ ./data/
 COPY agnav/ ./agnav/
 COPY scripts/ ./scripts/
 COPY prompts/ ./prompts/
-COPY app.py conftest.py ./
+COPY app.py conftest.py README.md Containerfile compose.yml LICENSE* ./
 
 # ─── Stage 2.5: Test Builder (Unit Tests - Lightweight) ──────────────────────
 FROM builder AS test_builder
