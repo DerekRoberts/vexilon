@@ -22,7 +22,7 @@ END_TIME=$((START_TIME + TIMEOUT_SECONDS))
 
 while [ $(date +%s) -lt $END_TIME ]; do
   # Use Bash array for safer argument handling
-  CURL_ARGS=( -s )
+  CURL_ARGS=( -s -L )
   if [ -n "${HF_TOKEN:-}" ]; then
       CURL_ARGS+=( -H "Authorization: Bearer $HF_TOKEN" )
   fi
