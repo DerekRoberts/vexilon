@@ -30,17 +30,13 @@ jobs:
           revision: ${{ github.sha }}
           max_depth: 20
 
-      - name: Push image-based stub to Hugging Face Space
+      - name: Promote and Verify to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          TEST: "true"
         run: |
           TAG=$(echo '${{ steps.resolve.outputs.images }}' | jq -r '.agnav')
           ./.github/scripts/deploy.sh "MinionTech/vexilon" "$TAG"
-
-      - name: Verify Space boots successfully
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: ./.github/scripts/verify_deployment.sh "MinionTech/vexilon"
 
       - name: Notify Owners on Failure
         if: failure()
