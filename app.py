@@ -24,7 +24,7 @@ from threading import Lock
 import numpy as np
 import openai
 from openai import AsyncOpenAI
-from huggingface_hub import AsyncInferenceClient, get_token
+
 import faiss
 import gradio as gr
 
@@ -283,9 +283,10 @@ def get_llm_client():
     if _llm_client is None:
         provider = get_llm_provider()
         if provider == "huggingface":
-            _llm_client = AsyncInferenceClient(
-                model=DEFAULT_MODEL_LLM,
-                token=os.environ.get("HF_TOKEN")
+            # Use the OpenAI-compatible router endpoint for reliable routing
+            _llm_client = AsyncOpenAI(
+                base_url="https://router.huggingface.co/v1",
+                api_key=os.environ.get("HF_TOKEN")
             )
         elif provider == "ollama":
             ollama_host = os.getenv("OLLAMA_HOST", "ollama:11434")
@@ -314,44 +315,25 @@ async def unified_chat_create(model: str, messages: list, system: str | list = N
     client = get_llm_client()
     full_messages = _build_messages(messages, system)
     
-    if isinstance(client, AsyncInferenceClient):
-        # Explicitly route to Featherless AI for Qwen3 support
-        resp = await client.chat_completion(
-            model=model,
-            messages=full_messages,
-            max_tokens=max_tokens,
-            provider="featherless-ai"
-        )
-    else:
-        resp = await client.chat.completions.create(
-            model=model,
-            max_tokens=max_tokens,
-            messages=full_messages,
-            timeout=300.0
-        )
+    resp = await client.chat.completions.create(
+        model=model,
+        max_tokens=max_tokens,
+        messages=full_messages,
+        timeout=300.0
+    )
     return resp.choices[0].message.content
 
 async def unified_chat_stream(model: str, messages: list, system: str | list = None, max_tokens: int = 2048) -> AsyncIterator[str]:
     client = get_llm_client()
     full_messages = _build_messages(messages, system)
     
-    if isinstance(client, AsyncInferenceClient):
-        # Explicitly route to Featherless AI for Qwen3 support
-        stream = await client.chat_completion(
-            model=model,
-            messages=full_messages,
-            max_tokens=max_tokens,
-            stream=True,
-            provider="featherless-ai"
-        )
-    else:
-        stream = await client.chat.completions.create(
-            model=model,
-            max_tokens=max_tokens,
-            messages=full_messages,
-            stream=True,
-            timeout=300.0
-        )
+    stream = await client.chat.completions.create(
+        model=model,
+        max_tokens=max_tokens,
+        messages=full_messages,
+        stream=True,
+        timeout=300.0
+    )
     # Stateful buffer for filtering <think> blocks (handles split-token tags)
     in_think_block = False
     buffer = ""
