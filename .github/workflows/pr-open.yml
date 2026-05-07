@@ -29,9 +29,34 @@ jobs:
         with:
           triggers: '["./Containerfile", "./pyproject.toml", "./app.py", "./agnav/", "./scripts/", "./prompts/", "./data/", "./tests/", "./.github/workflows/"]'
 
+  prepare-tests:
+    name: Prepare Test Cache
+    needs: check
+    if: needs.check.outputs.triggered == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          lfs: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Warm Cache (All Test Targets)
+        uses: docker/bake-action@v7
+        with:
+          files: compose.yml
+          targets: test-unit,test-integration,test-e2e
+          set: |
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
+
   test-unit:
     name: Unit Tests
-    needs: check
+    needs: [check, prepare-tests]
     if: needs.check.outputs.triggered == 'true'
     runs-on: ubuntu-24.04
     permissions:
@@ -97,9 +122,44 @@ jobs:
       - name: Validate Cache Manifest
         run: docker compose --profile verify up --build verify
 
+  test-integration:
+    name: RAG Integration Tests
+    needs: [test-unit, prepare-tests]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and Cache (Integration)
+        uses: docker/bake-action@v7
+        with:
+          load: true
+          files: compose.yml
+          targets: test-integration
+          set: |
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
+
+      - name: Run Integration Tests
+        run: docker compose --profile integration up --build --abort-on-container-exit test-integration
+
+      - name: Dump Logs on Failure
+        if: failure()
+        run: docker compose --profile integration logs
+
+      - name: Cleanup
+        if: always()
+        run: docker compose --profile integration down -v || true
+
   test-e2e:
-    name: Integration & E2E Tests
-    needs: test-unit
+    name: E2E Tests (Smoke)
+    needs: [test-unit, prepare-tests]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -121,7 +181,7 @@ jobs:
             *.cache-from=type=gha
             *.cache-to=type=gha,mode=max
 
-      - name: Run Functional Integration and E2E Tests
+      - name: Run E2E Smoke Test
         run: docker compose --profile e2e up --build --abort-on-container-exit test-e2e
 
       - name: Dump Logs on Failure
@@ -184,7 +244,7 @@ jobs:
 
   results:
     name: Results
-    needs: [build, test-unit, test-e2e, validate-cache, trivy]
+    needs: [build, test-unit, test-integration, test-e2e, validate-cache, trivy]
     if: always()
     runs-on: ubuntu-slim
     steps:
