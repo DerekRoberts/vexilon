@@ -85,20 +85,33 @@ if [ "$CURRENT_STATUS" != "running" ]; then
 fi
 
 # --- Functional Smoke Test ---
-echo "[verify] 🔍 Running functional smoke test..."
+echo "[verify] 🔍 Running deep functional smoke test..."
 SPACE_URL="https://$(echo "$SPACE_ID" | tr '[:upper:]' '[:lower:]' | tr '/' '-').hf.space"
 TEST_QUERY="What is AgNav?"
 
-# Hit the Gradio 'predict' or function endpoint
-# Note: For Gradio 4+, the API path is /gradio_api/call/<fn_name>
-RESPONSE=$(curl -s -X POST "$SPACE_URL/gradio_api/call/chat_handler" \
+# 1. Trigger the event and capture the Event ID
+EVENT_JSON=$(curl -s -X POST "$SPACE_URL/gradio_api/call/chat_handler" \
   -H "Content-Type: application/json" \
   -d "{\"data\": [\"$TEST_QUERY\", [], \"Lookup\"]}")
 
-if [[ "$RESPONSE" == *"event: error"* ]] || [ -z "$RESPONSE" ]; then
-  echo "❌ Error: Functional smoke test failed. API returned: $RESPONSE"
+EVENT_ID=$(echo "$EVENT_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('event_id', ''))")
+
+if [ -z "$EVENT_ID" ]; then
+  echo "❌ Error: Failed to trigger chat_handler. API returned: $EVENT_JSON"
   exit 1
 fi
 
-echo "✅ Success: Functional smoke test passed! AgNav is responsive at $SPACE_URL"
+echo "[verify] Event triggered (ID: $EVENT_ID). Waiting for LLM response..."
+
+# 2. Poll the stream for data (timeout after 30 seconds)
+# We use curl -N to disable buffering and grep for 'data:' events
+DATA_RECEIVED=$(curl -s -N "$SPACE_URL/gradio_api/call/chat_handler/$EVENT_ID" | grep -m 1 "data:" || true)
+
+if [ -z "$DATA_RECEIVED" ]; then
+  echo "❌ Error: Functional smoke test failed. No data received from stream."
+  exit 1
+fi
+
+echo "[verify] Received data chunk: ${DATA_RECEIVED:0:50}..."
+echo "✅ Success: Deep functional smoke test passed! AgNav is fully operational at $SPACE_URL"
 exit 0
