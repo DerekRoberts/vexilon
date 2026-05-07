@@ -54,24 +54,23 @@ COPY scripts/ ./scripts/
 COPY prompts/ ./prompts/
 COPY app.py conftest.py README.md Containerfile compose.yml LICENSE* ./
 
-# ─── Stage 2.5: Test Builder (Unit Tests - Lightweight) ──────────────────────
-FROM builder AS test_builder
+# ─── Stage 2.5: Index Builder (Data-Heavy - Cached) ──────────────────────────
+FROM builder AS index_builder
 COPY --from=model_fetcher /hf_cache /hf_cache
-RUN --mount=type=cache,target=/root/.cache/uv \
-    HF_HUB_OFFLINE=1 UV_LINK_MODE=copy uv sync --frozen --no-install-project
-COPY tests/ ./tests/
-RUN mkdir -p /app/reports /app/.pytest_cache && chown -R 1000:1000 /app/reports /app/.pytest_cache
-
-# ─── Stage 2.6: Functional Builder (Integration Tests - with Index) ──────────
-FROM test_builder AS functional_builder
 
 # Build FAISS index — cached by Docker unless data/ or model changes.
-# BuildKit cache mount persists the index between builds for fast Smart Refresh.
 RUN --mount=type=cache,target=/app/.pdf_cache_mount \
     mkdir -p /app/.pdf_cache && \
     cp -r /app/.pdf_cache_mount/* /app/.pdf_cache/ 2>/dev/null || true && \
     TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=1 PATH="/app/.venv/bin:$PATH" python scripts/build_index.py && \
     cp -r /app/.pdf_cache/* /app/.pdf_cache_mount/ 2>/dev/null || true
+
+# ─── Stage 2.6: Test Builder (Adds Dev/Test Tools) ──────────────────────────
+FROM index_builder AS functional_builder
+RUN --mount=type=cache,target=/root/.cache/uv \
+    HF_HUB_OFFLINE=1 UV_LINK_MODE=copy uv sync --frozen --no-install-project
+COPY tests/ ./tests/
+RUN mkdir -p /app/reports /app/.pytest_cache && chown -R 1000:1000 /app/reports /app/.pytest_cache
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
 FROM base AS runner
