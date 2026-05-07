@@ -53,7 +53,7 @@ while [ $(date +%s) -lt $END_TIME ]; do
   
   if [ "$CURRENT_STATUS" == "running" ]; then
     echo "✅ Success: Space $SPACE_ID is running!"
-    exit 0
+    break
   fi
   
   # Fail immediately on terminal error states
@@ -68,5 +68,27 @@ while [ $(date +%s) -lt $END_TIME ]; do
   sleep $INTERVAL
 done
 
-echo "❌ Error: Timeout waiting for Space $SPACE_ID to become ready after $TIMEOUT_SECONDS seconds."
-exit 1
+# Check if we exited the loop because of success or timeout
+if [ "$CURRENT_STATUS" != "running" ]; then
+  echo "❌ Error: Timeout waiting for Space $SPACE_ID to become ready after $TIMEOUT_SECONDS seconds."
+  exit 1
+fi
+
+# --- Functional Smoke Test ---
+echo "[verify] 🔍 Running functional smoke test..."
+SPACE_URL="https://$(echo "$SPACE_ID" | tr '[:upper:]' '[:lower:]' | tr '/' '-').hf.space"
+TEST_QUERY="What is AgNav?"
+
+# Hit the Gradio 'predict' or function endpoint
+# Note: For Gradio 4+, the API path is /gradio_api/call/<fn_name>
+RESPONSE=$(curl -s -X POST "$SPACE_URL/gradio_api/call/chat_handler" \
+  -H "Content-Type: application/json" \
+  -d "{\"data\": [\"$TEST_QUERY\", [], \"Lookup\"]}")
+
+if [[ "$RESPONSE" == *"event: error"* ]] || [ -z "$RESPONSE" ]; then
+  echo "❌ Error: Functional smoke test failed. API returned: $RESPONSE"
+  exit 1
+fi
+
+echo "✅ Success: Functional smoke test passed! AgNav is responsive at $SPACE_URL"
+exit 0
