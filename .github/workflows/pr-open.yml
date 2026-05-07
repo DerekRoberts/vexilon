@@ -164,7 +164,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    timeout-minutes: 5
+    timeout-minutes: 1
     steps:
       - uses: actions/checkout@v6
       - name: Run Trivy vulnerability scanner in repo mode
