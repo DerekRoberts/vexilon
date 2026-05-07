@@ -23,7 +23,7 @@ jobs:
 
       - name: Resolve image
         id: resolve
-        uses: bcgov/actions/image-tracker@feat/image-tracker-digest-resolver
+        uses: bcgov/actions/image-tracker@main
         with:
           package: agnav
           token: ${{ github.token }}
