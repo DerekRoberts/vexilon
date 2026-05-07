@@ -75,12 +75,10 @@ services:
   # ── test-unit (Containerized Unit Tests) ─────────────────────────────────────
   test-unit:
     <<: *service-defaults
-    user: "${UID:-1000}:${GID:-1000}"
     profiles: [test]
     build:
       <<: *common-build
       target: test_builder
-    volumes: *dev-volumes
     environment:
       <<: *common-env
       AGNAV_FORCE_PERSPECTIVES: "true"
@@ -136,7 +134,6 @@ services:
   # ── test-integration (RAG Pipeline Integration Tests) ───────────────────────
   test-integration:
     <<: *service-defaults
-    user: "${UID:-1000}:${GID:-1000}"
     profiles: [integration]
     build:
       <<: *common-build
@@ -150,7 +147,6 @@ services:
   # ── test-e2e (Full Flow / Functional Tests) ─────────────────────────────────
   test-e2e:
     <<: *service-defaults
-    user: "${UID:-1000}:${GID:-1000}"
     profiles: [e2e]
     build:
       <<: *common-build
