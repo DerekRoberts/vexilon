@@ -211,9 +211,8 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          TAG=$(echo '${{ steps.resolve.outputs.images }}' | jq -r '.agnav')
           set -x
-          ./.github/scripts/deploy.sh "DerekRoberts/landru" "$TAG"
+          ./.github/scripts/deploy.sh "DerekRoberts/landru" "${{ steps.resolve.outputs.image }}"
 
       - name: Verify Space boots successfully
         env:

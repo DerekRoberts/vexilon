@@ -91,14 +91,10 @@ git reset # Clears the index
 if [[ "$IMAGE_REF" == *"@"* ]] || [[ "$IMAGE_REF" == *"ghcr.io"* ]]; then
     FULL_IMAGE_REF="$IMAGE_REF"
 else
+    # Fallback path for legacy/local usage
     [[ "$IMAGE_REF" == sha256:* ]] && separator='@' || separator=':'
-    
-    # The package name is nested as 'repository/package' in this organization
     _REPO_REF="${GITHUB_REPOSITORY:-miniontech/vexilon}"
-    ORG_NAME="${_REPO_REF%/*}"
-    REPO_NAME="${_REPO_REF#*/}"
-    REPO_PATH="${ORG_NAME,,}/${REPO_NAME,,}/agnav"
-    FULL_IMAGE_REF="ghcr.io/${REPO_PATH}${separator}${IMAGE_REF}"
+    FULL_IMAGE_REF="ghcr.io/${_REPO_REF,,}/agnav${separator}${IMAGE_REF}"
 fi
 
 cat <<EOF > Dockerfile
