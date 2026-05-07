@@ -102,7 +102,7 @@ FROM ${FULL_IMAGE_REF}
 LABEL rebuild_timestamp=$(date +%s)
 COPY app.py /app/app.py
 # Temporary override to fix stale base image environment
-CMD ["sh", "-c", "unset HF_HUB_OFFLINE && python app.py"]
+CMD ["sh", "-c", "export TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=0 && python app.py"]
 EOF
 
 if [ "$DRY_RUN" == "true" ]; then
@@ -136,3 +136,16 @@ git remote add hf "https://huggingface.co/spaces/${SPACE_NAME}"
 git push "https://api:${HF_TOKEN}@huggingface.co/spaces/${SPACE_NAME}" hf-snapshot:main --force --no-verify
 
 echo "Deployment to ${SPACE_NAME} complete!"
+
+# Automatic Verification
+if [ "${TEST:-}" == "true" ]; then
+    echo "[info] TEST=true detected. Triggering automatic verification..."
+    # Locate the verification script relative to this script
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -f "$SCRIPT_DIR/verify_deployment.sh" ]; then
+        bash "$SCRIPT_DIR/verify_deployment.sh" "$SPACE_NAME"
+    else
+        echo "Error: Verification script not found at $SCRIPT_DIR/verify_deployment.sh"
+        exit 1
+    fi
+fi

@@ -22,38 +22,48 @@ END_TIME=$((START_TIME + TIMEOUT_SECONDS))
 
 while [ $(date +%s) -lt $END_TIME ]; do
   # Use Bash array for safer argument handling
-  CURL_ARGS=( -s )
+  CURL_ARGS=( -s -L )
   if [ -n "${HF_TOKEN:-}" ]; then
       CURL_ARGS+=( -H "Authorization: Bearer $HF_TOKEN" )
   fi
 
   # Temporarily disable -e to handle network errors during polling
   set +e
-  STATUS_JSON=$(curl "${CURL_ARGS[@]}" "https://huggingface.co/api/spaces/$SPACE_ID")
+  # Capture both body and HTTP status code
+  HTTP_RESPONSE=$(curl "${CURL_ARGS[@]}" -w "%{http_code}" "https://huggingface.co/api/spaces/$SPACE_ID")
   CURL_EXIT=$?
   set -e
 
+  HTTP_STATUS="${HTTP_RESPONSE: -3}"
+  STATUS_JSON="${HTTP_RESPONSE:0:${#HTTP_RESPONSE}-3}"
+
   if [ $CURL_EXIT -ne 0 ]; then
-      echo "[verify] curl command failed (exit code $CURL_EXIT). This might be a network glitch. Retrying in $INTERVAL seconds..."
+      echo "[verify] curl command failed (exit code $CURL_EXIT). Retrying in $INTERVAL seconds..."
       sleep $INTERVAL
       continue
   fi
 
-  # Check if we got a valid response (not empty or error)
-  if [ -z "$STATUS_JSON" ] || [[ "$STATUS_JSON" == *"\"error\":\""* ]]; then
-      echo "[verify] API returned error or empty response. Body: $STATUS_JSON. Retrying in $INTERVAL seconds..."
+  if [ "$HTTP_STATUS" != "200" ]; then
+      echo "[verify] API returned HTTP $HTTP_STATUS. Body: $STATUS_JSON. Retrying..."
       sleep $INTERVAL
       continue
   fi
 
-  # Robust status extraction using python (already available in GH Actions)
-  CURRENT_STATUS=$(echo "$STATUS_JSON" | python3 -c "import sys, json; print(str(json.load(sys.stdin).get('runtime', {}).get('stage', 'unknown')).lower())")
+  # Check if we got a valid response (not empty)
+  if [ -z "$STATUS_JSON" ]; then
+      echo "[verify] Received empty response from API. Retrying..."
+      sleep $INTERVAL
+      continue
+  fi
+
+  # Robust status extraction
+  CURRENT_STATUS=$(echo "$STATUS_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(str(data.get('runtime', {}).get('stage', 'unknown')).lower())" 2>/dev/null || echo "unknown")
   
   echo "[verify] Current status: $CURRENT_STATUS ($(($(date +%s) - START_TIME))s)"
   
   if [ "$CURRENT_STATUS" == "running" ]; then
     echo "✅ Success: Space $SPACE_ID is running!"
-    exit 0
+    break
   fi
   
   # Fail immediately on terminal error states
@@ -68,5 +78,40 @@ while [ $(date +%s) -lt $END_TIME ]; do
   sleep $INTERVAL
 done
 
-echo "❌ Error: Timeout waiting for Space $SPACE_ID to become ready after $TIMEOUT_SECONDS seconds."
-exit 1
+# Check if we exited the loop because of success or timeout
+if [ "$CURRENT_STATUS" != "running" ]; then
+  echo "❌ Error: Timeout waiting for Space $SPACE_ID to become ready after $TIMEOUT_SECONDS seconds."
+  exit 1
+fi
+
+# --- Functional Smoke Test ---
+echo "[verify] 🔍 Running deep functional smoke test..."
+SPACE_URL="https://$(echo "$SPACE_ID" | tr '[:upper:]' '[:lower:]' | tr '/' '-').hf.space"
+TEST_QUERY="What is AgNav?"
+
+# 1. Trigger the event and capture the Event ID
+EVENT_JSON=$(curl -s -X POST "$SPACE_URL/gradio_api/call/chat_handler" \
+  -H "Content-Type: application/json" \
+  -d "{\"data\": [\"$TEST_QUERY\", [], \"Lookup\"]}")
+
+EVENT_ID=$(echo "$EVENT_JSON" | python3 -c "import sys, json; print(json.load(sys.stdin).get('event_id', ''))")
+
+if [ -z "$EVENT_ID" ]; then
+  echo "❌ Error: Failed to trigger chat_handler. API returned: $EVENT_JSON"
+  exit 1
+fi
+
+echo "[verify] Event triggered (ID: $EVENT_ID). Waiting for LLM response..."
+
+# 2. Poll the stream for data (timeout after 30 seconds)
+# We use curl -N to disable buffering and grep for 'data:' events
+DATA_RECEIVED=$(curl -s -N "$SPACE_URL/gradio_api/call/chat_handler/$EVENT_ID" | grep -m 1 "data:" || true)
+
+if [ -z "$DATA_RECEIVED" ]; then
+  echo "❌ Error: Functional smoke test failed. No data received from stream."
+  exit 1
+fi
+
+echo "[verify] Received data chunk: ${DATA_RECEIVED:0:50}..."
+echo "✅ Success: Deep functional smoke test passed! AgNav is fully operational at $SPACE_URL"
+exit 0

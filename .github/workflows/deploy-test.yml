@@ -37,17 +37,11 @@ jobs:
           revision: ${{ github.event.pull_request.head.sha || github.sha }}
           max_depth: 20
 
-      - name: Push image-based stub to Hugging Face Space
+      - name: Promote and Verify to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          set -x
-          ./.github/scripts/deploy.sh "DerekRoberts/landru" "${{ steps.resolve.outputs.image }}"
-
-      - name: Verify Space boots successfully
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: ./.github/scripts/verify_deployment.sh "DerekRoberts/landru"
+          TEST: "true"
+        run: ./.github/scripts/deploy.sh "DerekRoberts/landru" "${{ steps.resolve.outputs.image }}"
 
       - name: Notify Owners on Failure
         if: failure()

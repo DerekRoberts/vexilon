@@ -1,5 +1,9 @@
-import sys
 import os
+# Force online mode for the API but keep local models offline for speed
+os.environ["HF_HUB_OFFLINE"] = "0"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
+import sys
 import re
 # Agreement Navigator - UI Version: 2026-05-03
 # Integrated RAG Backend + Stabilized Gradio 6 UI
@@ -20,7 +24,7 @@ from threading import Lock
 import numpy as np
 import openai
 from openai import AsyncOpenAI
-from huggingface_hub import AsyncInferenceClient, get_token
+
 import faiss
 import gradio as gr
 
@@ -85,6 +89,7 @@ def _get_default_model():
     return "Qwen/Qwen3-4B-Instruct-2507"
 
 DEFAULT_MODEL_LLM = os.getenv("AGNAV_DEFAULT_MODEL", _get_default_model())
+HF_PROVIDER = os.getenv("AGNAV_HF_PROVIDER", "featherless-ai")
 CLAUDE_MODEL = os.getenv("AGNAV_CLAUDE_MODEL", DEFAULT_MODEL_LLM)
 REVIEWER_MODEL = os.getenv("AGNAV_REVIEWER_MODEL", DEFAULT_MODEL_LLM)
 CONDENSE_MODEL = os.getenv("AGNAV_CONDENSE_MODEL", DEFAULT_MODEL_LLM)
@@ -279,9 +284,10 @@ def get_llm_client():
     if _llm_client is None:
         provider = get_llm_provider()
         if provider == "huggingface":
-            _llm_client = AsyncInferenceClient(
-                model=DEFAULT_MODEL_LLM,
-                token=os.environ.get("HF_TOKEN")
+            # Use the OpenAI-compatible router endpoint for reliable routing
+            _llm_client = AsyncOpenAI(
+                base_url="https://router.huggingface.co/v1",
+                api_key=os.environ.get("HF_TOKEN")
             )
         elif provider == "ollama":
             ollama_host = os.getenv("OLLAMA_HOST", "ollama:11434")
@@ -310,40 +316,22 @@ async def unified_chat_create(model: str, messages: list, system: str | list = N
     client = get_llm_client()
     full_messages = _build_messages(messages, system)
     
-    if isinstance(client, AsyncInferenceClient):
-        resp = await client.chat_completion(
-            model=model,
-            messages=full_messages,
-            max_tokens=max_tokens
-        )
-    else:
-        resp = await client.chat.completions.create(
-            model=model,
-            max_tokens=max_tokens,
-            messages=full_messages,
-            timeout=300.0
-        )
+    # Use the 'model:provider' syntax for the most robust routing on the HF Router
+    actual_model = f"{model}:{HF_PROVIDER}" if get_llm_provider() == "huggingface" else model
+    kwargs = {"model": actual_model, "max_tokens": max_tokens, "messages": full_messages, "timeout": 300.0}
+
+    resp = await client.chat.completions.create(**kwargs)
     return resp.choices[0].message.content
 
 async def unified_chat_stream(model: str, messages: list, system: str | list = None, max_tokens: int = 2048) -> AsyncIterator[str]:
     client = get_llm_client()
     full_messages = _build_messages(messages, system)
     
-    if isinstance(client, AsyncInferenceClient):
-        stream = await client.chat_completion(
-            model=model,
-            messages=full_messages,
-            max_tokens=max_tokens,
-            stream=True
-        )
-    else:
-        stream = await client.chat.completions.create(
-            model=model,
-            max_tokens=max_tokens,
-            messages=full_messages,
-            stream=True,
-            timeout=300.0
-        )
+    # Use the 'model:provider' syntax for the most robust routing on the HF Router
+    actual_model = f"{model}:{HF_PROVIDER}" if get_llm_provider() == "huggingface" else model
+    kwargs = {"model": actual_model, "max_tokens": max_tokens, "messages": full_messages, "stream": True, "timeout": 300.0}
+
+    stream = await client.chat.completions.create(**kwargs)
     # Stateful buffer for filtering <think> blocks (handles split-token tags)
     in_think_block = False
     buffer = ""
@@ -594,8 +582,10 @@ def startup(force_rebuild: bool = False):
     provider = get_llm_provider()
     model = DEFAULT_MODEL_LLM
     logger.info(f"[startup] AgNav {AGNAV_VERSION} starting...")
-    logger.info(f"[startup] Provider: {provider}")
-    logger.info(f"[startup] Default Model: {model}")
+    logger.info(f"[startup] Provider: {get_llm_provider()}")
+    logger.info(f"[startup] Default Model: {DEFAULT_MODEL_LLM}")
+    if get_llm_provider() == "huggingface":
+        logger.info(f"[startup] HF Routing: {HF_PROVIDER}")
 
     _test_registry.load(TESTS_DIR)
     # Ensure cache directory is writable
