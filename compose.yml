@@ -17,13 +17,11 @@ x-common-build: &common-build
 x-service-defaults: &service-defaults
   mem_limit: *MEM_LIMIT
   memswap_limit: *MEM_LIMIT
-  volumes:
-    - ./.pdf_cache:/app/.pdf_cache:z
+  volumes: []
 
 # Development volumes: Enables live-reload while protecting internal container data
 x-dev-volumes: &dev-volumes
   - .:/app:z
-  - ./.pdf_cache:/app/.pdf_cache:z
   - ./reports:/app/reports:z  # Artifact extraction "Lifeboat"
   - /app/.venv         # Lifeboat for packages
   - /hf_cache      # Lifeboat for the model
@@ -90,26 +88,13 @@ services:
       --junitxml=reports/junit.xml 
       --cov=agnav --cov=app --cov-report=xml:reports/coverage.xml"
 
-  # ── index (Cache Refresh / Rebuild) ─────────────────────────────────────────
-  index:
-    <<: *service-defaults
-    user: "${UID:-1000}:${GID:-1000}"
-    profiles: [index]
-    build:
-      <<: *common-build
-      target: builder
-    environment: *common-env
-    command: python scripts/build_index.py
-
   # ── verify (Cache Validator) ──────────────────────────────────────────────────
   verify:
     <<: *service-defaults
-    user: "${UID:-1000}:${GID:-1000}"
     profiles: [verify]
     build:
       <<: *common-build
       target: test_builder
-    volumes: *dev-volumes
     environment: *common-env
     command: /app/.venv/bin/python scripts/generate_cache_manifest.py validate
 
