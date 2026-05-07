@@ -315,10 +315,9 @@ async def unified_chat_create(model: str, messages: list, system: str | list = N
     client = get_llm_client()
     full_messages = _build_messages(messages, system)
     
-    # Only force the provider for Hugging Face to resolve routing issues
-    kwargs = {"model": model, "max_tokens": max_tokens, "messages": full_messages, "timeout": 300.0}
-    if get_llm_provider() == "huggingface":
-        kwargs["extra_headers"] = {"X-Inference-Provider": "featherless-ai"}
+    # Use the 'model:provider' syntax for the most robust routing on the HF Router
+    actual_model = f"{model}:featherless-ai" if get_llm_provider() == "huggingface" else model
+    kwargs = {"model": actual_model, "max_tokens": max_tokens, "messages": full_messages, "timeout": 300.0}
 
     resp = await client.chat.completions.create(**kwargs)
     return resp.choices[0].message.content
@@ -327,10 +326,9 @@ async def unified_chat_stream(model: str, messages: list, system: str | list = N
     client = get_llm_client()
     full_messages = _build_messages(messages, system)
     
-    # Only force the provider for Hugging Face to resolve routing issues
-    kwargs = {"model": model, "max_tokens": max_tokens, "messages": full_messages, "stream": True, "timeout": 300.0}
-    if get_llm_provider() == "huggingface":
-        kwargs["extra_headers"] = {"X-Inference-Provider": "featherless-ai"}
+    # Use the 'model:provider' syntax for the most robust routing on the HF Router
+    actual_model = f"{model}:featherless-ai" if get_llm_provider() == "huggingface" else model
+    kwargs = {"model": actual_model, "max_tokens": max_tokens, "messages": full_messages, "stream": True, "timeout": 300.0}
 
     stream = await client.chat.completions.create(**kwargs)
     # Stateful buffer for filtering <think> blocks (handles split-token tags)
