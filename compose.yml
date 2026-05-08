@@ -137,7 +137,7 @@ services:
     profiles: [dev, all]
     build:
       <<: *common-build
-      target: test_builder
+      target: functional_builder
     volumes: *dev-volumes
     environment:
       <<: *common-env
