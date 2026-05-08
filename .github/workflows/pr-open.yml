@@ -210,7 +210,7 @@ jobs:
         uses: bcgov/action-builder-ghcr@main
         with:
           package: agnav
-          build_context: .
+          build_context: app
           build_file: Containerfile
           build_args: |
             VERSION=sha-${{ github.event.pull_request.head.sha }}
