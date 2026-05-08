@@ -23,9 +23,9 @@ COPY pyproject.toml .
 RUN pip install --no-cache-dir uv==$(grep -oP 'uv==\K[\d.]+' pyproject.toml)
 
 RUN uv pip install --system sentence-transformers
-RUN --mount=type=cache,target=/root/.cache/huggingface \
-    echo "Cache-buster: 2026-05-08-v3" && \
-    python -c "from sentence_transformers import SentenceTransformer; model = SentenceTransformer('BAAI/bge-small-en-v1.5', cache_folder='/root/.cache/huggingface'); model.save('/hf_cache')" && \
+RUN --mount=type=cache,target=/root/.cache/hf_v4 \
+    echo "Cache-buster: 2026-05-08-v4" && \
+    python -c "from sentence_transformers import SentenceTransformer; model = SentenceTransformer('BAAI/bge-small-en-v1.5', cache_folder='/root/.cache/hf_v4'); model.save('/hf_cache')" && \
     ls -l /hf_cache/modules.json
 
 # ─── Stage 2: Builder (Dependencies Only) ────────────────────────────────────
