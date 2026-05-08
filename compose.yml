@@ -88,7 +88,7 @@ services:
     command: >
       sh -c "VERIFY_ENABLED=true uv run --no-sync python -m pytest tests/test_*.py -v 
       --junitxml=reports/junit.xml 
-      --cov=indexing --cov=app --cov-report=xml:reports/coverage.xml"
+      --cov=indexing --cov=main --cov-report=xml:reports/coverage.xml"
 
   # ── verify (Cache Validator) ──────────────────────────────────────────────────
   verify:

@@ -65,7 +65,6 @@ RUN --mount=type=cache,target=/app/.pdf_cache_mount \
 # ─── Stage 2.6: App Builder (Adds Source Code) ──────────────────────────────
 FROM index_builder AS app_builder
 COPY . ./
-COPY conftest.py README.md Containerfile compose.yml LICENSE* ./
 
 # ─── Stage 2.7: Test Builder (Adds Dev/Test Tools) ──────────────────────────
 FROM app_builder AS functional_builder
