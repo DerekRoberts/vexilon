@@ -75,6 +75,8 @@ COPY . ./
 
 # ─── Stage 2.7: Functional Builder (Final Test/Dev Image Source) ───────────────
 FROM test_deps_builder AS functional_builder
+# Copy the model and index into the final runtime image
+COPY --from=model_fetcher /hf_cache /hf_cache
 COPY --from=index_builder /app/.pdf_cache /app/.pdf_cache
 COPY . ./
 RUN mkdir -p /app/reports /app/.pytest_cache && chown -R 1000:1000 /app/reports /app/.pytest_cache
