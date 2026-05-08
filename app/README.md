@@ -1,16 +1,3 @@
----
-title: Agreement Navigator (AgNav)
-emoji: 📋
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-app_port: 7860 # DO NOT EDIT: must match Containerfile EXPOSE to prevent sync-drift
-startup_duration_timeout: 10m
-pinned: true
-license: mit
-short_description: Look up the BCGEU 19th Main Public Service Agreement
----
-
 # Agreement Navigator (AgNav)
 
 AI chatbot built to empower BCGEU union stewards with instant, cited answers from a broad library
@@ -83,7 +70,7 @@ podman compose up --build dev
 ```
 
 > [!NOTE]
-> **Performance:** Local LLM execution speed depends on your CPU/GPU. The first run will be slower as it pulls the model weights defined in `app.py`.
+> **Performance:** Local LLM execution speed depends on your CPU/GPU. The first run will be slower as it pulls the model weights defined in `main.py`.
 
 **2. Production / Cloud Simulation**
 Uses the **Hugging Face Inference API** for high-speed "Flash" responses. Requires an internet connection and a valid token. This simulates the exact environment of the Hugging Face Space.
@@ -244,14 +231,13 @@ podman compose up verify
 ## Project Structure
 
 ```
-vexilon/
-├── agnav/                # Core application workspace
-│   ├── data/             # Knowledge base (markdown files)
-│   ├── prompts/          # System prompts and instructions
-│   ├── scripts/          # Build, conversion, and audit utilities
-│   ├── tests/            # pytest test suite (Unit + Integration)
-│   ├── app.py            # Main entry point (Gradio UI)
-│   └── indexing.py       # RAG pipeline and FAISS logic
+app/                      # Core application workspace
+├── data/                 # Knowledge base (markdown files)
+├── prompts/              # System prompts and instructions
+├── scripts/              # Build, conversion, and audit utilities
+├── tests/                # pytest test suite (Unit + Integration)
+├── main.py               # Main entry point (Gradio UI)
+└── indexing.py           # RAG pipeline and FAISS logic
 ├── .agents/              # AI Agent specifications and SOPs
 ├── .github/              # CI/CD workflows and scripts
 ├── Containerfile         # High-integrity Docker build
