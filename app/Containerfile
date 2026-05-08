@@ -3,7 +3,7 @@ FROM python:3.14-slim AS base
 
 # Silence Hugging Face nag messages globally
 ENV HF_HOME=/hf_cache \
-    EMBED_MODEL=/hf_cache
+    EMBED_MODEL=/model
 
 # Install common runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -24,9 +24,9 @@ RUN pip install --no-cache-dir uv==$(grep -oP 'uv==\K[\d.]+' pyproject.toml)
 
 RUN uv pip install --system sentence-transformers
 RUN --mount=type=cache,target=/root/.cache/hf_v4 \
-    echo "Cache-buster: 2026-05-08-v4" && \
-    python -c "from sentence_transformers import SentenceTransformer; model = SentenceTransformer('BAAI/bge-small-en-v1.5', cache_folder='/root/.cache/hf_v4'); model.save('/hf_cache')" && \
-    ls -l /hf_cache/modules.json
+    echo "Cache-buster: 2026-05-08-v5" && \
+    python -c "from sentence_transformers import SentenceTransformer; model = SentenceTransformer('BAAI/bge-small-en-v1.5', cache_folder='/root/.cache/hf_v4'); model.save('/model')" && \
+    ls -l /model/modules.json
 
 # ─── Stage 2: Builder (Dependencies Only) ────────────────────────────────────
 FROM base AS builder
@@ -55,7 +55,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # ─── Stage 2.5: Index Builder (Data-Heavy - Cached) ──────────────────────────
 FROM builder AS index_builder
-COPY --from=model_fetcher /hf_cache /hf_cache
+COPY --from=model_fetcher /model /model
 
 # Copy ONLY what's needed for indexing
 COPY data/ ./data/
@@ -76,10 +76,11 @@ COPY . ./
 # ─── Stage 2.7: Functional Builder (Final Test/Dev Image Source) ───────────────
 FROM test_deps_builder AS functional_builder
 # Copy the model and index into the final runtime image
-COPY --from=model_fetcher /hf_cache /hf_cache
+COPY --from=model_fetcher /model /model
 COPY --from=index_builder /app/.pdf_cache /app/.pdf_cache
 COPY . ./
-RUN mkdir -p /app/reports /app/.pytest_cache && chown -R 1000:1000 /app/reports /app/.pytest_cache
+RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache /model && \
+    chown -R 1000:1000 /app/reports /app/.pytest_cache /hf_cache /model
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
 FROM base AS runner
@@ -89,10 +90,11 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy everything as root (read-only for the application user)
 COPY --from=app_builder /app /app
-COPY --from=model_fetcher /hf_cache /hf_cache
+COPY --from=model_fetcher /model /model
 
 # Only create and chown (by UID) the specific directories that MUST be writable
-RUN mkdir -p /app/.pdf_cache /app/reports && chown -R 1000:1000 /app/.pdf_cache /app/reports
+RUN mkdir -p /app/.pdf_cache /app/reports /hf_cache /model && \
+    chown -R 1000:1000 /app/.pdf_cache /app/reports /hf_cache /model
 
 USER 1000
 RUN --mount=type=cache,target=/app/.pdf_cache_mount,uid=1000,gid=1000 \
