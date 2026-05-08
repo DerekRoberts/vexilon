@@ -20,8 +20,8 @@ async def test_full_rag_flow_integration(monkeypatch, mock_llm_client, tmp_path)
     
     # Force reload to pick up new env vars
     import importlib
-    import agnav.indexing as indexing
-    import app
+    import indexing
+    import main as app
     importlib.reload(indexing)
     importlib.reload(app)
     
@@ -30,7 +30,8 @@ async def test_full_rag_flow_integration(monkeypatch, mock_llm_client, tmp_path)
     Uses the real MD agreement and real embedding model.
     """
     # 1. Setup: Use a smaller document for isolation to save memory/time in CI
-    source_md = Path("data/labour_law/04_jurisprudence/Nexus Test and Off-Duty Conduct.md")
+    app_root = Path(__file__).parent.parent.parent
+    source_md = app_root / "data/labour_law/04_jurisprudence/Nexus Test and Off-Duty Conduct.md"
     if not source_md.exists():
         pytest.skip(f"Agreement Markdown missing at {source_md}; cannot run full integration test.")
 

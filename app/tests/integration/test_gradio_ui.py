@@ -6,7 +6,7 @@ Does NOT rely on internal gradio.testing utilities which may vary across version
 """
 
 import pytest
-import app
+import main as app
 import gradio as gr
 
 def test_ui_builds_correctly(monkeypatch, mock_llm_client):

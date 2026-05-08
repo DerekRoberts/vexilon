@@ -8,8 +8,7 @@ import faiss
 import numpy as np
 import pytest
 
-import app
-import agnav.indexing as indexing
+import indexing
 
 
 def _make_chunks(n: int) -> list[dict]:

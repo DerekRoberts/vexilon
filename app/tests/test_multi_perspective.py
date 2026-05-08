@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from contextlib import asynccontextmanager
-import app
+import main as app
 
 @pytest.mark.asyncio
 async def test_generate_perspective_queries_simple():
@@ -14,9 +14,9 @@ async def test_generate_perspective_queries_simple():
     mock_completion.choices = [MagicMock(message=MagicMock(content='["vacation days amount"]'))]
     mock_client.chat.completions.create = AsyncMock(return_value=mock_completion)
     
-    with patch("app.get_llm_client", return_value=mock_client):
+    with patch("main.get_llm_client", return_value=mock_client):
         # We need to mock condense_query to return a known value
-        with patch("app.condense_query", return_value="vacation days amount"):
+        with patch("main.condense_query", return_value="vacation days amount"):
             queries = await app.generate_perspective_queries(message, history)
             
     assert queries == ["vacation days amount"]
@@ -34,8 +34,8 @@ async def test_generate_perspective_queries_complex():
     mock_completion.choices = [MagicMock(message=MagicMock(content='["off-duty conduct case law", "Millhaven factors DUI", "employer rights off-site arrest"]'))]
     mock_client.chat.completions.create = AsyncMock(return_value=mock_completion)
     
-    with patch("app.get_llm_client", return_value=mock_client):
-        with patch("app.condense_query", return_value="DUI arrest off-duty termination"):
+    with patch("main.get_llm_client", return_value=mock_client):
+        with patch("main.condense_query", return_value="DUI arrest off-duty termination"):
             queries = await app.generate_perspective_queries(message, history)
             
     assert len(queries) == 3
@@ -46,6 +46,7 @@ async def test_generate_perspective_queries_complex():
 @pytest.mark.asyncio
 async def test_rag_stream_aggregates_multiple_queries(monkeypatch):
     """Verify that rag_stream calls search_index for each query and deduplicates."""
+    monkeypatch.setenv("AGNAV_FORCE_PERSPECTIVES", "true")
     
     fake_index = MagicMock()
     monkeypatch.setattr(app, "_index", fake_index)

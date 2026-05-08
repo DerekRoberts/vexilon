@@ -8,7 +8,11 @@ from unittest.mock import MagicMock, patch, AsyncMock
 import openai
 import pytest
 
-import app
+import main as app
+
+@pytest.fixture(autouse=True)
+def enable_verify(monkeypatch):
+    monkeypatch.setattr(app, "VERIFY_ENABLED", True)
 
 @pytest.fixture
 def mock_llm_client():

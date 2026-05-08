@@ -1,5 +1,5 @@
 import pytest
-from app import _test_registry, TESTS_DIR, rag_review_stream
+from main import _test_registry, TESTS_DIR, rag_review_stream
 from unittest.mock import MagicMock, patch, AsyncMock
 from contextlib import asynccontextmanager
 
@@ -17,14 +17,14 @@ async def test_rag_review_stream_triggers_ohs_logic(monkeypatch):
     
     # Mock dependencies
     fake_index = MagicMock()
-    monkeypatch.setattr("app._index", fake_index)
+    monkeypatch.setattr("main._index", fake_index)
     
     fake_chunks = [{"text": "Agreement text", "page": 1, "source": "Main", "chunk_index": 0}]
-    monkeypatch.setattr("app._chunks", fake_chunks)
+    monkeypatch.setattr("main._chunks", fake_chunks)
     
     def mock_search_batch(*a, **kw):
         return [fake_chunks]
-    monkeypatch.setattr("app.search_index_batch", mock_search_batch)
+    monkeypatch.setattr("main.search_index_batch", mock_search_batch)
     
     all_captured_kwargs = []
     
@@ -40,10 +40,10 @@ async def test_rag_review_stream_triggers_ohs_logic(monkeypatch):
 
     mock_client = MagicMock()
     mock_client.chat.completions.create = AsyncMock(side_effect=mock_create)
-    monkeypatch.setattr("app.get_llm_client", lambda: mock_client)
+    monkeypatch.setattr("main.get_llm_client", lambda: mock_client)
     
     # Mock generate_perspective_queries to avoid hitting the API in this test
-    monkeypatch.setattr("app.generate_perspective_queries", AsyncMock(return_value=["I need to refuse unsafe work"]))
+    monkeypatch.setattr("main.generate_perspective_queries", AsyncMock(return_value=["I need to refuse unsafe work"]))
     
     # Run rag_review_stream with an OHS keyword
     # persona_mode must be 'Grieve' to trigger Audit Logic

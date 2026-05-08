@@ -27,7 +27,7 @@ jobs:
       - id: diff
         uses: bcgov/actions/diff-triggers@main
         with:
-          triggers: '["app/**", "Containerfile", "compose.yml", ".github/workflows/**"]'
+          triggers: '["app/**", "compose.yml", ".github/workflows/**"]'
 
   prepare-tests:
     name: Prepare Test Cache

@@ -16,8 +16,8 @@ import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import app
-import agnav.indexing as indexing
+import main as app
+import indexing
 
 
 def _tiny_index(n: int = 3) -> tuple[faiss.IndexFlatIP, list[dict]]:

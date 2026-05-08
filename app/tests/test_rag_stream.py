@@ -12,13 +12,13 @@ from unittest.mock import MagicMock, patch, AsyncMock
 import openai
 import pytest
 
-import app
+import main as app
 
 def test_compose_yml_does_not_hardcode_model_name():
     """
     compose.yml must not hardcode a model name default.
     """
-    compose_text = (Path(__file__).parent.parent / "compose.yml").read_text()
+    compose_text = (Path(__file__).parent.parent.parent / "compose.yml").read_text()
     match = re.search(r"DEFAULT_MODEL_LLM", compose_text)
     assert not match
 

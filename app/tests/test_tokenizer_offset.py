@@ -1,5 +1,5 @@
 import pytest
-from agnav.indexing import get_embed_model
+from indexing import get_embed_model
 
 def test_tokenizer_is_fast():
     """Agreement Navigator requires 'Fast' tokenizers for character-offset mapping."""

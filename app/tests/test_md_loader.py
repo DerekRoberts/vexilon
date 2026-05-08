@@ -1,8 +1,7 @@
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-import app
-import agnav.indexing as indexing
+import indexing
 
 def test_load_md_chunks_basic(tmp_path, monkeypatch):
     """load_md_chunks should return chunks with text and page=1 (baseline)."""

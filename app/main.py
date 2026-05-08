@@ -29,7 +29,7 @@ import faiss
 import gradio as gr
 
 # ─── Agnav Imports ────────────────────────────────────────────────────────
-from agnav.indexing import (
+from indexing import (
     _get_source_name,
     _get_rag_source_files,
     build_index_from_sources,
@@ -589,7 +589,7 @@ def startup(force_rebuild: bool = False):
 
     _test_registry.load(TESTS_DIR)
     # Ensure cache directory is writable
-    from agnav import indexing
+    import indexing
     indexing.PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     try:
         test_file = indexing.PDF_CACHE_DIR / "permissions_test"

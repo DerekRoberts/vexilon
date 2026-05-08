@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
-import app
+import main as app
 
 @pytest.mark.asyncio
 async def test_condense_query_with_gradio_blocks():
@@ -24,9 +24,9 @@ async def test_condense_query_with_gradio_blocks():
     mock_completion.choices = [MagicMock(message=MagicMock(content="Rephrased Query"))]
     mock_client.chat.completions.create = AsyncMock(return_value=mock_completion)
     
-    with patch("app.get_llm_client", return_value=mock_client):
+    with patch("main.get_llm_client", return_value=mock_client):
         # We need to mock get_embed_model because app.py might try to load it
-        with patch("app.get_embed_model"):
+        with patch("main.get_embed_model"):
             condensed = await app.condense_query(message, history)
             
     assert condensed == "Rephrased Query"
@@ -46,8 +46,8 @@ async def test_condense_query_with_string_content():
     mock_completion.choices = [MagicMock(message=MagicMock(content="Condensed String"))]
     mock_client.chat.completions.create = AsyncMock(return_value=mock_completion)
     
-    with patch("app.get_llm_client", return_value=mock_client):
-        with patch("app.get_embed_model"):
+    with patch("main.get_llm_client", return_value=mock_client):
+        with patch("main.get_embed_model"):
             condensed = await app.condense_query(message, history)
             
     assert condensed == "Condensed String"
@@ -64,8 +64,8 @@ async def test_condense_query_handles_api_failure_gracefully():
     mock_client = MagicMock()
     mock_client.chat.completions.create = AsyncMock(side_effect=Exception("API Down"))
     
-    with patch("app.get_llm_client", return_value=mock_client):
-        with patch("app.get_embed_model"):
+    with patch("main.get_llm_client", return_value=mock_client):
+        with patch("main.get_embed_model"):
             condensed = await app.condense_query(message, history)
             
     assert condensed == message

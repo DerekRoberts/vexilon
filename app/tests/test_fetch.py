@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-import agnav.indexing as indexing
+import indexing
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

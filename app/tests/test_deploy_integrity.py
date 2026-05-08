@@ -13,9 +13,9 @@ REPO_ROOT = Path(__file__).parent.parent
 
 
 def test_readme_metadata_sync():
-    """Ensures README.md has the critical metadata for Docker HF Spaces."""
-    readme_path = REPO_ROOT / "README.md"
-    content = readme_path.read_text()
+    """Ensures metadata.yml has the critical metadata for Docker HF Spaces."""
+    metadata_path = REPO_ROOT / "metadata.yml"
+    content = metadata_path.read_text()
     
     # 1. Must be sdk: docker
     assert re.search(r"^sdk: docker", content, re.MULTILINE), \
@@ -39,7 +39,7 @@ def test_readme_metadata_sync():
 
 def test_app_py_build_safety():
     """Ensures app.py doesn't contain global thread-pinning that hangs Docker builds."""
-    app_path = REPO_ROOT / "app.py"
+    app_path = REPO_ROOT / "main.py"
     content = app_path.read_text()
     
     # Check for OMP_NUM_THREADS or MKL_NUM_THREADS at top level (not inside a function)
@@ -90,7 +90,7 @@ def test_enter_key_uses_capture_phase():
     inserts a newline, making Shift+Enter the only way to submit — opposite of
     standard chat UX (MS Teams, Slack, etc.).
     """
-    app_path = REPO_ROOT / "app.py"
+    app_path = REPO_ROOT / "main.py"
     content = app_path.read_text()
 
     # The listener must be registered on document with capture=true (third arg).

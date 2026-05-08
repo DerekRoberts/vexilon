@@ -1,7 +1,7 @@
 """
 conftest.py — pytest root configuration
 
-Adds the project root to sys.path so `import app` works from tests/
+Adds the project root to sys.path so `import main` works from tests/
 regardless of how pytest is invoked.
 """
 import sys
@@ -22,7 +22,7 @@ def mock_embedding_model(request, monkeypatch):
     """
     if "integration" in str(request.path):
         return
-    import app
+    import main as app
     # Only mock if we are not explicitly doing an integration test that needs the real model
     # We can check the test name or path, but it's safer to just provide a lightweight mock
     # and let integration tests skip the mock if they want.

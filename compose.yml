@@ -51,7 +51,7 @@ services:
         condition: service_completed_successfully
     ports:
       - "${PORT:-7860}:7860"
-    command: /app/.venv/bin/python app.py
+    command: /app/.venv/bin/python main.py
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:7860')\""]
       interval: 30s
@@ -88,7 +88,7 @@ services:
     command: >
       sh -c "VERIFY_ENABLED=true uv run --no-sync python -m pytest tests/test_*.py -v 
       --junitxml=reports/junit.xml 
-      --cov=agnav --cov=app --cov-report=xml:reports/coverage.xml"
+      --cov=indexing --cov=app --cov-report=xml:reports/coverage.xml"
 
   # ── verify (Cache Validator) ──────────────────────────────────────────────────
   verify:
@@ -123,15 +123,15 @@ services:
       ollama:
         condition: service_healthy
     volumes:
-      - ./app/app.py:/app/app.py:ro
+      - ./app/main.py:/app/main.py:ro
     environment:
       - OLLAMA_HOST=ollama:11434
     entrypoint: /bin/sh
     command: 
       - -c
       - |
-        TARGET_MODEL=$$(sed -n 's/.*OLLAMA_MODEL_ID = "\(.*\)".*/\1/p' /app/app.py)
-        echo "Determined target model from app.py: $$TARGET_MODEL"
+        TARGET_MODEL=$$(sed -n 's/.*OLLAMA_MODEL_ID = "\(.*\)".*/\1/p' /app/main.py)
+        echo "Determined target model from main.py: $$TARGET_MODEL"
         ollama pull $$TARGET_MODEL
 
   # ── test-integration (RAG Pipeline Integration Tests) ───────────────────────

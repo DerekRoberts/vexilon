@@ -1,5 +1,5 @@
 import pytest
-import app
+import main as app
 import gradio as gr
 
 def test_manager_mode_in_selector(monkeypatch, mock_llm_client):
