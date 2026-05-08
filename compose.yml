@@ -77,7 +77,7 @@ services:
   # ── test-unit (Containerized Unit Tests) ─────────────────────────────────────
   test-unit:
     <<: *service-defaults
-    profiles: [test]
+    profiles: [test, all]
     build:
       <<: *common-build
       target: functional_builder
@@ -93,7 +93,7 @@ services:
   # ── verify (Cache Validator) ──────────────────────────────────────────────────
   verify:
     <<: *service-defaults
-    profiles: [verify]
+    profiles: [verify, all]
     build:
       <<: *common-build
       target: functional_builder
@@ -103,7 +103,7 @@ services:
   # ── Local LLM (Ollama) ──────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
-    profiles: [dev, integration, e2e]
+    profiles: [dev, integration, e2e, all]
     ports: ["11434:11434"]
     environment:
       - OLLAMA_FLASH_ATTENTION=1
@@ -118,7 +118,7 @@ services:
   # One-time service to pull the required model into the ollama volume.
   ollama-init:
     image: ollama/ollama:latest
-    profiles: [dev, integration, e2e]
+    profiles: [dev, integration, e2e, all]
     depends_on:
       ollama:
         condition: service_healthy
@@ -137,7 +137,7 @@ services:
   # ── test-integration (RAG Pipeline Integration Tests) ───────────────────────
   test-integration:
     <<: *service-defaults
-    profiles: [integration]
+    profiles: [integration, all]
     build:
       <<: *common-build
       target: functional_builder
@@ -153,7 +153,7 @@ services:
   # ── test-e2e (Full Flow / Functional Tests) ─────────────────────────────────
   test-e2e:
     <<: *service-defaults
-    profiles: [e2e]
+    profiles: [e2e, all]
     build:
       <<: *common-build
       target: functional_builder
@@ -163,12 +163,72 @@ services:
       PYTHONPATH: /app
       AGNAV_LLM_PROVIDER: ollama
       OLLAMA_HOST: ollama
-      OLLAMA_MODEL: qwen3:0.6b  # Tiny model for fast CI
-      AGNAV_FORCE_PERSPECTIVES: "true"
     depends_on:
       ollama-init:
         condition: service_completed_successfully
-    command: uv run --no-sync python scripts/smoke_e2e.py
+    command: >
+      sh -c "uv run --no-sync python -m pytest tests/test_rag_stream.py -v"
+
+  # ── dev (Local Development with Hot-Reload) ──────────────────────────────────
+  # Mounts source code to allow instant feedback.
+  dev:
+    <<: *service-defaults
+    user: "${UID:-1000}:${GID:-1000}"
+    profiles: [dev, all]
+    build:
+      <<: *common-build
+      target: test_builder
+    volumes: *dev-volumes
+    environment:
+      <<: *common-env
+      WATCHFILES_FORCE_POLLING: "true"
+      PORT: *PORT
+    ports:
+      - "*7860:7860"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      sh -c "uv run watchfiles 'uv run python main.py' ."
+
+  # ── Staging Simulation (Immutable Cloud-Parity) ───────────────────────────
+  # Run with: podman compose --profile staging up staging
+  staging:
+    <<: *service-defaults
+    profiles: [staging, all]
+    build: *common-build
+    environment:
+      <<: *common-env
+      AGNAV_LLM_PROVIDER: huggingface
+      PORT: *PORT
+    ports:
+      - "7861:7860"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── test-smoke (The Grand Slam Auditor) ─────────────────────────────────────
+  test-smoke:
+    <<: *service-defaults
+    profiles: [smoke, all]
+    build:
+      <<: *common-build
+      target: functional_builder
+    environment:
+      <<: *common-env
+      SMOKE_TARGET_DEV: "http://dev:7860"
+      SMOKE_TARGET_STAGING: "http://staging:7860"
+    depends_on:
+      dev:
+        condition: service_healthy
+      staging:
+        condition: service_healthy
+    command: >
+      sh -c "uv run --no-sync python scripts/smoke_multi.py"
 
 volumes:
   ollama_data: {}
