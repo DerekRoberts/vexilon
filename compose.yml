@@ -6,6 +6,7 @@ x-var:
 # Reusable environment for all services
 x-common-env: &common-env
   HF_TOKEN: ${HF_TOKEN:-}
+  GRADIO_ANALYTICS_ENABLED: "False"
 
 x-common-build: &common-build
   context: .
@@ -17,13 +18,11 @@ x-common-build: &common-build
 x-service-defaults: &service-defaults
   mem_limit: *MEM_LIMIT
   memswap_limit: *MEM_LIMIT
-  volumes:
-    - pdf_cache:/app/.pdf_cache:z
+  volumes: []
 
 # Development volumes: Enables live-reload while protecting internal container data
 x-dev-volumes: &dev-volumes
   - .:/app:z
-  - pdf_cache:/app/.pdf_cache:z
   - ./reports:/app/reports:z  # Artifact extraction "Lifeboat"
   - /app/.venv         # Lifeboat for packages
   - /hf_cache      # Lifeboat for the model
@@ -31,10 +30,12 @@ x-dev-volumes: &dev-volumes
 
 services:
 
-  # ── Agreement Navigator (Default: Local Dev with Hot-Reload) ─────────────────
-  # Mounts source code to allow instant feedback. No profile = starts by default.
-  agnav:
+  # ── dev (Local Development with Hot-Reload) ──────────────────────────────────
+  # Mounts source code to allow instant feedback.
+  dev:
     <<: *service-defaults
+    user: "${UID:-1000}:${GID:-1000}"
+    profiles: [dev]
     build:
       <<: *common-build
       target: test_builder
@@ -71,14 +72,13 @@ services:
     cap_drop: [ALL]
     tmpfs: [/tmp]
 
-  # ── Testing ──────────────────────────────────────────────────────────────────
-  tests-unit:
+  # ── test-unit (Containerized Unit Tests) ─────────────────────────────────────
+  test-unit:
     <<: *service-defaults
     profiles: [test]
     build:
       <<: *common-build
-      target: test_builder
-    volumes: *dev-volumes
+      target: functional_builder
     environment:
       <<: *common-env
       AGNAV_FORCE_PERSPECTIVES: "true"
@@ -87,30 +87,20 @@ services:
       --junitxml=reports/junit.xml 
       --cov=agnav --cov=app --cov-report=xml:reports/coverage.xml"
 
-  # ── Cache Refresh ────────────────────────────────────────────────────────────
-  index-refresh:
+  # ── verify (Cache Validator) ──────────────────────────────────────────────────
+  verify:
     <<: *service-defaults
-    profiles: [tools]
+    profiles: [verify]
     build:
       <<: *common-build
-      target: builder
-    environment: *common-env
-    command: python scripts/build_index.py
-
-  # ── Cache Validator ─────────────────────────────────────────────────────────
-  cache-validator:
-    <<: *service-defaults
-    profiles: [tools]
-    build:
-      <<: *common-build
-      target: test_builder
-    volumes: *dev-volumes
+      target: functional_builder
     environment: *common-env
     command: /app/.venv/bin/python scripts/generate_cache_manifest.py validate
 
   # ── Local LLM (Ollama) ──────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
+    profiles: [dev, integration, e2e]
     ports: ["11434:11434"]
     environment:
       - OLLAMA_FLASH_ATTENTION=1
@@ -125,6 +115,7 @@ services:
   # One-time service to pull the required model into the ollama volume.
   ollama-init:
     image: ollama/ollama:latest
+    profiles: [dev, integration, e2e]
     depends_on:
       ollama:
         condition: service_healthy
@@ -140,11 +131,26 @@ services:
         echo "Determined target model from app.py: $$TARGET_MODEL"
         ollama pull $$TARGET_MODEL
 
-  # ── tests-functional (Integration + E2E) ─────────────────────────────────────
-  # Uses the image's baked-in FAISS index — no host mounts needed.
-  tests-functional:
+  # ── test-integration (RAG Pipeline Integration Tests) ───────────────────────
+  test-integration:
     <<: *service-defaults
-    profiles: [ci]
+    profiles: [integration]
+    build:
+      <<: *common-build
+      target: functional_builder
+    environment:
+      <<: *common-env
+      AGNAV_FORCE_PERSPECTIVES: "true"
+    depends_on:
+      ollama-init:
+        condition: service_completed_successfully
+    command: >
+      sh -c "uv run --no-sync python -m pytest tests/integration/ -v"
+
+  # ── test-e2e (Full Flow / Functional Tests) ─────────────────────────────────
+  test-e2e:
+    <<: *service-defaults
+    profiles: [e2e]
     build:
       <<: *common-build
       target: functional_builder
@@ -159,8 +165,7 @@ services:
     depends_on:
       ollama-init:
         condition: service_completed_successfully
-    command: /app/scripts/integration_e2e.sh
+    command: uv run --no-sync python scripts/smoke_e2e.py
 
 volumes:
   ollama_data: {}
-  pdf_cache: {}

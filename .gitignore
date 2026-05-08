@@ -21,8 +21,7 @@ build/
 .ipynb_checkpoints/
 
 # ─── App runtime data (do NOT commit) ────────────────────────────────────────
-# The FAISS binary cache files are built during image build and tracked via Git LFS.
-# The manifest.json IS tracked in git to validate cache freshness.
+# The FAISS binary cache files are built during image build.
 .pdf_cache/
 .tmp/
 chroma_db/          # Local vector store data

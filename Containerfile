@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/root/.cache/huggingface \
     python -c "from huggingface_hub import snapshot_download; snapshot_download('BAAI/bge-small-en-v1.5', cache_dir='/root/.cache/huggingface', local_dir='/hf_cache', token=False, local_dir_use_symlinks=False)" && \
     ls -l /hf_cache/config.json
 
-# ─── Stage 2: Builder ─────────────────────────────────────────────────────────
+# ─── Stage 2: Builder (Dependencies Only) ────────────────────────────────────
 FROM base AS builder
 
 # Extract uv version from pyproject.toml
@@ -41,37 +41,40 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 1. Install dependencies
-# We copy pyproject.toml and uv.lock as root.
+# Install dependencies (No code yet)
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     HF_HUB_OFFLINE=1 UV_LINK_MODE=copy uv sync --frozen --no-dev --no-install-project
 
-# Copy source code and data as root (read-only for the app user later)
-COPY data/ ./data/
-COPY agnav/ ./agnav/
-COPY scripts/ ./scripts/
-COPY prompts/ ./prompts/
-COPY app.py conftest.py ./
-
-# ─── Stage 2.5: Test Builder (Unit Tests - Lightweight) ──────────────────────
-FROM builder AS test_builder
+# ─── Stage 2.5: Index Builder (Data-Heavy - Cached) ──────────────────────────
+FROM builder AS index_builder
 COPY --from=model_fetcher /hf_cache /hf_cache
-RUN --mount=type=cache,target=/root/.cache/uv \
-    HF_HUB_OFFLINE=1 UV_LINK_MODE=copy uv sync --frozen --no-install-project
-COPY tests/ ./tests/
-RUN mkdir -p /app/reports /app/.pytest_cache && chown -R 1000:1000 /app/reports /app/.pytest_cache
 
-# ─── Stage 2.6: Functional Builder (Integration Tests - with Index) ──────────
-FROM test_builder AS functional_builder
+# Copy ONLY what's needed for indexing
+COPY data/ ./data/
+COPY scripts/build_index.py ./scripts/
+COPY app.py ./ 
 
-# Build FAISS index — cached by Docker unless data/ or model changes.
-# BuildKit cache mount persists the index between builds for fast Smart Refresh.
+# Build FAISS index — cached by Docker unless data/ or indexing code changes.
 RUN --mount=type=cache,target=/app/.pdf_cache_mount \
     mkdir -p /app/.pdf_cache && \
     cp -r /app/.pdf_cache_mount/* /app/.pdf_cache/ 2>/dev/null || true && \
     TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=1 PATH="/app/.venv/bin:$PATH" python scripts/build_index.py && \
     cp -r /app/.pdf_cache/* /app/.pdf_cache_mount/ 2>/dev/null || true
+
+# ─── Stage 2.6: App Builder (Adds Source Code) ──────────────────────────────
+FROM index_builder AS app_builder
+COPY agnav/ ./agnav/
+COPY prompts/ ./prompts/
+COPY scripts/ ./scripts/
+COPY conftest.py README.md Containerfile compose.yml LICENSE* ./
+
+# ─── Stage 2.7: Test Builder (Adds Dev/Test Tools) ──────────────────────────
+FROM app_builder AS functional_builder
+RUN --mount=type=cache,target=/root/.cache/uv \
+    HF_HUB_OFFLINE=1 UV_LINK_MODE=copy uv sync --frozen --no-install-project
+COPY tests/ ./tests/
+RUN mkdir -p /app/reports /app/.pytest_cache && chown -R 1000:1000 /app/reports /app/.pytest_cache
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
 FROM base AS runner
@@ -80,7 +83,7 @@ FROM base AS runner
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy everything as root (read-only for the application user)
-COPY --from=builder /app /app
+COPY --from=app_builder /app /app
 COPY --from=model_fetcher /hf_cache /hf_cache
 
 # Only create and chown (by UID) the specific directories that MUST be writable
