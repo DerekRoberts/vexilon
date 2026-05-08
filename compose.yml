@@ -28,8 +28,8 @@ x-dev-volumes: &dev-volumes
   - ./app/uv.lock:/app/uv.lock:ro
   - ./reports:/app/reports:z  # Artifact extraction "Lifeboat"
   - /hf_cache      # Lifeboat for the model
-  - /app/.pdf_cache     # Lifeboat for the FAISS index
-  - /app/.pytest_cache # Lifeboat for test metadata
+  - ./.tmp/pdf_cache:/app/.pdf_cache:z     # Persistent, writable index
+  - ./.tmp/pytest_cache:/app/.pytest_cache:z # Persistent test metadata
 
 services:
 
