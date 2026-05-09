@@ -52,7 +52,7 @@ services:
   build-staging:
     container_name: vexilon-build-staging
     <<: *service-defaults
-    profiles: [all, staging]
+    profiles: [test, all, staging]
     image: vexilon:staging
     build: *common-build
 
@@ -77,7 +77,7 @@ services:
   test-integration:
     container_name: vexilon-test-integration
     <<: *service-defaults
-    profiles: [integration, all]
+    profiles: [test, integration, all]
     image: vexilon:dev
     depends_on:
       test-unit:
@@ -93,7 +93,7 @@ services:
   test-e2e:
     container_name: vexilon-test-e2e
     <<: *service-defaults
-    profiles: [e2e, all]
+    profiles: [test, e2e, all]
     image: vexilon:dev
     depends_on:
       test-integration:
@@ -112,7 +112,7 @@ services:
   test-cache:
     container_name: vexilon-test-cache
     <<: *service-defaults
-    profiles: [verify, all]
+    profiles: [test, verify, all]
     image: vexilon:dev
     depends_on:
       build-dev:
@@ -163,7 +163,7 @@ services:
     container_name: vexilon-dev
     <<: *service-defaults
     user: "${UID:-1000}:${GID:-1000}"
-    profiles: [dev, all]
+    profiles: [test, dev, all]
     image: vexilon:dev
     depends_on:
       build-dev:
@@ -189,7 +189,7 @@ services:
   staging:
     container_name: vexilon-staging
     <<: *service-defaults
-    profiles: [staging, all]
+    profiles: [test, staging, all]
     image: vexilon:staging
     depends_on:
       build-staging:
@@ -209,7 +209,7 @@ services:
   test-smoke:
     container_name: vexilon-test-smoke
     <<: *service-defaults
-    profiles: [smoke, all]
+    profiles: [test, smoke, all]
     image: vexilon:dev
     depends_on:
       test-e2e:
@@ -228,7 +228,7 @@ services:
   test-everything:
     container_name: vexilon-test-everything
     <<: *service-defaults
-    profiles: [all]
+    profiles: [test, all]
     image: vexilon:dev
     depends_on:
       test-smoke:

@@ -120,7 +120,7 @@ jobs:
             *.cache-to=type=gha,mode=max
 
       - name: Validate Cache Manifest
-        run: docker compose --profile all up --build test-cache
+        run: docker compose --profile test up --build test-cache
 
   test-integration:
     name: RAG Integration Tests
@@ -182,7 +182,7 @@ jobs:
             *.cache-to=type=gha,mode=max
 
       - name: Run E2E Smoke Test
-        run: docker compose --profile all up --build test-everything
+        run: docker compose --profile test up --build test-everything
 
       - name: Dump Logs on Failure
         if: failure()
