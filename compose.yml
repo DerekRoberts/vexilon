@@ -172,7 +172,7 @@ services:
       timeout: 5s
       retries: 5
     command: >
-      sh -c "uv run watchfiles 'uv run python main.py' ."
+      sh -c "uv run watchfiles --ignore-paths .pdf_cache,data,reports 'uv run python main.py' ."
 
   # ── Staging Simulation (Immutable Cloud-Parity) ───────────────────────────
   staging:
