@@ -1,25 +1,265 @@
 # Agreement Navigator (AgNav)
 
-The core application, documentation, and technical specifications have moved to the [app/](./app/) directory.
+AI chatbot built to empower BCGEU union stewards with instant, cited answers from a broad library
+of labour law and contract documents.
 
-For the full project documentation, please see [app/README.md](./app/README.md).
+> [!IMPORTANT]
+> **Agreement Navigator is NOT a replacement for your Staff Representative.** It is a research tool
+> designed to help you find contract language and legal context quickly. Always verify
+> important findings with your steward team or union leadership.
 
 ---
 
-## ⚡ Atomic Pulse Check
+## Knowledge Base
 
-To verify the entire repository (Unit, Integration, E2E, and Live Smoke Tests) in a single "Grand Slam" pass, run:
+Agreement Navigator is currently indexed with the following core documents:
+
+- **BCGEU 19th Main Public Service Agreement (Priority 1)**: The core collective agreement. This is the **authoritative source** for union stewards; all other documents provide context.
+- **BC Employment Standards Act (Priority 2)**: Statutory minimums for wages, overtime, and notice.
+- **BC Labour Relations Code**: The framework for collective bargaining and union operations.
+- **BC Human Rights Code**: Protection against discrimination and harassment.
+- **BC Workers Compensation Act**: Occupational health and safety (OHS) and injury claims.
+- **BC Social Media Guidance for Public Service Employees**: Specific guidelines for personal and professional social media conduct.
+
+### Priority & Weighting Logic
+Agreement Navigator is programmed to prioritize the **Collective Agreement** above all else. When a query overlaps multiple sources:
+1. The **Agreement** is used for primary enforcement.
+2. **Statutes** (ESA, Labour Code, HRC) are cited as secondary legal context.
+3. If no contract language exists, the assistant identifies relevant statutory protections.
+
+### Adding or Updating Documents
+
+Agreement Navigator indexes **Markdown files** (`.md`), not PDFs. PDFs are kept only for the "Download Original" links in the UI.
+
+Add or replace Markdown files in `app/data/labour_law/` using the naming convention:
+
+| Category | Path | Use case |
+|---|---|---|
+| `primary` | `01_primary/` | The Main Agreement and specific Component agreements |
+| `statutory` | `02_statutory/` | Provincial or Federal laws (ESA, Labour Code) |
+| `resources` | `03_resources/` | Steward manuals, ethics guides, "How-to" docs |
+| `jurisprudence` | `04_jurisprudence/` | Arbitration awards and case precedents |
+
+---
+
+## Deployment Status
+
+Agreement Navigator is deployed as a Docker container. We maintain two environments for
+Docker deployments.
+
+🚀 **TEST:** https://huggingface.co/spaces/DerekRoberts/landru
+
+🚀 **PROD:** https://huggingface.co/spaces/MinionTech/vexilon
+
+## Quick Start
+
+### Prerequisites
+- **Podman** (or Docker)
+- **Podman Compose** (or Docker Compose)
+- **Python 3.12+** (for local script execution)
+
+### Run
+
+Agreement Navigator is "Secure by Default" but optimized for a zero-config developer experience via Podman Compose.
+
+**1. Local Development (Zero-Config)**
+This is the default mode. It starts a local **Ollama** instance, pulls the required model weights, and launches the app with hot-reload. No API keys or tokens are required.
 
 ```bash
+podman compose up --build dev
+```
+
+> [!NOTE]
+> **Performance:** Local LLM execution speed depends on your CPU/GPU. The first run will be slower as it pulls the model weights defined in `app/main.py`.
+
+**2. Production / Cloud Simulation**
+Uses the **Hugging Face Inference API** for high-speed "Flash" responses. Requires an internet connection and a valid token. This simulates the exact environment of the Hugging Face Space.
+
+```bash
+# Add your HF_TOKEN to .env or export it
+export HF_TOKEN=your_token_here
+podman compose up --build staging
+```
+
+> [!TIP]
+> Using `--no-deps` prevents the local Ollama services from starting, allowing for an instant cloud-connected session.
+
+The container uses a multi-stage build and pre-indexes the agreement at build time for zero-downtime startup.
+
+---
+
+## Using the Assistant
+
+The app is ready immediately on page load — no dropdown, no Load button.
+
+1. Type a question in the input field and press **Enter** or tap **Send**
+2. Or click one of the suggested question chips on the welcome screen
+3. Responses include a plain-language explanation followed by verbatim quotes with citations
+4. **Persona Mode**: Toggle between operational modes to receive tactical guidance:
+   - **Lookup**: Standard research mode for finding specific clauses.
+   - **Grieve**: Forensic Auditor mode to build air-tight grievance cases with "Staff Rep" level scrutiny.
+   - **Manage**: Strategic Consultant mode for risk mitigation and compliance analysis.
+
+> **Note:** Informational purposes only. Consult your BCGEU representative or a legal advisor as appropriate.
+
+---
+
+## Multi-Perspective Retrieval
+
+To ensure follow-up questions work reliably (e.g., "What about for part-time?"), AgNav uses a **Multi-Perspective Context** pattern:
+
+1. **Query Condensing**: A fast LLM pass reconstructs the user's intent into a standalone search query based on conversation history.
+2. **Perspective Generation**: For complex queries, the system generates 3 different search angles (legal, procedural, factual) to ensure maximum retrieval coverage.
+3. **Multi-Perspective Search**: The FAISS index is searched using all generated queries, and the results are ranked and deduplicated.
+
+## Forensic Integrity Pipeline
+
+To ensure the AI never "hallucinates" contract language, we use a forensic conversion pipeline:
+
+1. **Precision Extraction**: PDFs are converted to Markdown using `app/scripts/pdf_to_md.py` via **PyMuPDF**.
+2. **Dual-Pass Verification**: The converter uses two different LLM passes to verify structural integrity.
+3. **Word Fingerprinting**: We verify that every substantive word in the Markdown exists in the original PDF.
+
+```bash
+# Convert a new PDF to high-integrity Markdown
+python app/scripts/pdf_to_md.py path/to/document.pdf
+```
+
+---
+
+## Security & Reliability
+
+### Rate Limiting
+
+To prevent API abuse and ensure fair usage, Agreement Navigator implements a multi-tier rate limiter:
+
+| Tier | Default Limit | Description |
+|---|---|---|
+| `RATE_LIMIT_PER_MINUTE` | `5` | Burst protection for chat messages |
+| `RATE_LIMIT_PER_HOUR` | `100` | Maximum requests per hour per client IP |
+
+When a rate limit is exceeded, users receive a clear error message indicating which limit was hit and when they can retry.
+
+### Input Sanitization
+
+Input sanitization prevents prompt injection attacks by detecting and blocking malicious inputs:
+
+| Setting | Value | Description |
+|---|---|---|
+| `MAX_INPUT_LENGTH` | `10000` | Maximum characters per message |
+| `LOG_SUSPICIOUS_INPUTS` | `true` | Log flagged inputs for security review |
+
+The sanitization checks for 16+ prompt injection patterns including:
+- `ignore all/previous/system instructions`
+- `forget your/the instructions`
+- `disregard your/the rules`
+- `you are now ... instead`
+- `new (system) prompt:`
+- `[[SYSTEM]]`
+- `jailbreak`, `developer mode`, `sudo mode`
+- `roleplay as`, `pretend you are/to be`
+- `override instructions`, `disable safety`
+
+### Privacy & Data Retention
+
+Agreement Navigator is a "content-blind" application designed for maximum privacy and to support compliance with the British Columbia **Personal Information Protection Act (PIPA)**.
+
+- **Ephemeral Conversations**: Chats are tied only to your current browser session and are permanently deleted upon refresh or closure.
+- **No Content Logging**: We **never** log user queries, bot responses, or search reasoning.
+- **Anonymized Metrics**: We only track non-sensitive technical metadata (token counts, query frequency) to monitor system health.
+
+For full technical disclosure and mapping to the 10 PIPA Fair Information Principles, see [PRIVACY.md](app/docs/PRIVACY.md).
+
+---
+
+## Hugging Face Spaces Deployment
+
+The Space runs as **`sdk: docker`** in production — the deploy script pushes a stub
+`Dockerfile` pointing to the pre-built container image on `ghcr.io/miniontech/vexilon/agnav`.
+The FAISS index is already baked into that image (built via the `Containerfile` `RUN` step),
+so the Space starts instantly.
+
+### Automated deploy (GitHub Actions)
+
+The deployment process (`.github/workflows/deploy-*.yml`) pushes a stub `Dockerfile` to
+the HF Space.
+
+- **TEST:** Every push to `main` triggers [`.github/workflows/deploy-test.yml`](.github/workflows/deploy-test.yml), deploying to the `DerekRoberts/landru` Space.
+- **PROD:** Every published GitHub release triggers [`.github/workflows/deploy-prod.yml`](.github/workflows/deploy-prod.yml), deploying to the `MinionTech/vexilon` Space.
+
+**Required GitHub secret:**
+
+| Secret | Value |
+|---|---|
+| `HF_TOKEN` | Hugging Face write-scoped access token ([settings/tokens](https://huggingface.co/settings/tokens)) |
+
+---
+
+## Running Tests
+
+Agreement Navigator uses a **Quality Gate** pattern in `compose.yml` — the app will not start unless the test suite passes.
+
+### Test Tiers
+
+| Tier | Location | Model | When to run |
+|---|---|---|---|
+| **Unit** | `app/tests/test_*.py` | Mocked (no download) | Every commit — fast, zero RAM cost |
+| **Integration (Model)** | `app/tests/integration/` | Real `BAAI/bge-small-en-v1.5` (~800 MB) | In container — memory-capped at 2 GB |
+| **Integration (App)** | `app/tests/test_rag_stream.py` | Functional app logic (mocked LLM) | Verify RAG flow and token streaming |
+| **E2E (Live)** | `app/scripts/smoke_multi.py` | Real HF/Ollama API | Manually, to verify live API connectivity |
+
+### Commands
+
+```bash
+# Run unit tests only — fast, safe locally
+uv run pytest app/tests/ --ignore=app/tests/integration --ignore=app/scripts/smoke_multi.py
+
+# Run containerized unit tests (Mocked, zero-AI)
+podman compose up --build test-unit
+
+# Run model integration tests (FAISS + Embedding Model)
+podman compose up --build test-integration-model
+
+# Run app integration tests (Functional RAG flow)
+podman compose up --build test-integration-app
+
+# Run full e2e suite (Live UI + Live LLM)
+podman compose up --build test-e2e
+
+# Verify everything at once (The "Grand Slam")
 podman compose up --build test-everything && podman compose down
 ```
 
-This command will:
-1. Build all atomic service images.
-2. Run the complete test battery.
-3. Start `dev` (port 7860) and `staging` (port 7861) environments.
-4. Verify both live environments via the `test-everything` master auditor.
-5. Automatically shutdown all services on completion.
+---
 
-> [!TIP]
-> **Build Efficiency:** On your very first run, use `podman compose build test-unit` to "warm" the dependency cache sequentially. This prevents parallel services from competing for the same `uv sync` lock and keeps your terminal logs clean. Subsequent runs will use the cached layers instantly.
+## Project Structure
+
+```
+.
+├── .agents/              # AI Agent specifications and SOPs
+├── .github/              # CI/CD workflows and scripts
+├── app/                  # Core application workspace
+│   ├── data/             # Knowledge base (markdown files)
+│   ├── docs/             # Technical and Privacy documentation
+│   ├── prompts/          # System prompts and instructions
+│   ├── scripts/          # Build, conversion, and audit utilities
+│   ├── tests/            # pytest test suite (Unit + Integration)
+│   ├── main.py           # Main entry point (Gradio UI)
+│   └── indexing.py       # RAG pipeline and FAISS logic
+├── Containerfile         # High-integrity Docker build
+├── compose.yml           # Dev, staging, and test profiles
+├── pyproject.toml        # Dependency management (uv)
+└── README.md             # The document you are reading
+```
+
+## Contributing
+
+We encourage contributions to AgNav via **pull requests**. 
+
+- **Workflow**: Create a branch from `main`, commit your changes, and submit a PR.
+- **Merge**: PRs are evaluated by the maintainers and are typically squash-merged to `main`.
+- **Licensing**: By contributing, you grant a world-wide, royalty-free, perpetual, irrevocable, non-exclusive, transferable license to all users under the terms of the [MIT License](./LICENSE).
+
+---
+
+*Agreement Navigator (AgNav) — Empowering Stewards through Forensic RAG.*
