@@ -90,6 +90,7 @@ services:
       WATCHFILES_FORCE_POLLING: "true"
       PORT: *PORT
     ports: [] # Prevent conflict with running dev instances
+    volumes: [] # Use baked-in cache, don't mount host directories
 
   # Staging with Immutable Cloud-Parity (HuggingFace Inference)
   staging:
