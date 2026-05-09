@@ -9,6 +9,7 @@ ENV HF_HOME=/hf_cache \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     libjpeg62-turbo \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-privileged user once (UID 1000 is standard for Hugging Face Spaces)
@@ -94,6 +95,6 @@ ENV AGNAV_VERSION=$VERSION
 ENV AGNAV_REPO_URL=$REPO_URL
 
 EXPOSE 7860
-HEALTHCHECK --interval=30s --timeout=30s --start-period=30s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:7860')" || exit 1
+HEALTHCHECK --interval=30s --timeout=15s --start-period=120s --retries=10 \
+  CMD curl -f http://localhost:7860/ || exit 1
 CMD ["sh", "-c", "TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=0 python main.py"]
