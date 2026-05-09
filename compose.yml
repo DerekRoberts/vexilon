@@ -18,6 +18,13 @@ x-common-build: &common-build
   args:
     VERSION: ${AGNAV_VERSION:-dev}
 
+x-build-dev: &build-dev
+  <<: *common-build
+  target: functional_builder
+
+x-build-staging: &build-staging
+  <<: *common-build
+
 # Standard service boilerplate: Resource limits and Persistence
 x-service-defaults: &service-defaults
   mem_limit: *MEM_LIMIT
@@ -36,24 +43,6 @@ x-dev-volumes: &dev-volumes
 
 services:
 
-  # ── Image Builders
-  # These services act as the single source of truth for builds.
-  # Other services depend on the images produced here to avoid redundant builds.
-  build-dev:
-    container_name: vexilon-build-dev
-    <<: *service-defaults
-    profiles: [manual-only]
-    image: vexilon:dev
-    build:
-      <<: *common-build
-      target: functional_builder
-
-  build-staging:
-    container_name: vexilon-build-staging
-    <<: *service-defaults
-    profiles: [manual-only]
-    image: vexilon:staging
-    build: *common-build
 
   # ── Main Application
   # Development with Hot-Reload (Ollama)
@@ -63,9 +52,8 @@ services:
     user: "${UID:-1000}:${GID:-1000}"
     profiles: [manual-only]
     image: vexilon:dev
+    build: *build-dev
     depends_on:
-      build-dev:
-        condition: service_started
       ollama-init:
         condition: service_completed_successfully
     volumes: *dev-volumes
@@ -90,9 +78,10 @@ services:
     <<: *service-defaults
     profiles: [manual-only]
     image: vexilon:staging
+    build: *build-staging
     depends_on:
-      build-staging:
-        condition: service_started
+      ollama:
+        condition: service_healthy
     environment:
       <<: *common-env
       AGNAV_LLM_PROVIDER: huggingface
@@ -151,6 +140,7 @@ services:
     <<: *service-defaults
     profiles: [manual-only]
     image: vexilon:dev
+    build: *build-dev
     depends_on:
       test-cache:
         condition: service_completed_successfully
@@ -170,6 +160,7 @@ services:
     <<: *service-defaults
     profiles: [manual-only]
     image: vexilon:dev
+    build: *build-dev
     depends_on:
       test-cache:
         condition: service_completed_successfully
@@ -188,6 +179,7 @@ services:
     <<: *service-defaults
     profiles: [manual-only]
     image: vexilon:dev
+    build: *build-dev
     depends_on:
       test-cache:
         condition: service_completed_successfully
@@ -208,9 +200,7 @@ services:
     <<: *service-defaults
     profiles: [manual-only]
     image: vexilon:dev
-    depends_on:
-      build-dev:
-        condition: service_started
+    build: *build-dev
     environment: *common-env
     command: /app/.venv/bin/python scripts/generate_cache_manifest.py validate
 
@@ -221,6 +211,7 @@ services:
     <<: *service-defaults
     profiles: [manual-only]
     image: vexilon:dev
+    build: *build-dev
     depends_on:
       dev:
         condition: service_healthy
@@ -242,6 +233,7 @@ services:
     <<: *service-defaults
     profiles: [manual-only]
     image: vexilon:dev
+    build: *build-dev
     depends_on:
       test-unit:
         condition: service_completed_successfully
