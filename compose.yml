@@ -36,10 +36,9 @@ x-dev-volumes: &dev-volumes
 
 services:
 
-  # ── Master Image Builders
+  # ── Image Builders
   # These services act as the single source of truth for builds.
   # Other services depend on the images produced here to avoid redundant builds.
-
   build-dev:
     container_name: vexilon-build-dev
     <<: *service-defaults
@@ -56,7 +55,93 @@ services:
     image: vexilon:staging
     build: *common-build
 
-  # ── Test Containers
+  # ── Main Application
+  # Development with Hot-Reload (Ollama)
+  dev:
+    container_name: vexilon-dev
+    <<: *service-defaults
+    user: "${UID:-1000}:${GID:-1000}"
+    profiles: [test, dev, integration, e2e, all]
+    image: vexilon:dev
+    depends_on:
+      build-dev:
+        condition: service_started
+      ollama-init:
+        condition: service_completed_successfully
+    volumes: *dev-volumes
+    environment:
+      <<: *common-env
+      WATCHFILES_FORCE_POLLING: "true"
+      PORT: *PORT
+    ports:
+      - "7860:7860"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      sh -c "uv run watchfiles --ignore-paths .pdf_cache,data,reports 'uv run python main.py' ."
+
+  # Staging with Immutable Cloud-Parity (HuggingFace Inference)
+  staging:
+    container_name: vexilon-staging
+    <<: *service-defaults
+    profiles: [test, dev, all]
+    image: vexilon:staging
+    depends_on:
+      build-staging:
+        condition: service_started
+    environment:
+      <<: *common-env
+      AGNAV_LLM_PROVIDER: huggingface
+      PORT: *PORT
+    ports:
+      - "7861:7860"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Local LLM (Ollama)
+  ollama:
+    container_name: vexilon-ollama
+    image: ollama/ollama:latest
+    profiles: [test, dev, all]
+    ports: ["11434:11434"]
+    environment:
+      OLLAMA_FLASH_ATTENTION: 1
+      OLLAMA_HOST: 0.0.0.0
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # One-time service to pull the required model into the ollama volume.
+  ollama-init:
+    container_name: vexilon-ollama-init
+    image: ollama/ollama:latest
+    profiles: [test, dev, integration, e2e, all]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ./app/main.py:/app/main.py:ro
+    environment:
+      - OLLAMA_HOST=ollama:11434
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        TARGET_MODEL=$$(sed -n 's/.*OLLAMA_MODEL_ID = "\(.*\)".*/\1/p' /app/main.py)
+        echo "Determined target model from main.py: $$TARGET_MODEL"
+        ollama pull $$TARGET_MODEL
+
+  # ── Tests
   test-unit:
     container_name: vexilon-test-unit
     <<: *service-defaults
@@ -119,92 +204,6 @@ services:
         condition: service_started
     environment: *common-env
     command: /app/.venv/bin/python scripts/generate_cache_manifest.py validate
-
-  # ── Local LLM (Ollama)
-  ollama:
-    container_name: vexilon-ollama
-    image: ollama/ollama:latest
-    profiles: [test, dev, all]
-    ports: ["11434:11434"]
-    environment:
-      OLLAMA_FLASH_ATTENTION: 1
-      OLLAMA_HOST: 0.0.0.0
-    volumes:
-      - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # One-time service to pull the required model into the ollama volume.
-  ollama-init:
-    container_name: vexilon-ollama-init
-    image: ollama/ollama:latest
-    profiles: [test, dev, integration, e2e, all]
-    depends_on:
-      ollama:
-        condition: service_healthy
-    volumes:
-      - ./app/main.py:/app/main.py:ro
-    environment:
-      - OLLAMA_HOST=ollama:11434
-    entrypoint: /bin/sh
-    command: 
-      - -c
-      - |
-        TARGET_MODEL=$$(sed -n 's/.*OLLAMA_MODEL_ID = "\(.*\)".*/\1/p' /app/main.py)
-        echo "Determined target model from main.py: $$TARGET_MODEL"
-        ollama pull $$TARGET_MODEL
-
-  # ── App Containers
-  # Development with Hot-Reload (Ollama)
-  dev:
-    container_name: vexilon-dev
-    <<: *service-defaults
-    user: "${UID:-1000}:${GID:-1000}"
-    profiles: [test, dev, integration, e2e, all]
-    image: vexilon:dev
-    depends_on:
-      build-dev:
-        condition: service_started
-      ollama-init:
-        condition: service_completed_successfully
-    volumes: *dev-volumes
-    environment:
-      <<: *common-env
-      WATCHFILES_FORCE_POLLING: "true"
-      PORT: *PORT
-    ports:
-      - "7860:7860"
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    command: >
-      sh -c "uv run watchfiles --ignore-paths .pdf_cache,data,reports 'uv run python main.py' ."
-
-  # Staging with Immutable Cloud-Parity (HuggingFace Inference)
-  staging:
-    container_name: vexilon-staging
-    <<: *service-defaults
-    profiles: [test, dev, all]
-    image: vexilon:staging
-    depends_on:
-      build-staging:
-        condition: service_started
-    environment:
-      <<: *common-env
-      AGNAV_LLM_PROVIDER: huggingface
-      PORT: *PORT
-    ports:
-      - "7861:7860"
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   test-smoke:
     container_name: vexilon-test-smoke
