@@ -53,7 +53,7 @@ FROM builder AS test_deps_builder
 RUN --mount=type=cache,target=/root/.cache/uv \
     HF_HUB_OFFLINE=1 UV_LINK_MODE=copy uv sync --frozen --no-install-project
 
-# ─── Stage 2.5: Index Builder (Data-Heavy - Cached) ──────────────────────────
+# ─── Stage 2.2: Index Builder (Data-Heavy - Cached) ──────────────────────────
 FROM builder AS index_builder
 COPY --from=model_fetcher /model /model
 
@@ -69,11 +69,11 @@ RUN --mount=type=cache,target=/app/.pdf_cache_mount \
     TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=1 PATH="/app/.venv/bin:$PATH" python scripts/build_index.py && \
     cp -r /app/.pdf_cache/* /app/.pdf_cache_mount/ 2>/dev/null || true
 
-# ─── Stage 2.6: App Builder (Final Prod Image Source) ──────────────────────────
+# ─── Stage 2.3: App Builder (Final Prod Image Source) ──────────────────────────
 FROM index_builder AS app_builder
 COPY . ./
 
-# ─── Stage 2.7: Functional Builder (Final Test/Dev Image Source) ───────────────
+# ─── Stage 2.4: Functional Builder (Final Test/Dev Image Source) ───────────────
 FROM test_deps_builder AS functional_builder
 # Copy the model and index into the final runtime image
 COPY --from=model_fetcher /model /model

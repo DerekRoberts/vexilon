@@ -20,3 +20,6 @@ This command will:
 3. Start `dev` (port 7860) and `staging` (port 7861) environments.
 4. Verify both live environments via the `test-smoke` auditor.
 5. Automatically shutdown all services on completion.
+
+> [!TIP]
+> **Build Efficiency:** On your very first run, use `podman compose build test-unit` to "warm" the dependency cache sequentially. This prevents parallel services from competing for the same `uv sync` lock and keeps your terminal logs clean. Subsequent runs will use the cached layers instantly.
