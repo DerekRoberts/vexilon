@@ -35,6 +35,6 @@ To maintain a clean, high-integrity "Forensic" look, several default Gradio elem
 
 ## 4. Custom Styling (Vanilla CSS)
 
-All custom styles are located in the `_CSS` constant in `app.py`. 
+All custom styles are located in the `_CSS` constant in `app/main.py`. 
 - **Typography**: Use standard system fonts for maximum loading speed on LTE.
 - **Citations**: Ensure the `[Source, Page]` format is rendered clearly in Markdown.

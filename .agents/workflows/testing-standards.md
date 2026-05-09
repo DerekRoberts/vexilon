@@ -18,26 +18,26 @@ This document defines the testing protocols for Vexilon. **All agents must verif
 
 ## 2. Test Categorization
 
-### Unit Tests (`tests/`)
-- **Location**: `tests/test_*.py`
+### Unit Tests (`app/tests/`)
+- **Location**: `app/tests/test_*.py`
 - **Focus**: UI logic, regex sanitizers, rate limiters, and chunking math.
-- **Run**: `pytest tests/ -v`
+- **Run**: `pytest app/tests/ -v`
 
-### Integration Tests (`tests/integration/`)
-- **Environment**: REQUIRES `ollama` profile.
+### Integration Tests (`app/tests/integration/`)
+- **Environment**: REQUIRES `manual-only` profile.
 - **Focus**: Full RAG pipeline flow from query to response.
-- **Run**: `docker compose --profile integration up test-integration`
+- **Run**: `podman compose --profile manual-only up test-integration-model`
 
-### E2E / Smoke Tests (`scripts/smoke_e2e.py`)
-- **Environment**: REQUIRES `ollama` profile.
+### E2E / Smoke Tests (`app/scripts/smoke_multi.py`)
+- **Environment**: REQUIRES `manual-only` profile.
 - **Focus**: Functional validation of the Gradio interface and final response integrity.
 
 ## 3. Coverage & Verification
 
 ### Mandatory Coverage
-- **Core Logic**: `app.py` and `agnav/indexing.py` must maintain >80% coverage.
+- **Core Logic**: `app/main.py` and `app/indexing.py` must maintain >80% coverage.
 - **Report**: Coverage reports are automatically uploaded as artifacts in `pr-open.yml`.
 
 ### Deployment Integrity
-- **Script**: `tests/test_deploy_integrity.py`
+- **Script**: `app/tests/test_deploy_integrity.py`
 - **Rule**: This test checks for GHCR lowercasing and HF metadata compliance. Never skip this test.
