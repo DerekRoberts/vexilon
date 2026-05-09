@@ -46,13 +46,6 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     HF_HUB_OFFLINE=1 UV_LINK_MODE=copy uv sync --frozen --no-dev --no-install-project
 
-# ─── Stage 2.1: Test/Dev Dependency Builder ──────────────────────────────────
-# This stage adds dev dependencies to the base venv using only lockfiles.
-# This ensures that code changes do NOT invalidate the 75+ package install.
-FROM builder AS test_deps_builder
-RUN --mount=type=cache,target=/root/.cache/uv \
-    HF_HUB_OFFLINE=1 UV_LINK_MODE=copy uv sync --frozen --no-install-project
-
 # ─── Stage 2.2: Index Builder (Data-Heavy - Cached) ──────────────────────────
 FROM builder AS index_builder
 COPY --from=model_fetcher /model /model
@@ -69,18 +62,20 @@ RUN --mount=type=cache,target=/app/.pdf_cache_mount \
     TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=1 PATH="/app/.venv/bin:$PATH" python scripts/build_index.py && \
     cp -r /app/.pdf_cache/* /app/.pdf_cache_mount/ 2>/dev/null || true
 
-# ─── Stage 2.3: App Builder (Final Prod Image Source) ──────────────────────────
+# ─── Stage 2.3: App Builder (Production Source) ───────────────────────────────
 FROM index_builder AS app_builder
+# Copy the full source code on top of the model and index
 COPY . ./
 
-# ─── Stage 2.4: Functional Builder (Final Test/Dev Image Source) ───────────────
-FROM test_deps_builder AS functional_builder
-# Copy the model and index into the final runtime image
-COPY --from=model_fetcher /model /model
-COPY --from=index_builder /app/.pdf_cache /app/.pdf_cache
-COPY . ./
-RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache /model && \
-    chown -R 1000:1000 /app/reports /app/.pytest_cache /hf_cache /model
+# ─── Stage 2.4: Functional Builder (Dev/Test Source) ──────────────────────────
+FROM app_builder AS functional_builder
+# Layer dev dependencies on top of the production venv
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen
+
+# Prepare directories for testing and ensure permissions
+RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache && \
+    chown -R 1000:1000 /app/reports /app/.pytest_cache /hf_cache
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
 FROM base AS runner
