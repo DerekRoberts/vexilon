@@ -41,6 +41,7 @@ services:
   # Other services depend on the images produced here to avoid redundant builds.
 
   build-dev:
+    container_name: vexilon-build-dev
     <<: *service-defaults
     profiles: [all, test, dev, integration, e2e, smoke, verify]
     image: vexilon:dev
@@ -49,6 +50,7 @@ services:
       target: functional_builder
 
   build-staging:
+    container_name: vexilon-build-staging
     <<: *service-defaults
     profiles: [all, staging]
     image: vexilon:staging
@@ -56,6 +58,7 @@ services:
 
   # ── Test Containers
   test-e2e:
+    container_name: vexilon-test-e2e
     <<: *service-defaults
     profiles: [e2e]
     image: vexilon:dev
@@ -74,6 +77,7 @@ services:
       sh -c "uv run --no-sync python -m pytest tests/test_rag_stream.py -v"
 
   test-integration:
+    container_name: vexilon-test-integration
     <<: *service-defaults
     profiles: [integration]
     image: vexilon:dev
@@ -89,6 +93,7 @@ services:
       sh -c "uv run --no-sync python -m pytest tests/integration/ -v"
 
   test-unit:
+    container_name: vexilon-test-unit
     <<: *service-defaults
     profiles: [test]
     image: vexilon:dev
@@ -106,6 +111,7 @@ services:
 
   # ── verify (Cache Validator)
   verify:
+    container_name: vexilon-verify
     <<: *service-defaults
     profiles: [verify]
     image: vexilon:dev
@@ -117,6 +123,7 @@ services:
 
   # ── Local LLM (Ollama)
   ollama:
+    container_name: vexilon-ollama
     image: ollama/ollama:latest
     profiles: [dev, integration, e2e, all]
     ports: ["11434:11434"]
@@ -133,6 +140,7 @@ services:
 
   # One-time service to pull the required model into the ollama volume.
   ollama-init:
+    container_name: vexilon-ollama-init
     image: ollama/ollama:latest
     profiles: [all, dev, integration, e2e]
     depends_on:
@@ -152,6 +160,7 @@ services:
 
   # ── dev (Local Development with Hot-Reload)
   dev:
+    container_name: vexilon-dev
     <<: *service-defaults
     user: "${UID:-1000}:${GID:-1000}"
     profiles: [dev, all]
@@ -178,6 +187,7 @@ services:
 
   # ── Staging Simulation (Immutable Cloud-Parity)
   staging:
+    container_name: vexilon-staging
     <<: *service-defaults
     profiles: [staging, all]
     image: vexilon:staging
@@ -198,6 +208,7 @@ services:
 
   # ── grand-slam (The Master Auditor) ─────────────────────────────────────────
   grand-slam:
+    container_name: vexilon-grand-slam
     <<: *service-defaults
     profiles: [smoke, all]
     image: vexilon:dev
@@ -221,6 +232,7 @@ services:
       "
 
   suite:
+    container_name: vexilon-suite
     <<: *service-defaults
     profiles: [asuite]
     image: vexilon:dev
