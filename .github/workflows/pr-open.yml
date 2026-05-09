@@ -194,7 +194,7 @@ jobs:
 
   test-e2e:
     name: End-to-End Tests
-    needs: [test-integration-model, test-integration-app]
+    needs: [test-unit, prepare-tests]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
