@@ -57,7 +57,7 @@ services:
   # ── test-unit (Containerized Unit Tests) ─────────────────────────────────────
   test-unit:
     <<: *service-defaults
-    profiles: [test, all]
+    profiles: [test]
     image: vexilon-test:latest
     depends_on:
       image-test:
@@ -120,7 +120,7 @@ services:
   # ── test-integration (RAG Pipeline Integration Tests) ───────────────────────
   test-integration:
     <<: *service-defaults
-    profiles: [integration, all]
+    profiles: [integration]
     image: vexilon-test:latest
     depends_on:
       image-test:
@@ -136,7 +136,7 @@ services:
   # ── test-e2e (Full Flow / Functional Tests) ─────────────────────────────────
   test-e2e:
     <<: *service-defaults
-    profiles: [e2e, all]
+    profiles: [e2e]
     image: vexilon-test:latest
     depends_on:
       image-test:
@@ -198,8 +198,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── test-smoke (The Grand Slam Auditor) ─────────────────────────────────────
-  test-smoke:
+  # ── grand-slam (The Master Auditor) ─────────────────────────────────────────
+  grand-slam:
     <<: *service-defaults
     profiles: [smoke, all]
     image: vexilon-test:latest
@@ -215,7 +215,12 @@ services:
       SMOKE_TARGET_DEV: "http://dev:7860"
       SMOKE_TARGET_STAGING: "http://staging:7860"
     command: >
-      sh -c "uv run --no-sync python scripts/smoke_multi.py"
+      sh -c "
+      echo 'Running Unit Tests...' && uv run --no-sync python -m pytest tests/test_*.py -v &&
+      echo 'Running Integration Tests...' && uv run --no-sync python -m pytest tests/integration/ -v &&
+      echo 'Running E2E Tests...' && uv run --no-sync python -m pytest tests/test_rag_stream.py -v &&
+      echo 'Running Smoke Tests...' && uv run --no-sync python scripts/smoke_multi.py
+      "
 
 volumes:
   ollama_data: {}
