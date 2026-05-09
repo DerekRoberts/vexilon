@@ -210,6 +210,12 @@ services:
         condition: service_healthy
       staging:
         condition: service_healthy
+      test-unit:
+        condition: service_completed_successfully
+      test-integration:
+        condition: service_completed_successfully
+      test-e2e:
+        condition: service_completed_successfully
     environment:
       <<: *common-env
       SMOKE_TARGET_DEV: "http://dev:7860"
