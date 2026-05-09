@@ -204,26 +204,30 @@ Agreement Navigator uses a **Quality Gate** pattern in `compose.yml` — the app
 | Tier | Location | Model | When to run |
 |---|---|---|---|
 | **Unit** | `tests/test_*.py` | Mocked (no download) | Every commit — fast, zero RAM cost |
-| **Integration** | `tests/integration/` | Real `BAAI/bge-small-en-v1.5` (~800 MB) | In container — memory-capped at 2 GB |
-| **Smoke** | `tests/smoke/` | Real HF/Ollama API | Manually, to verify live API connectivity |
+| **Integration (Model)** | `tests/integration/` | Real `BAAI/bge-small-en-v1.5` (~800 MB) | In container — memory-capped at 2 GB |
+| **Integration (App)** | `tests/test_rag_stream.py` | Functional app logic (mocked LLM) | Verify RAG flow and token streaming |
+| **E2E (Live)** | `scripts/smoke_multi.py` | Real HF/Ollama API | Manually, to verify live API connectivity |
 
 ### Commands
 
 ```bash
 # Run unit tests only — fast, safe locally
-uv run pytest tests/ --ignore=tests/integration --ignore=tests/smoke
+uv run pytest tests/ --ignore=tests/integration --ignore=scripts/smoke_multi.py
 
 # Run containerized unit tests (Mocked, zero-AI)
-podman compose up --build test-unit
+podman compose --profile test up --build test-unit
 
-# Run integration tests (FAISS + Embedding Model)
-podman compose up --build test-integration
+# Run model integration tests (FAISS + Embedding Model)
+podman compose --profile test up --build test-integration-model
 
-# Run full e2e / functional suite (Full LLM flow)
-podman compose up --build test-e2e
+# Run app integration tests (Functional RAG flow)
+podman compose --profile test up --build test-integration-app
 
-# Verify the baked-in FAISS index integrity
-podman compose up verify
+# Run full e2e suite (Live UI + Live LLM)
+podman compose --profile test up --build test-e2e
+
+# Verify everything at once (The "Grand Slam")
+podman compose --profile test up --build test-everything
 ```
 
 ---
