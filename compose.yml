@@ -62,12 +62,6 @@ services:
       PORT: *PORT
     ports:
       - "7860:7860"
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860')"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
     command: >
       sh -c "uv run watchfiles --ignore-paths .pdf_cache,data,reports 'uv run python main.py' ."
 
@@ -86,12 +80,6 @@ services:
       PORT: *PORT
     ports:
       - "7861:7860"
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860')"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
 
   # ── Local LLM (Ollama)
   ollama:
