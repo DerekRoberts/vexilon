@@ -42,7 +42,7 @@ services:
 
   image-test:
     <<: *service-defaults
-    profiles: [all, test, dev, integration, e2e, smoke, verify]
+    profiles: [test, dev, integration, e2e, smoke, verify]
     image: vexilon-test:latest
     build:
       <<: *common-build
@@ -50,14 +50,14 @@ services:
 
   image-prod:
     <<: *service-defaults
-    profiles: [all, staging]
+    profiles: [staging]
     image: vexilon-prod:latest
     build: *common-build
 
   # ── test-unit (Containerized Unit Tests) ─────────────────────────────────────
   test-unit:
     <<: *service-defaults
-    profiles: [test, all]
+    profiles: [test]
     image: vexilon-test:latest
     depends_on:
       image-test:
@@ -74,7 +74,7 @@ services:
   # ── verify (Cache Validator) ──────────────────────────────────────────────────
   verify:
     <<: *service-defaults
-    profiles: [verify, all]
+    profiles: [verify]
     image: vexilon-test:latest
     depends_on:
       image-test:
@@ -101,7 +101,7 @@ services:
   # One-time service to pull the required model into the ollama volume.
   ollama-init:
     image: ollama/ollama:latest
-    profiles: [dev, integration, e2e, all]
+    profiles: [dev, integration, e2e]
     depends_on:
       ollama:
         condition: service_healthy
@@ -120,7 +120,7 @@ services:
   # ── test-integration (RAG Pipeline Integration Tests) ───────────────────────
   test-integration:
     <<: *service-defaults
-    profiles: [integration, all]
+    profiles: [integration]
     image: vexilon-test:latest
     depends_on:
       image-test:
@@ -136,7 +136,7 @@ services:
   # ── test-e2e (Full Flow / Functional Tests) ─────────────────────────────────
   test-e2e:
     <<: *service-defaults
-    profiles: [e2e, all]
+    profiles: [e2e]
     image: vexilon-test:latest
     depends_on:
       image-test:
@@ -156,7 +156,7 @@ services:
   dev:
     <<: *service-defaults
     user: "${UID:-1000}:${GID:-1000}"
-    profiles: [dev, all]
+    profiles: [dev]
     image: vexilon-test:latest
     depends_on:
       image-test:
@@ -181,7 +181,7 @@ services:
   # ── Staging Simulation (Immutable Cloud-Parity) ───────────────────────────
   staging:
     <<: *service-defaults
-    profiles: [staging, all]
+    profiles: [staging]
     image: vexilon-prod:latest
     depends_on:
       image-prod:
