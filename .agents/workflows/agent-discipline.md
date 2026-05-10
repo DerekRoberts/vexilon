@@ -6,6 +6,7 @@ To prevent unprofessional, sloppy, and unverified work, the following rules are 
 - **Feature Branches**: All work MUST be performed in feature branches. 
 - **Clean Base**: Always branch from a fresh, updated `main`. Never branch from an existing feature branch.
 - **Workflow**: `git fetch origin main && git checkout -B feat/<name> origin/main`.
+- **Commits**" Always use conventional commits.
 
 ## 2. Mandatory Verification (Testing & Linting)
 - **Logic Testing**: Work is NOT ready to push or commit if it hasn't been tested. You must run the code and verify the output.
