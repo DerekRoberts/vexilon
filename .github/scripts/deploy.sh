@@ -120,10 +120,10 @@ if [ -n "${GITHUB_ACTIONS:-}" ]; then
     git config user.name "GitHub Actions"
 fi
 
-# Re-add only the essentials (including app/main.py as requested)
+# Re-add only the essentials
 # Assemble the Hugging Face README by stitching metadata and app documentation
 cat app/metadata.yml README.md > README-hf.md && mv README-hf.md README.md
-git add Dockerfile README.md app/main.py app/LICENSE
+git add Dockerfile README.md LICENSE
 git commit -m "promote: $IMAGE_REF from $ORIGINAL_REF"
 
 # Auth and Push
