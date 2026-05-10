@@ -5,7 +5,7 @@ To prevent unprofessional, sloppy, and unverified work, the following rules are 
 ## 1. Branching & Isolation
 - **Feature Branches**: All work MUST be performed in feature branches. 
 - **Clean Base**: Always branch from a fresh, updated `main`. Never branch from an existing feature branch.
-- **Workflow**: `git checkout main && git pull && git switch -c feat/<name>`.
+- **Workflow**: `git fetch origin main && git checkout -B feat/<name> origin/main`.
 
 ## 2. Mandatory Verification (Testing & Linting)
 - **Logic Testing**: Work is NOT ready to push or commit if it hasn't been tested. You must run the code and verify the output.
@@ -22,7 +22,7 @@ Work is only marked "Done" once the following are verified via terminal:
 ## 4. Communication & Integrity
 - **NO BULLSHITTING**: Never claim success or make unverified claims. If you haven't run the test, do not say it works.
 - **ZERO GUESSING**: If you are uncertain about an API, a path, a regex, or a tool’s behavior, verify it via `run_command` or `search_web`. Never guess.
-- **Proof-of-Work**: Every turn with an edit MUST end with a verification check (e.g., `git status` or a test run).
+- **Proof-of-Work**: Every turn with an edit MUST end with a verification check (e.g., a test run or linting command).
 
 ## 5. Hard Stops
 - **NEVER** report "Done" without terminal verification.
