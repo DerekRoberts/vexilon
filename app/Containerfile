@@ -67,7 +67,7 @@ RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache && \
     chown -R 1000:1000 /app/reports /app/.pytest_cache /hf_cache
 
 # ─── Stage 4: Builder (Indexing and Production Source) ──────────────────────
-FROM functional_builder AS builder
+FROM deps_builder AS builder
 
 # Model and FAISS Index (Cached unless data/ or scripts change)
 COPY --from=model_fetcher /model /model
@@ -81,8 +81,8 @@ RUN --mount=type=cache,target=/app/.pdf_cache_mount \
     TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=1 PATH="/app/.venv/bin:$PATH" python scripts/build_index.py && \
     cp -r /app/.pdf_cache/* /app/.pdf_cache_mount/ 2>/dev/null || true
 
-# Final Source Code cleanup
-COPY main.py ./
+# Final Source Code
+COPY . ./
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
 FROM base AS runner
