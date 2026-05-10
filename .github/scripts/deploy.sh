@@ -123,7 +123,7 @@ fi
 # Re-add only the essentials (including app/main.py as requested)
 # Assemble the Hugging Face README by stitching metadata and app documentation
 cat app/metadata.yml README.md > README-hf.md && mv README-hf.md README.md
-git add Dockerfile README.md app/main.py app/LICENSE
+git add Dockerfile README.md app/main.py LICENSE
 git commit -m "promote: $IMAGE_REF from $ORIGINAL_REF"
 
 # Auth and Push
