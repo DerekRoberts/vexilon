@@ -52,6 +52,22 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     HF_HUB_OFFLINE=1 UV_LINK_MODE=copy uv sync --frozen --no-dev --no-install-project
 
+# ─── Stage 2.1: Test Builder (Unit Tests - Lightweight) ──────────────────────
+FROM builder AS test_builder
+COPY --from=model_fetcher /model /model
+# Layer dev dependencies on top of the production venv
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-install-project
+
+COPY . ./
+
+# Prepare directories for testing and ensure permissions
+RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache && \
+    chown -R 1000:1000 /app/reports /app/.pytest_cache /hf_cache
+
+# ─── Stage 2.2: Indexed Builder (Production Indexing) ────────────────────────
+FROM builder AS indexed_builder
+
 # Model and FAISS Index (Cached unless data/ or scripts change)
 COPY --from=model_fetcher /model /model
 COPY data/ ./data/
@@ -64,15 +80,18 @@ RUN --mount=type=cache,target=/app/.pdf_cache_mount \
     TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=1 PATH="/app/.venv/bin:$PATH" python scripts/build_index.py && \
     cp -r /app/.pdf_cache/* /app/.pdf_cache_mount/ 2>/dev/null || true
 
-# Final Source Code
-COPY main.py ./
-COPY . ./
+# (Source code will be copied in leaf stages to maximize cache hits)
 
 # ─── Stage 2.5: Functional Builder (Dev/Test Source) ──────────────────────────
-FROM builder AS functional_builder
-# Layer dev dependencies on top of the production venv
+FROM indexed_builder AS functional_builder
+
+
+# Layer dev dependencies on top of the production venv (Cached unless uv.lock changes)
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen
+    uv sync --frozen --no-install-project
+
+# Now copy the remaining source code (Fast, frequently changed)
+COPY . ./
 
 # Prepare directories for testing and ensure permissions
 RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache && \
@@ -85,12 +104,16 @@ FROM base AS runner
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy everything from the builder (including the pre-computed index)
-COPY --from=builder /app /app
+COPY --from=indexed_builder /app /app
 COPY --from=model_fetcher /model /model
 
-# Ensure the app user owns the directories it needs to write to (reports/cache)
-RUN mkdir -p /app/.pdf_cache /app/reports /hf_cache /model && \
-    chown -R 1000:1000 /app/.pdf_cache /app/reports /hf_cache /model
+# Copy the actual application source code
+COPY main.py ./
+COPY prompts/ ./prompts/
+
+# Only create and chown (by UID) the specific directories that MUST be writable
+RUN mkdir -p /app/.pdf_cache /app/reports /hf_cache && \
+    chown -R 1000:1000 /app/.pdf_cache /app/reports /hf_cache
 
 USER 1000
 
