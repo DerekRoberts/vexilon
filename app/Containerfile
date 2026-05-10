@@ -55,10 +55,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ─── Stage 2.1: Test Builder (Unit Tests - Lightweight) ──────────────────────
 FROM builder AS test_builder
 COPY --from=model_fetcher /model /model
-COPY . ./
 # Layer dev dependencies on top of the production venv
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen
+    uv sync --frozen --no-install-project
+
+COPY . ./
 
 # Prepare directories for testing and ensure permissions
 RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache && \
@@ -79,16 +80,18 @@ RUN --mount=type=cache,target=/app/.pdf_cache_mount \
     TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=1 PATH="/app/.venv/bin:$PATH" python scripts/build_index.py && \
     cp -r /app/.pdf_cache/* /app/.pdf_cache_mount/ 2>/dev/null || true
 
-# Copy remaining source code for the runner and functional tests
-COPY . ./
+# (Source code will be copied in leaf stages to maximize cache hits)
 
 # ─── Stage 2.5: Functional Builder (Dev/Test Source) ──────────────────────────
 FROM indexed_builder AS functional_builder
 
 
-# Layer dev dependencies on top of the production venv
+# Layer dev dependencies on top of the production venv (Cached unless uv.lock changes)
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen
+    uv sync --frozen --no-install-project
+
+# Now copy the remaining source code (Fast, frequently changed)
+COPY . ./
 
 # Prepare directories for testing and ensure permissions
 RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache && \
@@ -103,6 +106,9 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Copy everything from the builder (including the pre-computed index)
 COPY --from=indexed_builder /app /app
 COPY --from=model_fetcher /model /model
+
+# Copy the actual application source code
+COPY . ./
 
 # Ensure the app user owns the directories it needs to write to (reports/cache)
 RUN mkdir -p /app/.pdf_cache /app/reports /hf_cache /model && \
