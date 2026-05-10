@@ -24,29 +24,32 @@ def mock_embedding_model(request, monkeypatch):
         return
     import main as app
     import indexing
-    # Only mock if we are not explicitly doing an integration test that needs the real model
-    # We can check the test name or path, but it's safer to just provide a lightweight mock
-    # and let integration tests skip the mock if they want.
+    import sentence_transformers
     
     mock_model = MagicMock()
     
     # Mock tokenizer behavior for chunk_text
-    def mock_tokenize(text, **kwargs):
-        # Return something that looks like encoding.input_ids and encoding.offset_mapping
-        tokens = [1] * (len(text) // 4 + 1) # dummy tokens
-        offsets = [(i*4, min((i+1)*4, len(text))) for i in range(len(tokens))]
+    mock_tokenizer = MagicMock()
+    mock_tokenizer.is_fast = True
+    
+    def mock_tokenize_side_effect(text, **kwargs):
+        tokens_count = (len(text) + 3) // 4 if text else 0
         return {
-            "input_ids": tokens,
-            "offset_mapping": offsets
+            "input_ids": [1] * tokens_count,
+            "offset_mapping": [(i*4, min((i+1)*4, len(text))) for i in range(tokens_count)]
         }
         
-    mock_model.tokenizer = mock_tokenize
+    mock_tokenizer.side_effect = mock_tokenize_side_effect
+    mock_model.tokenizer = mock_tokenizer
     mock_model.encode = MagicMock(return_value=[[0.1]*384])
     
-    # We only patch if the test isn't an integration test that specifically wants the real deal
-    # (By default we mock, integration tests can un-mock if needed)
+    # The Nuclear Option: Patch the class itself so any instantiation returns our mock
+    monkeypatch.setattr(sentence_transformers, "SentenceTransformer", lambda *args, **kwargs: mock_model)
+    
+    # Keep these for direct reference patching
     monkeypatch.setattr(app, "get_embed_model", lambda: mock_model)
     monkeypatch.setattr(indexing, "get_embed_model", lambda: mock_model)
+    
     return mock_model
 
 @pytest.fixture

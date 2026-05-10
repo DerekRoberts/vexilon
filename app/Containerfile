@@ -59,7 +59,7 @@ FROM deps_builder AS functional_builder
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen
 
-# Copy source code for testing
+# Copy source code and test data (Cache-buster: v2)
 COPY . ./
 
 # Prepare directories for testing and ensure permissions

@@ -1,15 +1,15 @@
 import pytest
-from indexing import get_embed_model
+import indexing
 
 def test_tokenizer_is_fast():
     """Agreement Navigator requires 'Fast' tokenizers for character-offset mapping."""
-    model = get_embed_model()
+    model = indexing.get_embed_model()
     assert hasattr(model, "tokenizer"), "Model should have a tokenizer"
     assert getattr(model.tokenizer, "is_fast", False), "Tokenizer must be a 'Fast' tokenizer"
 
 def test_tokenizer_offset_mapping_valid():
     """Ensure offsets returned by the tokenizer align with the original text."""
-    model = get_embed_model()
+    model = indexing.get_embed_model()
     tokenizer = model.tokenizer
     text = "The quick brown fox jumps over the lazy dog."
     
@@ -33,7 +33,7 @@ def test_tokenizer_offset_mapping_valid():
 
 def test_tokenizer_offset_mapping_multiline():
     """Test offset mapping with multiline strings to ensure char_offset logic in indexing.py is sound."""
-    model = get_embed_model()
+    model = indexing.get_embed_model()
     tokenizer = model.tokenizer
     lines = ["Line one", "Second line", "Third line"]
     full_text = "\n".join(lines)
