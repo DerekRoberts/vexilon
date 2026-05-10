@@ -18,12 +18,13 @@ async def test_full_rag_flow_integration(monkeypatch, mock_llm_client, tmp_path)
     monkeypatch.setenv("AGNAV_CACHE_DIR", str(cache_dir))
     monkeypatch.setenv("AGNAV_DATA_DIR", str(test_data_dir))
     
-    # Force reload to pick up new env vars
-    import importlib
+    # Surgically mock the paths in the already-imported modules
     import indexing
     import main as app
-    importlib.reload(indexing)
-    importlib.reload(app)
+    monkeypatch.setattr(indexing, "LABOUR_LAW_DIR", test_data_dir)
+    monkeypatch.setattr(indexing, "PDF_CACHE_DIR", cache_dir)
+    monkeypatch.setattr(app, "LABOUR_LAW_DIR", test_data_dir)
+    monkeypatch.setattr(app, "TESTS_DIR", test_data_dir / "tests")
     
     """
     Tests the system from Markdown loading to streaming response.
