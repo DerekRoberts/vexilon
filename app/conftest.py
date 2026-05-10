@@ -14,6 +14,10 @@ import os
 from unittest.mock import MagicMock, AsyncMock
 from contextlib import asynccontextmanager
 
+import main as app
+import indexing
+import sentence_transformers
+
 @pytest.fixture(autouse=True)
 def mock_embedding_model(request, monkeypatch):
     """
@@ -22,9 +26,6 @@ def mock_embedding_model(request, monkeypatch):
     """
     if "integration" in str(request.path):
         return
-    import main as app
-    import indexing
-    import sentence_transformers
     
     mock_model = MagicMock()
     
