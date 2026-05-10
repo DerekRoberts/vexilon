@@ -84,7 +84,7 @@ jobs:
         with:
           load: true
           files: compose.yml
-          targets: dev
+          targets: test-unit
           set: |
             *.cache-from=type=gha
             *.cache-to=type=gha,mode=max

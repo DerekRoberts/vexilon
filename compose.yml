@@ -158,10 +158,9 @@ services:
     container_name: vexilon-test-unit
     <<: *service-defaults
     image: vexilon:dev
-    build: *build-dev
-    depends_on:
-      test-cache:
-        condition: service_completed_successfully
+    build:
+      <<: *common-build
+      target: test_builder
     environment: *test-env
     # Shared healthcheck not needed for one-off test runners
     command: >
