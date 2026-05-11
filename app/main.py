@@ -732,7 +732,7 @@ def startup(force_rebuild: bool = False):
     provider = get_llm_provider()
     model = DEFAULT_MODEL_LLM
     logger.info(f"[startup] AgNav {AGNAV_VERSION} starting...")
-    logger.info(f"[startup] Provider: {get_llm_provider()}")
+    logger.info(f"[startup] Provider: {provider}")
     logger.info(f"[startup] Default Model: {DEFAULT_MODEL_LLM}")
     if get_llm_provider() == "huggingface":
         logger.info(f"[startup] HF Routing: {HF_PROVIDER}")
@@ -756,20 +756,41 @@ def startup(force_rebuild: bool = False):
         all_files = _get_rag_source_files()
         _source_path_map = { _get_source_name(p.stem): p for p in all_files }
         report = get_integrity_report()
+    
+    # ── Document Library Preparation ──────────────────────────────────────
     doc_list = _get_download_source_files()
     logger.info(f"[startup] {len(doc_list)} reference documents found.")
 
 # ─── Chainlit UI ────────────────────────────────────────────────────────────
-EXAMPLES = [
-    "What are the just cause requirements for discipline?",
-    "What constitutes a 'harassment' threshold in BC labor law?",
-    "Explain the nexus test for off-duty conduct.",
-    "What are the steward rights during an investigation meeting?",
-    "What are the standard timelines for Article 8 grievances?",
-]
-
-PERSONAS = ["Lookup", "Grieve", "Train", "Audit", "Manage"]
-DEFAULT_PERSONA = "Lookup"
+@cl.set_starters
+async def set_starters():
+    return [
+        cl.Starter(
+            label="Just Cause Requirements",
+            message="What are the just cause requirements for discipline?",
+            icon="/public/learn.svg",
+        ),
+        cl.Starter(
+            label="Nexus Test",
+            message="What is the nexus test for off-duty conduct?",
+            icon="/public/search.svg",
+        ),
+        cl.Starter(
+            label="Steward Rights",
+            message="What rights do stewards have in investigation meetings?",
+            icon="/public/terminal.svg",
+        ),
+        cl.Starter(
+            label="Grievance Timelines",
+            message="What are the standard grievance timelines in the 19th Main Agreement?",
+            icon="/public/history.svg",
+        ),
+        cl.Starter(
+            label="Investigation Procedures",
+            message="How should an employer conduct a fair investigation?",
+            icon="/public/edit.svg",
+        ),
+    ]
 
 # Module-level startup gate. startup() is sync (it does blocking I/O: PDF
 # fetch, FAISS index build/load, registry load). We run it exactly once,
@@ -822,37 +843,11 @@ if os.getenv("AGNAV_PASSWORD"):
         return None
 
 
-# ── Chat profiles (personas) ───────────────────────────────────────────────
-@cl.set_chat_profiles
-async def chat_profiles(_user: "cl.User | None" = None) -> list[cl.ChatProfile]:
-    starters = [
-        cl.Starter(label=EXAMPLES[0], message=EXAMPLES[0], icon="/public/icons/shield.svg"),
-        cl.Starter(label=EXAMPLES[1], message=EXAMPLES[1], icon="/public/icons/alert.svg"),
-        cl.Starter(label=EXAMPLES[2], message=EXAMPLES[2], icon="/public/icons/search.svg"),
-        cl.Starter(label=EXAMPLES[3], message=EXAMPLES[3], icon="/public/icons/users.svg"),
-        cl.Starter(label=EXAMPLES[4], message=EXAMPLES[4], icon="/public/icons/clock.svg"),
-    ]
-    descriptions = {
-        "Lookup": "Find specific clauses and provide literal guidance.",
-        "Grieve": "Forensic auditor mode for building grievance cases.",
-        "Train": "Educational mode for steward development.",
-        "Audit": "Senior staff rep mode for deep contract verification.",
-        "Manage": "Management consultant mode for compliance and risk.",
-    }
-    return [
-        cl.ChatProfile(
-            name=name,
-            markdown_description=descriptions.get(name, "Forensic assistant"),
-            default=(name == DEFAULT_PERSONA),
-            starters=starters,
-        )
-        for name in PERSONAS
-    ]
-
 @cl.on_settings_update
 async def setup_agent(settings):
+    cl.user_session.set("persona", settings["Persona"])
     cl.user_session.set("show_reasoning", settings["ShowReasoning"])
-    await cl.Message(content=f"Settings updated: Reasoning is now **{'Visible' if settings['ShowReasoning'] else 'Hidden'}**").send()
+    await cl.Message(content=f"Settings updated: Persona is **{settings['Persona']}**, Reasoning is **{'Visible' if settings['ShowReasoning'] else 'Hidden'}**").send()
 
 @cl.on_chat_start
 async def start():
@@ -861,6 +856,12 @@ async def start():
     # ── Chat Settings (Gear Icon) ─────────────────────────────────────────
     await cl.ChatSettings(
         [
+            cl.input_widget.Select(
+                id="Persona",
+                label="Navigator Persona",
+                values=["Lookup", "Grieve", "Train", "Audit", "Manage"],
+                initial_index=0,
+            ),
             cl.input_widget.Switch(
                 id="ShowReasoning",
                 label="Show Internal Reasoning",
@@ -872,14 +873,26 @@ async def start():
     # Initialize session state
     cl.user_session.set("history", [])
     cl.user_session.set("show_reasoning", False)
-    # Persona is handled by cl.ChatProfile in Chainlit 2.x automatically
-    profile = cl.user_session.get("chat_profile") or "Lookup"
-    cl.user_session.set("persona", profile)
+    cl.user_session.set("persona", "Lookup")
 
-    if INTEGRITY_WARNING:
-        await cl.Message(content=INTEGRITY_WARNING, author="system").send()
+    # ── Welcome Header & Toolbox ──────────────────────────────────────────
+    welcome_msg = """# 🛡️ BCGEU Navigator
+Welcome! I am your forensic labor law assistant. Use the **top-right header** to export your chat or the **gear icon** to switch personas.
 
-    # ── Document Library (Side Panel) ─────────────────────────────────────
+### 🚀 Quick Start
+Click one of the common queries below to begin immediately:
+"""
+    
+    # ── Quick Start Actions ───────────────────────────────────────────────
+    actions = [
+        cl.Action(name="starter_query", value="What are the just cause requirements for discipline?", label="⚖️ Just Cause"),
+        cl.Action(name="starter_query", value="What is the nexus test for off-duty conduct?", label="🔍 Nexus Test"),
+        cl.Action(name="starter_query", value="What rights do stewards have in investigation meetings?", label="🛡️ Steward Rights"),
+        cl.Action(name="starter_query", value="What are the standard grievance timelines?", label="📅 Timelines"),
+        cl.Action(name="starter_query", value="How should an employer conduct a fair investigation?", label="📝 Investigations"),
+    ]
+
+    # ── Side Panel Library ────────────────────────────────────────────────
     doc_list = _get_download_source_files()
     doc_markdown = "\n".join([f"- {p.name}" for p in doc_list])
     git_sha = "af7022d"
@@ -891,8 +904,28 @@ async def start():
 **🛠️ Forensic Footer**
 - **Revision**: `{git_sha}`
 - **Status**: Operational
+- **SHA**: `agnav`
 """
-    await cl.Text(name="Vexilon Library", content=side_panel_content, display="side").send()
+    # Fix: Attach the side panel to the welcome message
+    side_element = cl.Text(name="Vexilon Library", content=side_panel_content, display="side")
+    
+    await cl.Message(
+        content=welcome_msg, 
+        author="System", 
+        elements=[side_element],
+        actions=actions
+    ).send()
+
+    toolbox_msg = """### 🧰 Steward Toolbox
+- [BC Labour Relations Code (PDF)](https://github.com/MinionTech/vexilon/blob/main/app/data/labour_law/01_primary/BC%20Labour%20Relations%20Code.pdf)
+- [BCGEU 19th Main Agreement (PDF)](https://github.com/MinionTech/vexilon/blob/main/app/data/labour_law/01_primary/BCGEU%2019th%20Main%20Agreement.pdf)
+
+**[🔗 Browse Full Knowledge Base on GitHub](https://github.com/MinionTech/vexilon/tree/main/app/data/labour_law)**
+
+---
+[GitHub](https://github.com/MinionTech/vexilon) | [Privacy](https://github.com/MinionTech/vexilon/blob/main/PRIVACY.md)
+"""
+    await cl.Message(content=toolbox_msg, author="System").send()
 
     if INTEGRITY_WARNING:
         await cl.Message(content=INTEGRITY_WARNING, author="system").send()
@@ -909,6 +942,15 @@ def _client_id(message: cl.Message) -> str:
     sid = getattr(cl.user_session, "id", None) or cl.user_session.get("id")
     return str(sid) if sid else "default"
 
+
+@cl.action_callback("starter_query")
+async def on_action(action: cl.Action):
+    # This simulates the user sending the message
+    await cl.Message(content=f"Sent query: {action.value}", author="System").send()
+    # Now we trigger the on_message logic manually or via cl.process_message
+    await on_message(cl.Message(content=action.value))
+    # Remove the buttons after use to keep the chat clean
+    await action.remove()
 
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
