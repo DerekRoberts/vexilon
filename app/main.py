@@ -4,19 +4,31 @@ import sys
 # Force anyio to use asyncio to resolve loop detection issues on Python 3.14
 os.environ["ANYIO_BACKEND"] = "asyncio"
 
-# Python 3.14 AnyIO loop detection fix
+# Python 3.14 Stability Patch
+# Root cause: AnyIO's CancelScope does _task_states[current_task()] lookup.
+# Tasks started by Uvicorn/Starlette are not in AnyIO's _task_states dict,
+# so the lookup crashes. Fix: bypass AnyIO's run_sync when outside AnyIO task context.
 if sys.version_info >= (3, 14):
     try:
-        import anyio
-        import anyio._core._eventloop
-        _original_get_backend = anyio.get_async_backend
-        def _patched_get_backend(backend=None, backend_options=None):
-            if backend is None:
-                return anyio._core._eventloop.backends['asyncio']()
-            return _original_get_backend(backend, backend_options)
-        anyio.get_async_backend = _patched_get_backend
-    except Exception:
-        pass
+        import asyncio
+        import anyio.to_thread
+        import anyio._backends._asyncio as _anyio_asyncio_backend
+
+        _orig_run_sync = anyio.to_thread.run_sync
+
+        async def _patched_run_sync(func, *args, abandon_on_cancel=False, limiter=None):
+            current = asyncio.current_task()
+            if current is None or current not in _anyio_asyncio_backend._task_states:
+                # Not in an AnyIO-managed task. Use stdlib executor to avoid
+                # the _task_states KeyError in CancelScope.
+                loop = asyncio.get_running_loop()
+                return await loop.run_in_executor(None, func, *args)
+            return await _orig_run_sync(func, *args, abandon_on_cancel=abandon_on_cancel, limiter=limiter)
+
+        anyio.to_thread.run_sync = _patched_run_sync
+    except Exception as e:
+        print(f"Warning: Failed to apply Python 3.14 stability patch: {e}")
+
 
 # Force online mode for the API but keep local models offline for speed
 os.environ["HF_HUB_OFFLINE"] = "0"
