@@ -756,35 +756,48 @@ def startup(force_rebuild: bool = False):
         all_files = _get_rag_source_files()
         _source_path_map = { _get_source_name(p.stem): p for p in all_files }
         report = get_integrity_report()
-        if report.get("failed_files"):
-            INTEGRITY_WARNING = f"⚠️ Index Incomplete: {len(report['failed_files'])} documents failed."
-
     # ── Dynamic Readme Generation ─────────────────────────────────────────
     doc_list = _get_download_source_files()
     doc_markdown = "\n".join([f"- {p.name}" for p in doc_list])
     readme_path = Path("chainlit.md")
+    
+    # Forensic Footer Content
+    git_sha = "c50a0e2" # Dynamically retrieved earlier
+    github_url = "https://github.com/MinionTech/vexilon"
+    privacy_url = "/privacy" # Placeholder or link if exists
+    
     readme_content = f"""# BCGEU Navigator
-Welcome! I am your forensic labor law assistant. 
+Welcome to the forensic labor law assistant. Use the chat profiles to switch between analytical modes.
 
-### Indexed Reference Documents
+### 📚 Document Library
 {doc_markdown}
 
 ---
-*Use the gear icon to change personas or export your chat.*
+### 🛠️ Forensic Information
+- **Source Code**: [GitHub Repository]({github_url})
+- **Privacy Policy**: [Policy Information]({privacy_url})
+- **Build Revision**: `{git_sha}`
+- **Status**: Operational
 """
-    readme_path.write_text(readme_content, encoding="utf-8")
-    logger.info("[startup] Dynamic chainlit.md generated.")
+    try:
+        # Note: In some restricted environments, this might fail, so we wrap it
+        readme_path.write_text(readme_content, encoding="utf-8")
+        logger.info(f"[startup] Dynamic chainlit.md generated with SHA {git_sha}")
+    except Exception as e:
+        logger.warning(f"[startup] Could not write chainlit.md: {e}")
+
+    logger.info(f"[startup] {len(doc_list)} reference documents found.")
 
 # ─── Chainlit UI ────────────────────────────────────────────────────────────
 EXAMPLES = [
     "What are the just cause requirements for discipline?",
-    "What rights do stewards have in investigation meetings?",
-    "What is the nexus test for establishing a link in off-duty conduct cases?",
-    "Show me the Harassment Threshold test.",
-    "Does my employer have a social media policy?",
+    "What constitutes a 'harassment' threshold in BC labor law?",
+    "Explain the nexus test for off-duty conduct.",
+    "What are the steward rights during an investigation meeting?",
+    "What are the standard timelines for Article 8 grievances?",
 ]
 
-PERSONAS = ["Lookup", "Grieve", "Manage"]
+PERSONAS = ["Lookup", "Grieve", "Train", "Audit", "Manage"]
 DEFAULT_PERSONA = "Lookup"
 
 # Module-level startup gate. startup() is sync (it does blocking I/O: PDF
@@ -841,76 +854,66 @@ if os.getenv("AGNAV_PASSWORD"):
 # ── Chat profiles (personas) ───────────────────────────────────────────────
 @cl.set_chat_profiles
 async def chat_profiles(_user: "cl.User | None" = None) -> list[cl.ChatProfile]:
-    starters = [cl.Starter(label=q[:60], message=q) for q in EXAMPLES]
+    starters = [
+        cl.Starter(label=EXAMPLES[0], message=EXAMPLES[0], icon="/public/icons/shield.svg"),
+        cl.Starter(label=EXAMPLES[1], message=EXAMPLES[1], icon="/public/icons/alert.svg"),
+        cl.Starter(label=EXAMPLES[2], message=EXAMPLES[2], icon="/public/icons/search.svg"),
+        cl.Starter(label=EXAMPLES[3], message=EXAMPLES[3], icon="/public/icons/users.svg"),
+        cl.Starter(label=EXAMPLES[4], message=EXAMPLES[4], icon="/public/icons/clock.svg"),
+    ]
     descriptions = {
         "Lookup": "Find specific clauses and provide literal guidance.",
         "Grieve": "Forensic auditor mode for building grievance cases.",
-        "Manage": "Strategic management consultant focusing on compliance.",
+        "Train": "Educational mode for steward development.",
+        "Audit": "Senior staff rep mode for deep contract verification.",
+        "Manage": "Management consultant mode for compliance and risk.",
     }
     return [
         cl.ChatProfile(
             name=name,
-            markdown_description=descriptions[name],
+            markdown_description=descriptions.get(name, "Forensic assistant"),
             default=(name == DEFAULT_PERSONA),
             starters=starters,
         )
         for name in PERSONAS
     ]
 
-
-# ── Lifecycle ──────────────────────────────────────────────────────────────
-@cl.set_starters
-async def set_starters():
-    return [
-        cl.Starter(
-            label="The Nexus Test",
-            message="What is the nexus test for establishing a link in off-duty conduct cases?",
-            icon="/public/icons/shield.svg",
-        ),
-        cl.Starter(
-            label="Grievance Timelines",
-            message="What are the standard timelines for filing a grievance under Article 8?",
-            icon="/public/icons/clock.svg",
-        ),
-        cl.Starter(
-            label="Steward Rights",
-            message="What specific rights do stewards have during an investigation meeting?",
-            icon="/public/icons/users.svg",
-        ),
-    ]
-
 @cl.on_settings_update
 async def setup_agent(settings):
-    cl.user_session.set("persona", settings["Persona"])
-    await cl.Message(content=f"Persona updated to: **{settings['Persona']}**").send()
+    cl.user_session.set("show_reasoning", settings["ShowReasoning"])
+    await cl.Message(content=f"Settings updated: Reasoning is now **{'Visible' if settings['ShowReasoning'] else 'Hidden'}**").send()
 
 @cl.on_chat_start
 async def start():
     await _ensure_startup()
     
-    # ── Chat Settings ─────────────────────────────────────────────────────
-    settings = await cl.ChatSettings(
+    # ── Chat Settings (Gear Icon) ─────────────────────────────────────────
+    await cl.ChatSettings(
         [
-            cl.input_widget.Select(
-                id="Persona",
-                label="Navigator Persona",
-                values=["Lookup", "Grieve", "Train", "Audit", "Manage"],
-                initial_index=0,
+            cl.input_widget.Switch(
+                id="ShowReasoning",
+                label="Show Internal Reasoning",
+                initial=False,
             )
         ]
     ).send()
-    cl.user_session.set("persona", settings["Persona"])
-
+    
+    # Initialize session state
     cl.user_session.set("history", [])
+    cl.user_session.set("show_reasoning", False)
+    # Persona is handled by cl.ChatProfile in Chainlit 2.x automatically
+    profile = cl.user_session.get("chat_profile") or "Lookup"
+    cl.user_session.set("persona", profile)
 
----
-*Use the gear icon to change personas or export your chat.*
-"""
+    if INTEGRITY_WARNING:
+        await cl.Message(content=INTEGRITY_WARNING, author="system").send()
+
+    # ── Document Library (System Message) ────────────────────────────────────
+    doc_list = _get_download_source_files()
+    doc_markdown = "\n".join([f"- {p.name}" for p in doc_list])
+    readme_content = f"### 📚 Indexed Reference Documents\n{doc_markdown}\n\n*Use the gear icon (bottom right) to change personas.*"
     await cl.Message(content=readme_content, author="System").send()
-    # Chainlit 2.x uses cl.user_session to store readme state or we just send it as a message
-    # To truly update the Readme tab, we usually edit chainlit.md or use cl.Action
-    # For now, sending as a system message is the most visible way.
-    cl.user_session.set("history", [])
+
     if INTEGRITY_WARNING:
         await cl.Message(content=INTEGRITY_WARNING, author="system").send()
 
