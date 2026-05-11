@@ -875,12 +875,14 @@ async def start():
     cl.user_session.set("show_reasoning", False)
     cl.user_session.set("persona", "Lookup")
 
-    # ── Welcome Header & Toolbox ──────────────────────────────────────────
+    # ── Welcome Header ────────────────────────────────────────────────────
     welcome_msg = """# 🛡️ BCGEU Navigator
-Welcome! I am your forensic labor law assistant. Use the **top-right header** to export your chat or the **gear icon** to switch personas.
+Welcome! I am your forensic labor law assistant. 
 
-### 🚀 Quick Start
-Click one of the common queries below to begin immediately:
+**Quick Tips:**
+- 📖 Click the **Readme** tab (top-left) to access the **Knowledge Base**.
+- ⚙️ Use the **gear icon** (bottom) to switch personas.
+- 📤 Use the **header** (top-right) to export your chat history.
 """
     
     # ── Quick Start Actions ───────────────────────────────────────────────
@@ -888,44 +890,13 @@ Click one of the common queries below to begin immediately:
         cl.Action(name="starter_query", payload={"value": "What are the just cause requirements for discipline?"}, label="⚖️ Just Cause"),
         cl.Action(name="starter_query", payload={"value": "What is the nexus test for off-duty conduct?"}, label="🔍 Nexus Test"),
         cl.Action(name="starter_query", payload={"value": "What rights do stewards have in investigation meetings?"}, label="🛡️ Steward Rights"),
-        cl.Action(name="starter_query", payload={"value": "What are the standard grievance timelines?"}, label="📅 Timelines"),
-        cl.Action(name="starter_query", payload={"value": "How should an employer conduct a fair investigation?"}, label="📝 Investigations"),
     ]
 
-    # ── Side Panel Library ────────────────────────────────────────────────
-    doc_list = _get_download_source_files()
-    doc_markdown = "\n".join([f"- {p.name}" for p in doc_list])
-    git_sha = "af7022d"
-    
-    side_panel_content = f"""### 📚 Indexed Reference Documents
-{doc_markdown}
-
----
-**🛠️ Forensic Footer**
-- **Revision**: `{git_sha}`
-- **Status**: Operational
-- **SHA**: `agnav`
-"""
-    # Fix: Attach the side panel to the welcome message
-    side_element = cl.Text(name="Vexilon Library", content=side_panel_content, display="side")
-    
     await cl.Message(
         content=welcome_msg, 
         author="System", 
-        elements=[side_element],
         actions=actions
     ).send()
-
-    toolbox_msg = """### 🧰 Steward Toolbox
-- [BC Labour Relations Code (PDF)](https://github.com/MinionTech/vexilon/blob/main/app/data/labour_law/01_primary/BC%20Labour%20Relations%20Code.pdf)
-- [BCGEU 19th Main Agreement (PDF)](https://github.com/MinionTech/vexilon/blob/main/app/data/labour_law/01_primary/BCGEU%2019th%20Main%20Agreement.pdf)
-
-**[🔗 Browse Full Knowledge Base on GitHub](https://github.com/MinionTech/vexilon/tree/main/app/data/labour_law)**
-
----
-[GitHub](https://github.com/MinionTech/vexilon) | [Privacy](https://github.com/MinionTech/vexilon/blob/main/PRIVACY.md)
-"""
-    await cl.Message(content=toolbox_msg, author="System").send()
 
     if INTEGRITY_WARNING:
         await cl.Message(content=INTEGRITY_WARNING, author="system").send()
