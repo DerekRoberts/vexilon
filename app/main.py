@@ -74,6 +74,28 @@ async def _patched_wait_for(fut, timeout=None, **kwargs):
 
 asyncio.wait_for = _patched_wait_for
 
+# 4. Global patch for anyio's task state lookup to prevent weakref(None) crash
+# This is a deep fix for httpx/httpcore/openai calls on Python 3.14.
+_orig_task_states = _anyio_asyncio_backend._task_states
+
+class SafeTaskStates:
+    def __getitem__(self, key):
+        if key is None:
+            from anyio._backends._asyncio import TaskState
+            return TaskState(None)
+        return _orig_task_states[key]
+    def __setitem__(self, key, value):
+        if key is not None: _orig_task_states[key] = value
+    def __delitem__(self, key):
+        if key is not None: del _orig_task_states[key]
+    def __contains__(self, key):
+        return key is None or key in _orig_task_states
+    def get(self, key, default=None):
+        if key is None: return self[None]
+        return _orig_task_states.get(key, default)
+
+_anyio_asyncio_backend._task_states = SafeTaskStates()
+
 # ─── Agnav Imports ────────────────────────────────────────────────────────
 from indexing import (
     _get_source_name,
@@ -650,8 +672,11 @@ def startup(force_rebuild: bool = False):
     # Ensure cache directory is writable
     import indexing
     indexing.PDF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    # Ensure Chainlit's upload directory is writable (Fixes PermissionError in 3.14)
-    Path(".files").mkdir(parents=True, exist_ok=True)
+    # Redirect Chainlit's upload directory to a known-writable location
+    # (Fixes PermissionError in environments with restricted /app)
+    upload_dir = indexing.PDF_CACHE_DIR / ".files"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    os.environ["CHAINLIT_FILES_DIR"] = str(upload_dir)
     try:
         test_file = indexing.PDF_CACHE_DIR / "permissions_test"
         test_file.touch()
