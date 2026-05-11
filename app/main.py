@@ -528,7 +528,7 @@ async def generate_perspective_queries(message: str, history: list[dict]) -> lis
     except Exception:
         return [message]
 
-async def get_multi_perspective_context(message: str, history: list[dict]) -> tuple[list[str], str]:
+async def get_multi_perspective_context(message: str, history: list[dict]) -> tuple[list[str], str, list[dict]]:
     # Optimization: Skip condensation in DEV or if no history exists to save ~30s of latency
     if IS_DEV or not history:
         condensed = message
@@ -547,10 +547,12 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
     all_res = await asyncio.to_thread(search_index_batch, _index, _chunks, queries, [top_k_count] * len(queries))
     seen = set()
     context_parts = []
+    unique_snippets = []
     for res_list in all_res:
         for c in res_list:
             if c["text"] not in seen:
                 seen.add(c["text"])
+                unique_snippets.append(c)
                 source = c.get("source", "Unknown")
                 page = c.get("page", "?")
                 context_parts.append(f"[Source: {source}, Page: {page}]\n{c['text']}")
@@ -632,8 +634,10 @@ def markdown_to_history(file_path: str) -> list:
     return history
 
 # ─── App Logic ──────────────────────────────────────────────────────────────
+_source_path_map: dict[str, Path] = {}
+
 def startup(force_rebuild: bool = False):
-    global _index, _chunks, INTEGRITY_WARNING
+    global _index, _chunks, INTEGRITY_WARNING, _source_path_map
     
     # Identify environment
     provider = get_llm_provider()
@@ -660,6 +664,8 @@ def startup(force_rebuild: bool = False):
     if _index is None or force_rebuild:
         _index, _chunks = build_index_from_sources(force=True)
     if _index is not None:
+        all_files = _get_rag_source_files()
+        _source_path_map = { _get_source_name(p.stem): p for p in all_files }
         report = get_integrity_report()
         if report.get("failed_files"):
             INTEGRITY_WARNING = f"⚠️ Index Incomplete: {len(report['failed_files'])} documents failed."
@@ -801,11 +807,23 @@ async def on_message(message: cl.Message) -> None:
     try:
         # Show progress step for RAG search
         async with cl.Step(name="Searching Knowledge Base...") as step:
-            queries, context = await get_multi_perspective_context(sanitized, history)
+            queries, context, snippets = await get_multi_perspective_context(sanitized, history)
             step.input = " + ".join(queries)
-            # Count snippets by counting the Source tags
-            snippet_count = context.count("[Source:")
-            step.output = f"Retrieved {snippet_count} relevant excerpts from the Labour Law library."
+            
+            elements = []
+            seen_sources = set()
+            for s in snippets:
+                source_name = s.get("source", "Unknown")
+                if source_name not in seen_sources:
+                    path = _source_path_map.get(source_name)
+                    if path and path.suffix.lower() == ".pdf":
+                        elements.append(cl.Pdf(name=source_name, path=str(path), display="side"))
+                    else:
+                        elements.append(cl.Text(name=source_name, content=s.get("text", ""), display="side"))
+                    seen_sources.add(source_name)
+            
+            out.elements = elements
+            step.output = f"Retrieved {len(snippets)} relevant excerpts from {len(seen_sources)} documents."
 
         async for chunk in rag_review_stream(sanitized, history, persona, context=context, queries=queries):
             if not chunk:
@@ -818,6 +836,16 @@ async def on_message(message: cl.Message) -> None:
         out.content = accumulated
 
     await out.update()
+
+    # Async Verification pass as per SPEC.md Section 9
+    if VERIFY_ENABLED:
+        async def verify_and_update():
+            report = await verify_response(accumulated, context)
+            if report and "ALL_CLAIMS_VERIFIED" not in report:
+                out.content += f"\n\n---\n**Verification Note:**\n{report}"
+                await out.update()
+        
+        cl.run_task(verify_and_update())
 
     history.append({"role": "user", "content": sanitized})
     history.append({"role": "assistant", "content": accumulated})
