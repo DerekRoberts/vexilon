@@ -26,6 +26,27 @@ if sys.version_info >= (3, 14):
             return await _orig_run_sync(func, *args, abandon_on_cancel=abandon_on_cancel, limiter=limiter)
 
         anyio.to_thread.run_sync = _patched_run_sync
+
+        # Fix 2: Python 3.14's asyncio.wait_for uses asyncio.timeout() internally,
+        # which requires current_task() != None. engineio._service_task runs as a
+        # bare coroutine, not a Task, so it crashes. Replace wait_for with an
+        # implementation that uses call_later+cancel instead of timeout().
+        import asyncio.tasks
+
+        async def _safe_wait_for(fut, timeout, **kwargs):
+            loop = asyncio.get_running_loop()
+            waiter = asyncio.ensure_future(fut, loop=loop)
+            timeout_handle = loop.call_later(timeout, waiter.cancel)
+            try:
+                return await waiter
+            except asyncio.CancelledError:
+                raise asyncio.TimeoutError()
+            finally:
+                timeout_handle.cancel()
+
+        asyncio.wait_for = _safe_wait_for
+        asyncio.tasks.wait_for = _safe_wait_for
+
     except Exception as e:
         print(f"Warning: Failed to apply Python 3.14 stability patch: {e}")
 
