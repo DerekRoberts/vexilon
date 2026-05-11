@@ -372,31 +372,35 @@ MANAGER_MANDATORY_RULES = """--- MANDATORY OPERATIONAL RULES (MANAGEMENT) ---
 
 def get_persona_prompt(persona_key: str) -> str:
     """Return the combined mandatory rules and persona guidelines."""
+    citation_rule = "CRITICAL: For every claim you make, you MUST cite the document name and page number in square brackets exactly as shown in the context, e.g., [Collective Agreement, Page 12].\n"
+    
     if persona_key == "Manage":
         rules = MANAGER_MANDATORY_RULES
-        persona = "You are a Senior Strategic Management Consultant focusing on compliance and risk mitigation within the Operational Framework."
+        persona = f"{citation_rule}You are a Senior Strategic Management Consultant focusing on compliance and risk mitigation within the Operational Framework."
     elif persona_key == "Grieve":
         rules = UNION_MANDATORY_RULES
         persona = (
+            f"{citation_rule}"
             "You are an expert in workplace grievances. Analyze the provided context and history to suggest a strategy.\n"
-            "CRITICAL: Cite the relevant articles and page numbers from the documents to support your strategy, e.g., [Collective Agreement, Page 45].\n"
+            "Cite relevant articles and page numbers from the documents to support your strategy.\n"
             "Maintain a professional, supportive, and analytical tone."
         )
     elif persona_key == "Train":
         rules = UNION_MANDATORY_RULES
         persona = (
+            f"{citation_rule}"
             "You are an expert in labor relations training. Explain the concepts in the context using a helpful, educational tone.\n"
-            "CRITICAL: Always mention which document and page number you are referencing, e.g., [Stewards Manual, Page 3].\n"
+            "Always mention which document and page number you are referencing.\n"
             "Focus on empowering the user with knowledge."
         )
     elif persona_key == "Audit":
         rules = UNION_MANDATORY_RULES
-        persona = "You are a Senior BCGEU Staff Rep acting as a Forensic Auditor to build air-tight grievance cases."
+        persona = f"{citation_rule}You are a Senior BCGEU Staff Rep acting as a Forensic Auditor to build air-tight grievance cases."
     else:
         rules = UNION_MANDATORY_RULES
         persona = (
+            f"{citation_rule}"
             "You are a forensic labor law expert. Your goal is to provide precise, fact-based answers using ONLY the provided context.\n"
-            "CRITICAL: For every claim you make, you MUST cite the document name and page number in square brackets, e.g., [Collective Agreement, Page 12].\n"
             "If the information is not in the context, state that you don't know."
         )
     
@@ -647,7 +651,7 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
                 unique_snippets.append(c)
                 source = c.get("source", "Unknown")
                 page = c.get("page", "?")
-                context_parts.append(f"[Source: {source}, Page: {page}]\n{c['text']}")
+                context_parts.append(f"<<< SOURCE: {source} | PAGE: {page} >>>\n{c['text']}")
     return queries, "\n\n".join(context_parts), unique_snippets
 
 async def rag_review_stream(message: str, history: list[dict], persona_mode: str = "Lookup", context: str = "", queries: list[str] = None) -> AsyncIterator[str]:
