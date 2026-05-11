@@ -653,7 +653,9 @@ async def on_message(message: cl.Message):
     history = cl.user_session.get("history") or []
     
     # Rate Limit & Security Check
-    user_id = cl.user_session.get("id") or "default"
+    # Use x-forwarded-for for IP-based limiting on HF Spaces/proxies, fall back to session ID
+    headers = cl.context.session.http_headers
+    user_id = headers.get("x-forwarded-for", "").split(",")[0].strip() or cl.context.session.id or "default"
     allowed, rate_msg = _rate_limiter.is_allowed(user_id)
     if not allowed:
         await cl.Message(content=rate_msg).send()
@@ -686,6 +688,8 @@ async def on_message(message: cl.Message):
     ]
     cl.user_session.set("history", new_history)
 
-if __name__ == "__main__":
-    startup()
+# ─── Startup ───────────────────────────────────────────────────────────────
+# Pre-load the index at the module level so workers are ready immediately.
+# This prevents a massive delay for the first user connecting to a fresh worker.
+startup()
 
