@@ -95,7 +95,7 @@ COPY . ./
 
 # Prepare directories for testing and ensure permissions
 RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache && \
-    chown -R 1000:1000 /app/reports /app/.pytest_cache /hf_cache
+    chown -R 1000:1000 /app /hf_cache
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
 FROM base AS runner
@@ -113,7 +113,7 @@ COPY prompts/ ./prompts/
 
 # Only create and chown (by UID) the specific directories that MUST be writable
 RUN mkdir -p /app/.pdf_cache /app/reports /hf_cache && \
-    chown -R 1000:1000 /app/.pdf_cache /app/reports /hf_cache
+    chown -R 1000:1000 /app /hf_cache
 
 USER 1000
 
