@@ -86,21 +86,36 @@ _orig_task_states = _anyio_asyncio_backend._task_states
 
 class SafeTaskStates:
     def __getitem__(self, key):
-        if key is None:
+        if key is None or not isinstance(key, asyncio.Task):
             from anyio._backends._asyncio import TaskState
             return TaskState(None, None)
         return _orig_task_states[key]
     def __setitem__(self, key, value):
-        if key is not None: _orig_task_states[key] = value
+        if isinstance(key, asyncio.Task): _orig_task_states[key] = value
     def __delitem__(self, key):
-        if key is not None: del _orig_task_states[key]
+        if isinstance(key, asyncio.Task): del _orig_task_states[key]
     def __contains__(self, key):
-        return key is None or key in _orig_task_states
+        return key is None or not isinstance(key, asyncio.Task) or key in _orig_task_states
     def get(self, key, default=None):
-        if key is None: return self[None]
+        if key is None or not isinstance(key, asyncio.Task): return self[key]
         return _orig_task_states.get(key, default)
 
 _anyio_asyncio_backend._task_states = SafeTaskStates()
+
+# 5. Patch anyio.CancelScope to prevent AssertionError on Python 3.14
+from anyio._backends._asyncio import CancelScope as _AnyioCancelScope
+_orig_cancel_scope_enter = _AnyioCancelScope.__enter__
+
+def _patched_cancel_scope_enter(self):
+    host_task = asyncio.current_task()
+    if host_task is None:
+        # Pre-emptively set a dummy task so anyio doesn't skip logic 
+        # but also doesn't crash on the 'assert self._host_task is not None' in __exit__
+        self._host_task = "dummy_task"
+        return self
+    return _orig_cancel_scope_enter(self)
+
+_AnyioCancelScope.__enter__ = _patched_cancel_scope_enter
 
 # ─── Agnav Imports ────────────────────────────────────────────────────────
 from indexing import (
