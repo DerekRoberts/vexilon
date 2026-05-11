@@ -759,6 +759,22 @@ def startup(force_rebuild: bool = False):
         if report.get("failed_files"):
             INTEGRITY_WARNING = f"⚠️ Index Incomplete: {len(report['failed_files'])} documents failed."
 
+    # ── Dynamic Readme Generation ─────────────────────────────────────────
+    doc_list = _get_download_source_files()
+    doc_markdown = "\n".join([f"- {p.name}" for p in doc_list])
+    readme_path = Path("chainlit.md")
+    readme_content = f"""# BCGEU Navigator
+Welcome! I am your forensic labor law assistant. 
+
+### Indexed Reference Documents
+{doc_markdown}
+
+---
+*Use the gear icon to change personas or export your chat.*
+"""
+    readme_path.write_text(readme_content, encoding="utf-8")
+    logger.info("[startup] Dynamic chainlit.md generated.")
+
 # ─── Chainlit UI ────────────────────────────────────────────────────────────
 EXAMPLES = [
     "What are the just cause requirements for discipline?",
@@ -843,11 +859,57 @@ async def chat_profiles(_user: "cl.User | None" = None) -> list[cl.ChatProfile]:
 
 
 # ── Lifecycle ──────────────────────────────────────────────────────────────
+@cl.set_starters
+async def set_starters():
+    return [
+        cl.Starter(
+            label="The Nexus Test",
+            message="What is the nexus test for establishing a link in off-duty conduct cases?",
+            icon="/public/icons/shield.svg",
+        ),
+        cl.Starter(
+            label="Grievance Timelines",
+            message="What are the standard timelines for filing a grievance under Article 8?",
+            icon="/public/icons/clock.svg",
+        ),
+        cl.Starter(
+            label="Steward Rights",
+            message="What specific rights do stewards have during an investigation meeting?",
+            icon="/public/icons/users.svg",
+        ),
+    ]
+
+@cl.on_settings_update
+async def setup_agent(settings):
+    cl.user_session.set("persona", settings["Persona"])
+    await cl.Message(content=f"Persona updated to: **{settings['Persona']}**").send()
+
 @cl.on_chat_start
-async def on_chat_start() -> None:
+async def start():
     await _ensure_startup()
-    persona = cl.user_session.get("chat_profile") or DEFAULT_PERSONA
-    cl.user_session.set("persona", persona)
+    
+    # ── Chat Settings ─────────────────────────────────────────────────────
+    settings = await cl.ChatSettings(
+        [
+            cl.input_widget.Select(
+                id="Persona",
+                label="Navigator Persona",
+                values=["Lookup", "Grieve", "Train", "Audit", "Manage"],
+                initial_index=0,
+            )
+        ]
+    ).send()
+    cl.user_session.set("persona", settings["Persona"])
+
+    cl.user_session.set("history", [])
+
+---
+*Use the gear icon to change personas or export your chat.*
+"""
+    await cl.Message(content=readme_content, author="System").send()
+    # Chainlit 2.x uses cl.user_session to store readme state or we just send it as a message
+    # To truly update the Readme tab, we usually edit chainlit.md or use cl.Action
+    # For now, sending as a system message is the most visible way.
     cl.user_session.set("history", [])
     if INTEGRITY_WARNING:
         await cl.Message(content=INTEGRITY_WARNING, author="system").send()
