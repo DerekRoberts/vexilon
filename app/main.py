@@ -117,6 +117,15 @@ def _patched_cancel_scope_enter(self):
 
 _AnyioCancelScope.__enter__ = _patched_cancel_scope_enter
 
+# 6. Force Chainlit to use a writable directory for temporary files (v2.x fix)
+# Chainlit 2.x ignores CHAINLIT_FILES_DIR and hardcodes Path(os.getcwd()) / ".files"
+import chainlit.config
+chainlit.config.FILES_DIRECTORY = Path("/app/.pdf_cache/.files").absolute()
+try:
+    chainlit.config.FILES_DIRECTORY.mkdir(exist_ok=True, parents=True)
+except Exception as e:
+    print(f"⚠️ Warning: Could not create FILES_DIRECTORY at {chainlit.config.FILES_DIRECTORY}: {e}")
+
 # ─── Agnav Imports ────────────────────────────────────────────────────────
 from indexing import (
     _get_source_name,
