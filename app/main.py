@@ -756,8 +756,7 @@ def startup(force_rebuild: bool = False):
         all_files = _get_rag_source_files()
         _source_path_map = { _get_source_name(p.stem): p for p in all_files }
         report = get_integrity_report()
-    logger.info(f"[startup] {len(doc_list)} reference documents found.")
-
+    doc_list = _get_download_source_files()
     logger.info(f"[startup] {len(doc_list)} reference documents found.")
 
 # ─── Chainlit UI ────────────────────────────────────────────────────────────
