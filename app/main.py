@@ -20,6 +20,37 @@ from openai import AsyncOpenAI
 
 import faiss
 import chainlit as cl
+import anyio.to_thread
+import anyio._backends._asyncio as _anyio_asyncio_backend
+import sniffio
+
+# ─── Python 3.14 Compatibility Patches ──────────────────────────────────────
+# anyio/sniffio/asyncio can fail on Python 3.14 alpha/beta due to changes in 
+# task tracking and weakref handling.
+
+# 1. Patch sniffio to force asyncio detection
+_orig_current_async_library = sniffio.current_async_library
+def _patched_current_async_library():
+    try:
+        return _orig_current_async_library()
+    except (sniffio.AsyncLibraryNotFoundError, LookupError):
+        return "asyncio"
+sniffio.current_async_library = _patched_current_async_library
+
+# 2. Patch anyio.to_thread.run_sync to bypass broken task tracking
+# This fixes the "TypeError: cannot create weak reference to 'NoneType' object" 
+# error in Starlette's FileResponse.
+_orig_anyio_run_sync = anyio.to_thread.run_sync
+
+async def _patched_anyio_run_sync(func, *args, abandon_on_cancel=False, limiter=None):
+    current = asyncio.current_task()
+    if current is None or current not in _anyio_asyncio_backend._task_states:
+        # Fallback to standard asyncio executor if anyio's task tracking is broken
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, func, *args)
+    return await _orig_anyio_run_sync(func, *args, abandon_on_cancel=abandon_on_cancel, limiter=limiter)
+
+anyio.to_thread.run_sync = _patched_anyio_run_sync
 
 # ─── Agnav Imports ────────────────────────────────────────────────────────
 from indexing import (
@@ -312,8 +343,9 @@ async def unified_chat_create(model: str, messages: list, system: str | list = N
     
     # Use the 'model:provider' syntax for the most robust routing on the HF Router
     actual_model = f"{model}:{HF_PROVIDER}" if get_llm_provider() == "huggingface" else model
-    kwargs = {"model": actual_model, "max_tokens": max_tokens, "messages": full_messages, "timeout": 300.0}
+    kwargs = {"model": actual_model, "max_tokens": max_tokens, "messages": full_messages}
 
+    # timeout is handled by the client initialization or default
     resp = await client.chat.completions.create(**kwargs)
     return resp.choices[0].message.content
 
@@ -376,6 +408,10 @@ async def unified_chat_stream(model: str, messages: list, system: str | list = N
                         else:
                             buffer = ""
                             break
+    
+    # Final flush of the buffer if there's remaining content that isn't a think block
+    if buffer and not in_think_block:
+        yield buffer
 
 async def verify_response(assistant_response: str, context: str) -> str:
     if not VERIFY_ENABLED: return ""
@@ -483,7 +519,8 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
     
     # Optimization: Fewer chunks in dev to speed up inference
     top_k_count = 3 if IS_DEV else 5
-    all_res = search_index_batch(_index, _chunks, queries, [top_k_count] * len(queries))
+    # Embedding is CPU-heavy; offload to thread to keep the event loop alive
+    all_res = await asyncio.to_thread(search_index_batch, _index, _chunks, queries, [top_k_count] * len(queries))
     seen = set()
     context_parts = []
     for res_list in all_res:
@@ -495,9 +532,10 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
                 context_parts.append(f"[Source: {source}, Page: {page}]\n{c['text']}")
     return queries, "\n\n".join(context_parts)
 
-async def rag_review_stream(message: str, history: list[dict], persona_mode: str = "Lookup") -> AsyncIterator[str]:
+async def rag_review_stream(message: str, history: list[dict], persona_mode: str = "Lookup", context: str = "", queries: list[str] = None) -> AsyncIterator[str]:
     try:
-        queries, context = await get_multi_perspective_context(message, history)
+        if not context:
+            queries, context = await get_multi_perspective_context(message, history)
         
         base_persona = get_persona_prompt(persona_mode)
         audit_rules = ""
@@ -628,7 +666,24 @@ async def _ensure_startup() -> None:
     async with _startup_lock:
         if _startup_done:
             return
+        
+        msg = None
+        try:
+            # Attempt to show progress if we're in a chat session
+            msg = cl.Message(content="⚙️ Initializing Knowledge Base... This may take a moment if indexing is required.")
+            await msg.send()
+        except Exception:
+            pass
+
         await asyncio.to_thread(startup)
+        
+        if msg:
+            try:
+                msg.content = "✅ Knowledge Base initialized."
+                await msg.update()
+            except Exception:
+                pass
+        
         _startup_done = True
 
 
@@ -720,7 +775,15 @@ async def on_message(message: cl.Message) -> None:
     accumulated = ""
     logger.info(f"[chat] Starting stream for query: {sanitized[:50]}...")
     try:
-        async for chunk in rag_review_stream(sanitized, history, persona):
+        # Show progress step for RAG search
+        async with cl.Step(name="Searching Knowledge Base...") as step:
+            queries, context = await get_multi_perspective_context(sanitized, history)
+            step.input = " + ".join(queries)
+            # Count snippets by counting the Source tags
+            snippet_count = context.count("[Source:")
+            step.output = f"Retrieved {snippet_count} relevant excerpts from the Labour Law library."
+
+        async for chunk in rag_review_stream(sanitized, history, persona, context=context, queries=queries):
             if not chunk:
                 continue
             accumulated += chunk
