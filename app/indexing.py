@@ -31,9 +31,9 @@ class FileIntegrityError(Exception):
 
 # Models
 EMBED_MODEL = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5")
-MAX_EMBED_TOKENS = int(os.getenv("AGNAV_MAX_EMBED_TOKENS", 4096))
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 1200))
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 200))
+MAX_EMBED_TOKENS = int(os.getenv("AGNAV_MAX_EMBED_TOKENS", 512))
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 512))
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 100))
 EMBED_DIM = int(os.getenv("EMBED_DIM", "384"))
 SIMILARITY_TOP_K = int(os.getenv("SIMILARITY_TOP_K", 40))
 
