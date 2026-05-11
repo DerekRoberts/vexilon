@@ -880,6 +880,19 @@ async def on_message(message: cl.Message) -> None:
     logger.info(f"[chat] Starting stream for query: {sanitized[:50]}...")
     try:
         queries, context, snippets = await get_multi_perspective_context(sanitized, history)
+        
+        # Attach unique sources as inline downloadable files
+        elements = []
+        seen_sources = set()
+        for s in snippets:
+            source_name = s.get("source", "Unknown")
+            if source_name not in seen_sources:
+                path = _source_path_map.get(source_name)
+                if path:
+                    # 'inline' ensures they appear as chips at the bottom, not auto-opening side-panels
+                    elements.append(cl.File(name=source_name, path=str(path), display="inline"))
+                seen_sources.add(source_name)
+        out.elements = elements
 
         async for chunk in rag_review_stream(sanitized, history, persona, context=context, queries=queries):
             if not chunk:
