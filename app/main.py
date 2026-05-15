@@ -30,126 +30,8 @@ import anyio.to_thread
 import anyio._backends._asyncio as _anyio_asyncio_backend
 import sniffio
 
-# ─── Python 3.14 Compatibility Patches ──────────────────────────────────────
-# anyio/sniffio/asyncio can fail on Python 3.14 alpha/beta due to changes in 
-# task tracking and weakref handling.
-
-# 1. Patch sniffio to force asyncio detection
-_orig_current_async_library = sniffio.current_async_library
-def _patched_current_async_library():
-    try:
-        return _orig_current_async_library()
-    except (sniffio.AsyncLibraryNotFoundError, LookupError):
-        return "asyncio"
-sniffio.current_async_library = _patched_current_async_library
-
-# 2. Patch anyio.to_thread.run_sync to bypass broken task tracking
-# This fixes the "TypeError: cannot create weak reference to 'NoneType' object" 
-# error in Starlette's FileResponse.
-_orig_anyio_run_sync = anyio.to_thread.run_sync
-
-async def _patched_anyio_run_sync(func, *args, abandon_on_cancel=False, limiter=None):
-    current = asyncio.current_task()
-    if current is None or current not in _anyio_asyncio_backend._task_states:
-        # Fallback to standard asyncio executor if anyio's task tracking is broken
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, func, *args)
-    return await _orig_anyio_run_sync(func, *args, abandon_on_cancel=abandon_on_cancel, limiter=limiter)
-
-anyio.to_thread.run_sync = _patched_anyio_run_sync
-
-# 3. Patch asyncio.wait_for to handle calls outside a Task
-# Required for engineio/chainlit compatibility on Python 3.14.
-_orig_wait_for = asyncio.wait_for
-
-async def _patched_wait_for(fut, timeout=None, **kwargs):
-    if timeout is None:
-        return await fut
-    if asyncio.current_task() is not None:
-        return await _orig_wait_for(fut, timeout=timeout, **kwargs)
-    
-    loop = asyncio.get_running_loop()
-    waiter = asyncio.ensure_future(fut, loop=loop)
-    timeout_handle = loop.call_later(timeout, waiter.cancel)
-    try:
-        return await waiter
-    except asyncio.CancelledError:
-        raise asyncio.TimeoutError() from None
-    finally:
-        timeout_handle.cancel()
-
-asyncio.wait_for = _patched_wait_for
-
-# 4. Global patch for anyio's task state lookup to prevent weakref(None) crash
-# This is a deep fix for httpx/httpcore/openai calls on Python 3.14.
-_orig_task_states = _anyio_asyncio_backend._task_states
-
-class SafeTaskStates:
-    def __init__(self):
-        self._dummy_state = None
-    def __getitem__(self, key):
-        if key is None or not isinstance(key, asyncio.Task):
-            if self._dummy_state is None:
-                from anyio._backends._asyncio import TaskState
-                # TaskState(parent_id, cancel_scope)
-                self._dummy_state = TaskState(None, None)
-            return self._dummy_state
-        return _orig_task_states[key]
-    def __setitem__(self, key, value):
-        if isinstance(key, asyncio.Task): _orig_task_states[key] = value
-        else: self._dummy_state = value
-    def __delitem__(self, key):
-        if isinstance(key, asyncio.Task):
-            if key in _orig_task_states: del _orig_task_states[key]
-        else: self._dummy_state = None
-    def __contains__(self, key):
-        return key is None or not isinstance(key, asyncio.Task) or key in _orig_task_states
-    def get(self, key, default=None):
-        if key is None or not isinstance(key, asyncio.Task): return self[key]
-        return _orig_task_states.get(key, default)
-
-_anyio_asyncio_backend._task_states = SafeTaskStates()
-
-# 5. Patch anyio.CancelScope to prevent AssertionError and RuntimeError on Python 3.14
-from anyio._backends._asyncio import CancelScope as _AnyioCancelScope
-_orig_cancel_scope_enter = _AnyioCancelScope.__enter__
-_orig_cancel_scope_exit = _AnyioCancelScope.__exit__
-
-def _patched_cancel_scope_enter(self):
-    host_task = asyncio.current_task()
-    if host_task is None:
-        self._host_task = "dummy_task"
-        from anyio._backends._asyncio import _task_states
-        task_state = _task_states[self._host_task]
-        self._parent_scope = task_state.cancel_scope
-        task_state.cancel_scope = self
-        return self
-    return _orig_cancel_scope_enter(self)
-
-def _patched_cancel_scope_exit(self, exc_type, exc_val, tb):
-    try:
-        return _orig_cancel_scope_exit(self, exc_type, exc_val, tb)
-    except RuntimeError as e:
-        if "is not active" in str(e) and self._host_task == "dummy_task":
-            # Manually clean up if anyio's internal state check failed but we know we're dummy
-            from anyio._backends._asyncio import _task_states
-            task_state = _task_states[self._host_task]
-            task_state.cancel_scope = self._parent_scope
-            return None
-        raise
-
-_AnyioCancelScope.__enter__ = _patched_cancel_scope_enter
-_AnyioCancelScope.__exit__ = _patched_cancel_scope_exit
-
-# 6. Force Chainlit to use a writable directory for temporary files (v2.x fix)
-# Chainlit 2.x ignores CHAINLIT_FILES_DIR and hardcodes Path(os.getcwd()) / ".files"
-import chainlit.config
-chainlit.config.FILES_DIRECTORY = Path("/app/.pdf_cache/.files").absolute()
-try:
-    chainlit.config.FILES_DIRECTORY.mkdir(exist_ok=True, parents=True)
-except Exception as e:
-    print(f"⚠️ Warning: Could not create FILES_DIRECTORY at {chainlit.config.FILES_DIRECTORY}: {e}")
-
+from patches import apply_patches
+apply_patches()
 # ─── Agnav Imports ────────────────────────────────────────────────────────
 from indexing import (
     _get_source_name,
@@ -766,29 +648,20 @@ def startup(force_rebuild: bool = False):
 async def set_starters():
     return [
         cl.Starter(
-            label="Just Cause Requirements",
-            message="What are the just cause requirements for discipline?",
-            icon="/public/learn.svg",
+            label="⚖️ Discipline Analysis",
+            message="What are the Article 14 (Discipline) requirements for just cause?",
         ),
         cl.Starter(
-            label="Nexus Test",
-            message="What is the nexus test for off-duty conduct?",
-            icon="/public/search.svg",
+            label="📝 Grievance Builder",
+            message="I need to file a grievance for a member. What steps should I take?",
         ),
         cl.Starter(
-            label="Steward Rights",
-            message="What rights do stewards have in investigation meetings?",
-            icon="/public/terminal.svg",
+            label="🛡️ Steward Rights",
+            message="What are my rights as a steward during an investigation meeting?",
         ),
         cl.Starter(
-            label="Grievance Timelines",
-            message="What are the standard grievance timelines in the 19th Main Agreement?",
-            icon="/public/history.svg",
-        ),
-        cl.Starter(
-            label="Investigation Procedures",
-            message="How should an employer conduct a fair investigation?",
-            icon="/public/edit.svg",
+            label="📝 Grievance Builder",
+            message="How does the nexus test apply to off-duty conduct discipline?",
         ),
     ]
 
@@ -849,19 +722,29 @@ async def setup_agent(settings):
     cl.user_session.set("show_reasoning", settings["ShowReasoning"])
     await cl.Message(content=f"Settings updated: Persona is **{settings['Persona']}**, Reasoning is **{'Visible' if settings['ShowReasoning'] else 'Hidden'}**").send()
 
+def get_kb_markdown() -> str:
+    """Generate a Markdown list of knowledge base documents."""
+    from indexing import _get_rag_source_files, _get_source_name
+    files = _get_rag_source_files()
+    if not files:
+        return "No documents found."
+    lines = ["## 📚 Knowledge Base", ""]
+    for f in sorted(files):
+        name = _get_source_name(f.stem)
+        lines.append(f"- {name}")
+    return "\n".join(lines)
+
 @cl.on_chat_start
 async def start():
     await _ensure_startup()
     
+    # ── Knowledge Base Sidebar ────────────────────────────────────────────
+    kb_content = get_kb_markdown()
+    await cl.Text(name="Knowledge Base", content=kb_content, display="side").send()
+
     # ── Chat Settings (Gear Icon) ─────────────────────────────────────────
     await cl.ChatSettings(
         [
-            cl.input_widget.Select(
-                id="Persona",
-                label="Navigator Persona",
-                values=["Lookup", "Grieve", "Train", "Audit", "Manage"],
-                initial_index=0,
-            ),
             cl.input_widget.Switch(
                 id="ShowReasoning",
                 label="Show Internal Reasoning",
@@ -880,16 +763,28 @@ async def start():
 Welcome! I am your forensic labor law assistant. 
 
 **Quick Tips:**
-- 📖 Click the **Readme** tab (top-left) to access the **Knowledge Base**.
-- ⚙️ Use the **gear icon** (bottom) to switch personas.
-- 📤 Use the **header** (top-right) to export your chat history.
+- 📚 Check the **Sidebar** (top-right icon) for the Knowledge Base.
+- 🛠️ Use the buttons below to switch modes or manage your session.
 """
     
     # ── Quick Start Actions ───────────────────────────────────────────────
+    persona_actions = [
+        cl.Action(name="set_persona", payload={"value": "Lookup"}, label="🔍 Lookup"),
+        cl.Action(name="set_persona", payload={"value": "Grieve"}, label="⚖️ Grieve"),
+        cl.Action(name="set_persona", payload={"value": "Audit"}, label="🕵️ Audit"),
+        cl.Action(name="set_persona", payload={"value": "Manage"}, label="📊 Manage"),
+    ]
+    await cl.Message(content="**Select Navigator Mode:**", author="System", actions=persona_actions).send()
+    session_actions = [
+        cl.Action(name="export_history", payload={}, label="📤 Export Session"),
+        cl.Action(name="clear_session", payload={}, label="🗑️ Clear Session"),
+    ]
+    await cl.Message(content="**Session Controls:**", author="System", actions=session_actions).send()
+
     actions = [
-        cl.Action(name="starter_query", payload={"value": "What are the just cause requirements for discipline?"}, label="⚖️ Just Cause"),
-        cl.Action(name="starter_query", payload={"value": "What is the nexus test for off-duty conduct?"}, label="🔍 Nexus Test"),
-        cl.Action(name="starter_query", payload={"value": "What rights do stewards have in investigation meetings?"}, label="🛡️ Steward Rights"),
+        cl.Action(name="starter_query", payload={"value": "What are the Article 14 (Discipline) requirements for just cause?"}, label="⚖️ Discipline Analysis"),
+        cl.Action(name="starter_query", payload={"value": "I need to file a grievance for a member. What steps should I take?"}, label="📝 Grievance Builder"),
+        cl.Action(name="starter_query", payload={"value": "What are my rights as a steward during an investigation meeting?"}, label="🛡️ Steward Rights"),
     ]
 
     await cl.Message(
@@ -913,6 +808,28 @@ def _client_id(message: cl.Message) -> str:
     sid = getattr(cl.user_session, "id", None) or cl.user_session.get("id")
     return str(sid) if sid else "default"
 
+
+@cl.action_callback("export_history")
+async def on_export(action: cl.Action):
+    history = cl.user_session.get("history")
+    if not history:
+        await cl.Message(content="No history to export.").send()
+        return
+    md_content = history_to_markdown(history)
+    file = cl.File(name="agnav_conversation.md", content=md_content.encode("utf-8"), display="inline")
+    await cl.Message(content="Here is your conversation export:", elements=[file]).send()
+
+@cl.action_callback("clear_session")
+async def on_clear(action: cl.Action):
+    cl.user_session.set("history", [])
+    await cl.Message(content="🧹 Session cleared. Conversation history has been reset.").send()
+
+@cl.action_callback("set_persona")
+async def on_persona_action(action: cl.Action):
+    persona = action.payload.get("value")
+    if persona:
+        cl.user_session.set("persona", persona)
+        await cl.Message(content=f"Persona switched to **{persona}** mode.").send()
 
 @cl.action_callback("starter_query")
 async def on_action(action: cl.Action):
