@@ -740,7 +740,7 @@ async def start():
     
     # ── Knowledge Base Sidebar ────────────────────────────────────────────
     kb_content = get_kb_markdown()
-    await cl.Text(name="Knowledge Base", content=kb_content, display="side").send()
+    kb_element = cl.Text(name="Knowledge Base", content=kb_content, display="side")
 
     # ── Chat Settings (Gear Icon) ─────────────────────────────────────────
     await cl.ChatSettings(
@@ -763,7 +763,7 @@ async def start():
 Welcome! I am your forensic labor law assistant. 
 
 **Quick Tips:**
-- 📚 Check the **Sidebar** (top-right icon) for the Knowledge Base.
+- 📚 Check the Knowledge Base in the sidebar.
 - 🛠️ Use the buttons below to switch modes or manage your session.
 """
     
@@ -790,7 +790,7 @@ Welcome! I am your forensic labor law assistant.
     await cl.Message(
         content=welcome_msg, 
         author="System", 
-        actions=actions
+        actions=actions, elements=[kb_element]
     ).send()
 
     if INTEGRITY_WARNING:
