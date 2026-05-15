@@ -720,27 +720,12 @@ if os.getenv("AGNAV_PASSWORD"):
 async def setup_agent(settings):
     cl.user_session.set("persona", settings["Persona"])
     cl.user_session.set("show_reasoning", settings["ShowReasoning"])
-    await cl.Message(content=f"Settings updated: Persona is **{settings['Persona']}**, Reasoning is **{'Visible' if settings['ShowReasoning'] else 'Hidden'}**").send()
 
-def get_kb_markdown() -> str:
-    """Generate a Markdown list of knowledge base documents."""
-    from indexing import _get_rag_source_files, _get_source_name
-    files = _get_rag_source_files()
-    if not files:
-        return "No documents found."
-    lines = ["## 📚 Knowledge Base", ""]
-    for f in sorted(files):
-        name = _get_source_name(f.stem)
-        lines.append(f"- {name}")
-    return "\n".join(lines)
 
 @cl.on_chat_start
 async def start():
     await _ensure_startup()
     
-    # ── Knowledge Base Sidebar ────────────────────────────────────────────
-    kb_content = get_kb_markdown()
-    kb_element = cl.Text(name="Knowledge Base", content=kb_content, display="side")
 
     # ── Chat Settings (Gear Icon) ─────────────────────────────────────────
     await cl.ChatSettings(
@@ -763,25 +748,20 @@ async def start():
 Welcome! I am your forensic labor law assistant. 
 
 **Quick Tips:**
-- 📚 Check the Knowledge Base in the sidebar.
-- 🛠️ Use the buttons below to switch modes or manage your session.
+- 📖 Click the **Readme** tab (top-left) to access the **Knowledge Base**.
+- 🛠️ Use the buttons below to switch modes, manage your session, or start a common query.
 """
-    
-    # ── Quick Start Actions ───────────────────────────────────────────────
-    persona_actions = [
+
+    actions = [
+        # Personas
         cl.Action(name="set_persona", payload={"value": "Lookup"}, label="🔍 Lookup"),
         cl.Action(name="set_persona", payload={"value": "Grieve"}, label="⚖️ Grieve"),
         cl.Action(name="set_persona", payload={"value": "Audit"}, label="🕵️ Audit"),
         cl.Action(name="set_persona", payload={"value": "Manage"}, label="📊 Manage"),
-    ]
-    await cl.Message(content="**Select Navigator Mode:**", author="System", actions=persona_actions).send()
-    session_actions = [
+        # Session
         cl.Action(name="export_history", payload={}, label="📤 Export Session"),
         cl.Action(name="clear_session", payload={}, label="🗑️ Clear Session"),
-    ]
-    await cl.Message(content="**Session Controls:**", author="System", actions=session_actions).send()
-
-    actions = [
+        # Starters
         cl.Action(name="starter_query", payload={"value": "What are the Article 14 (Discipline) requirements for just cause?"}, label="⚖️ Discipline Analysis"),
         cl.Action(name="starter_query", payload={"value": "I need to file a grievance for a member. What steps should I take?"}, label="📝 Grievance Builder"),
         cl.Action(name="starter_query", payload={"value": "What are my rights as a steward during an investigation meeting?"}, label="🛡️ Steward Rights"),
@@ -790,7 +770,7 @@ Welcome! I am your forensic labor law assistant.
     await cl.Message(
         content=welcome_msg, 
         author="System", 
-        actions=actions, elements=[kb_element]
+        actions=actions
     ).send()
 
     if INTEGRITY_WARNING:
@@ -813,23 +793,19 @@ def _client_id(message: cl.Message) -> str:
 async def on_export(action: cl.Action):
     history = cl.user_session.get("history")
     if not history:
-        await cl.Message(content="No history to export.").send()
         return
     md_content = history_to_markdown(history)
     file = cl.File(name="agnav_conversation.md", content=md_content.encode("utf-8"), display="inline")
-    await cl.Message(content="Here is your conversation export:", elements=[file]).send()
 
 @cl.action_callback("clear_session")
 async def on_clear(action: cl.Action):
     cl.user_session.set("history", [])
-    await cl.Message(content="🧹 Session cleared. Conversation history has been reset.").send()
 
 @cl.action_callback("set_persona")
 async def on_persona_action(action: cl.Action):
     persona = action.payload.get("value")
     if persona:
         cl.user_session.set("persona", persona)
-        await cl.Message(content=f"Persona switched to **{persona}** mode.").send()
 
 @cl.action_callback("starter_query")
 async def on_action(action: cl.Action):
@@ -837,7 +813,11 @@ async def on_action(action: cl.Action):
     if not query:
         return
     # This simulates the user sending the message
-    await cl.Message(content=f"Sent query: {query}", author="System").send()
+    await cl.Message(
+        content=welcome_msg,
+        author="System",
+        actions=actions
+    ).send()
     # Now we trigger the on_message logic manually
     await on_message(cl.Message(content=query))
     # Remove the buttons after use to keep the chat clean
@@ -854,13 +834,11 @@ async def on_message(message: cl.Message) -> None:
     # Rate limit (per session)
     allowed, rate_msg = _rate_limiter.is_allowed(_client_id(message))
     if not allowed:
-        await cl.Message(content=rate_msg).send()
         return
 
     # Prompt-injection / length sanitisation
     sanitized, flagged = sanitize_input(msg_str)
     if flagged:
-        await cl.Message(content="⚠️ Input flagged for security review.").send()
         return
 
     persona = cl.user_session.get("persona") or DEFAULT_PERSONA

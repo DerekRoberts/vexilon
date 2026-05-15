@@ -1,37 +1,17 @@
 # Tasks: Chainlit UI Overhaul
 
 ## Phase 1: Foundation & Cleanup
-- [x] **T1: Patch Decoupling**
-  - Create `app/patches.py`.
-  - Move all Python 3.14 compatibility patches from `app/main.py` to `app/patches.py`.
-  - Import patches in `app/main.py`.
-  - Verify app still starts on Python 3.14.
+- [x] **T1: Patch Decoupling** (Completed)
 
-## Phase 2: Native UI Implementation
-- [x] **T2: Forensic Starters**
-  - Update `set_starters` with high-impact forensic queries.
-  - Add icons for each starter.
-- [x] **T3: Knowledge Base Sidebar**
-  - Create a helper to generate Markdown links for the knowledge base.
-  - Use `cl.on_chat_start` to send a `cl.Text` element displayed in the side panel.
-- [x] **T4: Action-Based Personas**
-  - Create `cl.Action` buttons for personas.
-  - Implement `@cl.action_callback` for persona switching.
-  - Update welcome message to include these actions.
+## Phase 2: UI Implementation
+- [x] **T2: Forensic Starters** (Completed)
+- [x] **T3: Action-Based Modes** (Completed)
+- [x] **T4: Session Controls** (Completed)
 
-## Phase 3: PIPA & Export
-- [x] **T5: Export/Clear Actions**
-  - Implement `export_history` action using `history_to_markdown`.
-  - Implement `clear_session` action that resets session state and provides a fresh start.
-- [x] **T6: Final UI Polish**
-  - Remove legacy `cl.ChatSettings` if the action-based persona switcher is preferred.
-  - Standardize logging and error messages.
+## Phase 3: Verification
+- [x] **V1: Functional Smoke Test** (Verified via Podman logs)
+- [x] **V2: Regression Test** (Verified via Pytest)
 
-## Phase 4: Verification
-- [x] **V1: Development Smoke Test**
-  - Run `podman compose up --build dev`.
-  - Verify starters work.
-  - Verify persona switching updates the system prompt.
-  - Verify sidebar is persistent.
-- [x] **V2: Regression Test**
-  - Run `pytest app/tests/test_rag_stream.py`.
+## Phase 4: Discipline Lock-in
+- [x] **D1: Update Agent Discipline Workflow** (Completed)
+- [x] **D2: Harden OpenSpec Hard Stops** (Completed)

@@ -71,7 +71,7 @@ services:
       <<: *common-env
       WATCHFILES_FORCE_POLLING: "true"
       PORT: *PORT
-      CHAINLIT_FILES_DIR: "./.pdf_cache/.files"
+      CHAINLIT_APP_ROOT: "/app/.pdf_cache"
     ports:
       - "7860:7860"
     healthcheck: *app-healthcheck
@@ -137,6 +137,12 @@ services:
       <<: *common-env
     entrypoint: /bin/sh
 
+    command:
+      - -c
+      - |
+        TARGET_MODEL=$${OLLAMA_MODEL_ID:-tinyllama}
+        echo "Pulling model: $$TARGET_MODEL"
+        ollama pull $$TARGET_MODEL
   ollama-init-test:
     <<: *ollama-init-service
     container_name: vexilon-ollama-init-test
