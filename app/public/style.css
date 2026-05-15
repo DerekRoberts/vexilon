@@ -1,0 +1,34 @@
+/* app/public/style.css */
+
+/* Hide the default Chainlit title if we want to replace it, or just style near it */
+.header .title {
+    font-weight: 700 !important;
+    color: var(--primary-main) !important;
+}
+
+/* Custom Persona Selector Container */
+#persona-selector-container {
+    margin-left: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+#persona-selector {
+    background-color: transparent;
+    border: 1px solid var(--divider);
+    color: var(--text-primary);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    outline: none;
+}
+
+#persona-selector:hover {
+    border-color: var(--primary-main);
+}
+
+#persona-selector option {
+    background-color: var(--background-paper);
+    color: var(--text-primary);
+}
