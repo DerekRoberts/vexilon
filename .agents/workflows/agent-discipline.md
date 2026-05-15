@@ -42,7 +42,7 @@ To prevent accidental regression and "downgrades" that frustrate the team, the f
   - For iterative work, use `podman compose up --build dev` (or equivalent) to verify logs and manual output.
   - **The Log Receipt**: If you claim a feature is running, you must show the relevant log lines from the container output.
 - **Final Verification (The "Pre-Flight" Check)**:
-  - Before declaring a task "Done" or opening a PR, the agent MUST attempt to run specific test services (e.g., `test-unit` or `test-cache`) if they are relevant to the change.
+  - Before declaring a task "Done" or opening a PR, the agent MUST attempt to run specific test services (e.g., `test-unit` or `test-cache`) and the comprehensive `test-everything` suite if they are relevant to the change.
 - **No Psychic Claims**: Never assume code works because it "looks correct." You are not a compiler. If there is no terminal output, the verification didn't happen.
 
 ## 8. Dependency Discipline
