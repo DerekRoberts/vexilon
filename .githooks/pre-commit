@@ -1,0 +1,21 @@
+#!/bin/bash
+# Guardian Hook: Prevents Python 3.14 downgrades
+
+CONTAINERFILE="app/Containerfile"
+PYPROJECT="app/pyproject.toml"
+
+# Check Containerfile
+if grep -q "FROM python:" "$CONTAINERFILE" && ! grep -q "FROM python:3.14" "$CONTAINERFILE"; then
+    echo "ERROR: Attempted to downgrade Python in $CONTAINERFILE."
+    echo "Python 3.14 is MANDATORY for the anyio.NoEventLoopError fix."
+    exit 1
+fi
+
+# Check pyproject.toml
+if grep -q "requires-python =" "$PYPROJECT" && ! grep -q 'requires-python = ">=3.14"' "$PYPROJECT"; then
+    echo "ERROR: Attempted to downgrade Python in $PYPROJECT."
+    echo "Python 3.14 is MANDATORY for the anyio.NoEventLoopError fix."
+    exit 1
+fi
+
+exit 0

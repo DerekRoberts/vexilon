@@ -2,7 +2,8 @@
 name = "agnav"
 version = "0.1.0"
 description = "BCGEU Collective Agreement RAG Chatbot"
-requires-python = ">=3.12"
+# CRITICAL: Python 3.14+ required for anyio.NoEventLoopError fix in Starlette 1.0.0
+requires-python = ">=3.14"
 dependencies = [
     # ── Web UI ──────────────────────────────────────────────────────────────
     "gradio==6.14.0",
