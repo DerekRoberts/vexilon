@@ -50,5 +50,4 @@ To prevent accidental regression and "downgrades" that frustrate the team, the f
 - **Upgrade First**: We are on the bleeding edge; our dependencies MUST be too. ALWAYS attempt to upgrade to the latest stable version of a package first before exploring hacks or pinning.
 
 ## 9. The Anti-Regression Law
-- **NO DOWNGRADING WITHOUT DISCUSSION**: Agents are strictly forbidden from decreasing any version number (runtime, dependency, or GitHub Action version) unless explicitly directed by the user.
-- **Regression Proposals**: If an agent believes a downgrade is necessary for stability, it MUST stop work and provide a "Regression Proposal" explaining the trade-offs before modifying any configuration.
+- **NO DOWNGRADING WITHOUT DISCUSSION**: Agents are strictly forbidden from decreasing any version number (runtime, dependency, or GitHub Action version) unless explicitly directed by the user. If a downgrade seems necessary, STOP and ask the human.
