@@ -26,8 +26,18 @@
         chatInput.dataset.listenerAttached = "true";
     }
 
+    function hideReadmeDrawerTitle() {
+        document.querySelectorAll('span').forEach(el => {
+            if (el.textContent.trim() === 'Readme') el.style.display = 'none';
+        });
+    }
+
     // Run periodically to catch re-renders
-    setInterval(setupEnterToSubmit, 1000);
+    setInterval(() => {
+        setupEnterToSubmit();
+        hideReadmeDrawerTitle();
+    }, 500);
 
     setupEnterToSubmit();
+    hideReadmeDrawerTitle();
 })();
