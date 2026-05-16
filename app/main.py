@@ -661,7 +661,7 @@ async def set_starters():
             message="What are my rights as a steward during an investigation meeting?",
         ),
         cl.Starter(
-            label="Grievance Builder",
+            label="Nexus Analysis",
             message="How does the nexus test apply to off-duty conduct discipline?",
         ),
     ]
