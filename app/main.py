@@ -705,9 +705,7 @@ EXAMPLES = [
     "What are my rights as a steward during an investigation meeting?",
 ]
 
-WELCOME_MSG = """# BCGEU Navigator
-Welcome! I am your forensic labor law assistant. 
-"""
+WELCOME_MSG = """# BCGEU Navigator"""
 
 def get_welcome_actions():
     return [
