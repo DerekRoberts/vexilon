@@ -141,13 +141,48 @@
         console.log("Custom AgNav footer injected");
     }
 
+    function updateWatermark() {
+        const watermark = document.querySelector('.watermark');
+        if (watermark) {
+            watermark.innerHTML = `
+                <a href="https://github.com/MinionTech/vexilon" target="_blank">GitHub</a> • 
+                <a href="https://github.com/MinionTech/vexilon/blob/main/app/docs/PRIVACY.md" target="_blank">Privacy</a> • 
+                <span>v2026.05.15</span>
+            `;
+        }
+    }
+
+    function killSparkles() {
+        document.querySelectorAll('span').forEach(span => {
+            const rect = span.getBoundingClientRect();
+            if (rect.width > 0 && rect.width < 40 && rect.height > 0 && rect.height < 40) {
+                if (span.innerText.trim() === '') {
+                    span.style.display = 'none';
+                    span.style.visibility = 'hidden';
+                    span.style.width = '0';
+                    span.style.height = '0';
+                }
+            }
+        });
+        // Also target any SVG that might have survived (except functional ones)
+        document.querySelectorAll('svg').forEach(svg => {
+            const isPersona = svg.closest('#persona-selector-container');
+            const isSubmit = svg.closest('[aria-label="send message"]') || svg.closest('button[type="submit"]');
+            if (!isPersona && !isSubmit) {
+                svg.style.display = 'none';
+            }
+        });
+    }
+
     // Run periodically to catch re-renders
     setInterval(() => {
         setupEnterToSubmit();
         injectPersonaSelector();
-        injectFooter();
-    }, 1000);
+        updateWatermark();
+        killSparkles();
+    }, 100);
     setupEnterToSubmit();
     injectPersonaSelector();
-    injectFooter();
+    updateWatermark();
+    killSparkles();
 })();

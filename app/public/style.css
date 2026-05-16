@@ -38,13 +38,47 @@ body {
     margin: 0 !important;
 }
 
-/* Hide default Chainlit branding/logo for forensic integrity */
-.header img, 
-.header svg:not(#persona-selector-container svg),
-[aria-label="logo"],
-#welcome-screen img,
-#welcome-screen svg {
+/* TOTAL VISUAL SANITIZATION (Scorched Earth v5) */
+/* Target tags directly to bypass generic class names */
+header img, header svg, header [role="img"],
+#welcome-screen img, #welcome-screen svg, #welcome-screen [role="img"],
+h1 svg, h2 svg, h3 svg,
+h1 > span:first-child, h2 > span:first-child,
+button img, button svg,
+.step-icon, .sparkle,
+[aria-label="logo"], [aria-label="Chainlit"],
+.MuiSvgIcon-root:not(#persona-selector-container svg) {
     display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+}
+
+/* Kill pseudo-elements (the likely source of the final pink sparkle) */
+h1::before, h1::after, 
+h2::before, h2::after,
+.MuiTypography-h1::before, .MuiTypography-h1::after,
+#welcome-screen h1::before, #welcome-screen h1::after {
+    display: none !important;
+    content: none !important;
+}
+
+/* Style the vanilla footer (Watermark) */
+.watermark {
+    background-color: var(--background-paper) !important;
+    border-top: 1px solid var(--divider) !important;
+    padding: 8px 0 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.7rem !important;
+    color: var(--text-secondary) !important;
+    text-align: center !important;
+}
+
+.watermark a {
+    color: var(--primary-main) !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
 }
 
 /* Custom Persona Selector Container */
@@ -111,35 +145,24 @@ body {
 }
 
 /* Custom AgNav Footer */
-#agnav-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 30px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: var(--background-paper);
-    border-top: 1px solid var(--divider);
-    font-family: 'Inter', sans-serif;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    z-index: 1000;
-    pointer-events: auto;
-}
-
-#agnav-footer a {
-    color: var(--primary-main);
-    text-decoration: none;
-    font-weight: 500;
-}
-
-#agnav-footer a:hover {
-    text-decoration: underline;
-}
 
 /* Ensure the main content doesn't get covered by footer */
 main {
     padding-bottom: 40px !important;
+}
+
+/* Forensic Color Overrides (Eliminate any remaining Pink) */
+button[type="submit"], 
+[aria-label="send message"],
+.MuiButton-containedPrimary {
+    background-color: #2563eb !important;
+}
+
+[aria-label="send message"] svg {
+    display: block !important; /* Allow the SEND arrow SVG to show */
+    visibility: visible !important;
+    width: 24px !important;
+    height: 24px !important;
+    opacity: 1 !important;
+    color: white !important;
 }
