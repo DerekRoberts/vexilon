@@ -42,19 +42,20 @@ x-service-defaults: &service-defaults
   memswap_limit: *MEM_LIMIT
   volumes: []
 
-# Development volumes: Enables live-reload while protecting internal container data
+# Development volumes: Mount source files for hot-reload, preserve built venv
 x-dev-volumes: &dev-volumes
-  - ./app:/app:z
+  - ./app/main.py:/app/main.py:ro
+  - ./app/indexing.py:/app/indexing.py:ro
+  - ./app/.chainlit:/app/.chainlit:ro
+  - ./app/public:/app/public:ro
+  - ./app/prompts:/app/prompts:ro
   - ./PRIVACY.md:/app/public/docs/PRIVACY.md:ro
   - ./app/data/labour_law:/app/public/docs/labour_law:ro
-  - ./app/pyproject.toml:/app/pyproject.toml:ro
-  - ./app/uv.lock:/app/uv.lock:ro
-  - ./reports:/app/reports:z  # Artifact extraction "Lifeboat"
-  - ./.pdf_cache:/app/.pdf_cache:z     # Persistent, writable index
-  - ./.pytest_cache:/app/.pytest_cache:z # Persistent test metadata
+  - ./reports:/app/reports:z
+  - ./.pdf_cache:/app/.pdf_cache:z
+  - ./.pytest_cache:/app/.pytest_cache:z
 
 services:
-
 
   # ── Main Application
   # Development with Hot-Reload (Ollama)
@@ -175,7 +176,7 @@ services:
     command: >
       sh -c "VERIFY_ENABLED=true uv run --no-sync python -m pytest tests/test_*.py -v 
       --junitxml=reports/junit.xml 
-      --cov=indexing --cov=main --cov-report=xml:reports/coverage.xml"
+      --cov=indexing --cov=main --cov_report=xml:reports/coverage.xml"
 
   # Validates integration between app code and the local model services.
   # Hits live Ollama instance; requires pre-warmed model weights.
