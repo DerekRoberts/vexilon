@@ -66,6 +66,7 @@ The following reference documents form the primary authority for my analytical r
 | Grievance - C - Steward Case | PDF | [Download](/public/docs/labour_law/forms/Grievance_-_C_-_Steward_Case.pdf) |
 | Nexus Test and Off-Duty Conduct | PDF | [Download](/public/docs/labour_law/04_jurisprudence/Nexus_Test_and_Off-Duty_Conduct.pdf) |
 | Policy Grievance Form Guide | MD | [Download](/public/docs/labour_law/forms/Policy_Grievance_Form_Guide.md) |
+| Privacy Policy | PDF | [View Root Policy](/public/docs/PRIVACY.md) |
 
 ---
 

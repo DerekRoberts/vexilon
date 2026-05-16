@@ -24,7 +24,7 @@ x-healthcheck: &app-healthcheck
   start_period: 120s
 
 x-common-build: &common-build
-  context: app
+  context: .
   dockerfile: Containerfile
   args:
     VERSION: ${AGNAV_VERSION:-dev}
@@ -45,6 +45,8 @@ x-service-defaults: &service-defaults
 # Development volumes: Enables live-reload while protecting internal container data
 x-dev-volumes: &dev-volumes
   - ./app:/app:z
+  - ./PRIVACY.md:/app/public/docs/PRIVACY.md:ro
+  - ./app/data/labour_law:/app/public/docs/labour_law:ro
   - /app/.venv         # Lifeboat for packages
   - ./app/pyproject.toml:/app/pyproject.toml:ro
   - ./app/uv.lock:/app/uv.lock:ro
