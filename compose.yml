@@ -73,6 +73,7 @@ services:
       <<: *common-env
       WATCHFILES_FORCE_POLLING: "true"
       PORT: *PORT
+      CHAINLIT_FILES_DIR: /tmp/chainlit_files
     mem_limit: 2g
     memswap_limit: 2g
     ports:
