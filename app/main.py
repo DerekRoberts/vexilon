@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-# 2026-05-15: Removed hardcoded paths for portability (PR #495)
 CACHE_DIR = Path(os.getenv("AGNAV_CACHE_DIR", "./.pdf_cache"))
 os.environ["CHAINLIT_FILES_DIR"] = str(CACHE_DIR / ".files")
 CACHE_DIR.joinpath(".files").mkdir(parents=True, exist_ok=True)
@@ -12,8 +11,6 @@ os.environ["TRANSFORMERS_OFFLINE"] = "1"
 import sys
 import re
 # Agreement Navigator - UI Version: 2026-05-10
-# Integrated RAG Backend + Chainlit UI
-import time
 import logging
 import asyncio
 import datetime
@@ -649,19 +646,19 @@ def startup(force_rebuild: bool = False):
 async def set_starters():
     return [
         cl.Starter(
-            label="⚖️ Discipline Analysis",
+            label="Discipline Analysis",
             message="What are the Article 14 (Discipline) requirements for just cause?",
         ),
         cl.Starter(
-            label="📝 Grievance Builder",
+            label="Grievance Builder",
             message="I need to file a grievance for a member. What steps should I take?",
         ),
         cl.Starter(
-            label="🛡️ Steward Rights",
+            label="Steward Rights",
             message="What are my rights as a steward during an investigation meeting?",
         ),
         cl.Starter(
-            label="📝 Grievance Builder",
+            label="Nexus Analysis",
             message="How does the nexus test apply to off-duty conduct discipline?",
         ),
     ]
@@ -684,7 +681,7 @@ async def _ensure_startup() -> None:
         msg = None
         try:
             # Attempt to show progress if we're in a chat session
-            msg = cl.Message(content="⚙️ Initializing Knowledge Base... This may take a moment if indexing is required.")
+            msg = cl.Message(content="Initializing Knowledge Base... This may take a moment if indexing is required.")
             await msg.send()
         except Exception:
             pass
@@ -693,7 +690,7 @@ async def _ensure_startup() -> None:
         
         if msg:
             try:
-                msg.content = "✅ Knowledge Base initialized."
+                msg.content = "Knowledge Base initialized."
                 await msg.update()
             except Exception:
                 pass
@@ -732,21 +729,21 @@ EXAMPLES = [
     "What are my rights as a steward during an investigation meeting?",
 ]
 
-WELCOME_MSG = """# 🛡️ BCGEU Navigator
+WELCOME_MSG = """# BCGEU Navigator
 Welcome! I am your forensic labor law assistant. 
 
 **Quick Tips:**
-- 📖 Click the **Readme** link (top-right) to access the **Knowledge Base**.
-- ⚙️ Mode switching and reasoning settings are in the **Chat Settings** (bottom-left or sidebar).
+- Click the **Readme** link (top-right) to access the **Knowledge Base**.
+- Mode switching and reasoning settings are in the **Chat Settings** (bottom-left or sidebar).
 """
 
 def get_welcome_actions():
     return [
-        cl.Action(name="export_history", payload={}, label="📤 Export Session"),
-        cl.Action(name="clear_session", payload={}, label="🗑️ Clear Session"),
-        cl.Action(name="starter_query", payload={"value": "What are the Article 14 (Discipline) requirements for just cause?"}, label="⚖️ Discipline Analysis"),
-        cl.Action(name="starter_query", payload={"value": "I need to file a grievance for a member. What steps should I take?"}, label="📝 Grievance Builder"),
-        cl.Action(name="starter_query", payload={"value": "What are my rights as a steward during an investigation meeting?"}, label="🛡️ Steward Rights"),
+        cl.Action(name="export_history", payload={}, label="Export Session"),
+        cl.Action(name="clear_session", payload={}, label="Clear Session"),
+        cl.Action(name="starter_query", payload={"value": "What are the Article 14 (Discipline) requirements for just cause?"}, label="Discipline Analysis"),
+        cl.Action(name="starter_query", payload={"value": "I need to file a grievance for a member. What steps should I take?"}, label="Grievance Builder"),
+        cl.Action(name="starter_query", payload={"value": "What are my rights as a steward during an investigation meeting?"}, label="Steward Rights"),
     ]
 
 
@@ -756,26 +753,22 @@ async def chat_profiles(user: cl.User):
         cl.ChatProfile(
             name="Lookup",
             default=True,
-            markdown_description="🔍 Forensic lookup of labor law excerpts.",
-            icon="https://www.gstatic.com/images/branding/product/1x/search_64dp.png",
+            markdown_description="Forensic lookup of labor law excerpts.",
             starters=[cl.Starter(label="Discipline Analysis", message=EXAMPLES[0])],
         ),
         cl.ChatProfile(
             name="Grieve",
-            markdown_description="⚖️ Strategic guidance for grievance filing.",
-            icon="https://www.gstatic.com/images/icons/material/system/1x/gavel_black_24dp.png",
+            markdown_description="Strategic guidance for grievance filing.",
             starters=[cl.Starter(label="Grievance Builder", message=EXAMPLES[1])],
         ),
         cl.ChatProfile(
             name="Audit",
-            markdown_description="🕵️ Forensic auditing of compliance risks.",
-            icon="https://www.gstatic.com/images/icons/material/system/1x/fact_check_black_24dp.png",
+            markdown_description="Forensic auditing of compliance risks.",
             starters=[cl.Starter(label="Audit Analysis", message=EXAMPLES[2])],
         ),
         cl.ChatProfile(
             name="Manage",
-            markdown_description="📊 Strategic management consulting.",
-            icon="https://www.gstatic.com/images/icons/material/system/1x/analytics_black_24dp.png",
+            markdown_description="Strategic management consulting.",
             starters=[cl.Starter(label="Strategy Session", message=EXAMPLES[0])],
         ),
     ]

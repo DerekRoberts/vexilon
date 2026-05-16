@@ -42,7 +42,7 @@ assistant_message_autoscroll = true
 auto_tag_thread = true
 
 # Allow users to edit their own messages
-edit_message = true
+edit_message = false
 
 # Allow users to share threads (backend + UI). Requires an app-defined on_shared_thread_view callback.
 allow_thread_sharing = false
@@ -170,14 +170,12 @@ default_avatar_file_url = ""
 [[UI.header_links]]
     name = "GitHub"
     display_name = "Source Code"
-    icon_url = "https://github.githubassets.com/favicons/favicon.svg"
     url = "https://github.com/MinionTech/vexilon"
     target = "_blank"
 
 [[UI.header_links]]
     name = "Privacy"
     display_name = "Privacy Policy"
-    icon_url = "https://www.gstatic.com/images/branding/product/1x/privacy_shield_24dp.png"
     url = "/privacy"
     target = "_blank"
 
