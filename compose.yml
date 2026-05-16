@@ -11,6 +11,7 @@ x-common-env: &common-env
   EMBED_MODEL: /model
   OLLAMA_HOST: ollama:11434
   OLLAMA_MODEL_ID: tinyllama
+  CHAINLIT_FILES_DIR: /tmp/chainlit_files
 
 x-test-env: &test-env
   <<: *common-env

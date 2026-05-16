@@ -1,7 +1,7 @@
 # ─── Stage 0: Base ────────────────────────────────────────────────────────────
 FROM python:3.14-slim AS base
 
-# Global environment configuration
+# Silence Hugging Face nag messages globally
 ENV HF_HOME=/hf_cache \
     EMBED_MODEL=/model \
     CHAINLIT_FILES_DIR=/tmp/chainlit_files
@@ -117,7 +117,8 @@ RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache && \
 FROM base AS runner
 
 # Use venv path for all subsequent commands
-ENV PATH="/app/.venv/bin:$PATH"
+ENV PATH="/app/.venv/bin:$PATH" \
+    CHAINLIT_FILES_DIR=/tmp/chainlit_files
 
 # Copy everything from functional_builder (includes venv, source code, index, config)
 COPY --from=functional_builder /app /app

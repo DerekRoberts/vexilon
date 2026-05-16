@@ -153,7 +153,7 @@
             console.log('[Save/Load] Load clicked');
             const input = document.createElement('input');
             input.type = 'file';
-            input.accept = '.json';
+            input.accept = '.md,.json';
             input.addEventListener('change', (changeEvent) => {
                 const file = changeEvent.target.files?.[0];
                 if (!file) return;
