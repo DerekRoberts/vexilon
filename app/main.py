@@ -573,55 +573,10 @@ def _get_download_source_files() -> list[Path]:
     """Scan LABOUR_LAW_DIR for PDF and MD files. Excludes tests/."""
     if not LABOUR_LAW_DIR.exists(): return []
     tests_dir = LABOUR_LAW_DIR / "tests"
-    files = [p for p in LABOUR_LAW_DIR.rglob("*") if p.suffix.lower() in (".pdf", ".md") 
+    files = [p for p in LABOUR_LAW_DIR.rglob("*") if p.suffix.lower() in (".pdf", ".md")
              and not p.is_relative_to(tests_dir)
              and not p.name.endswith(".integrity.md")]
     return sorted(list(set(files)), key=lambda p: str(p))
-
-def _update_readme_kb():
-    """Dynamically update chainlit.md with PDF-first fallback library."""
-    all_files = _get_download_source_files()
-    
-    # Deduplicate: Group by normalized name, prefer PDF
-    library = {}
-    for p in all_files:
-        name = _get_source_name(p.stem)
-        ext = p.suffix.lower().replace(".", "").upper()
-        
-        if name not in library or ext == "PDF":
-            library[name] = {"path": p, "format": ext}
-
-    # Header of the chainlit.md
-    content = """# BCGEU Navigator
-Welcome! I am your forensic labor law assistant.
-
----
-
-# Knowledge Base Library
-The following reference documents form the primary authority for my analytical responses. PDFs are provided for human review where available; Markdown versions are used as a fallback.
-
-| Document Name | Format | Access |
-| :--- | :--- | :--- |
-"""
-    
-    import urllib.parse
-    # Sort library by name for a professional alphabetical list
-    for name in sorted(library.keys()):
-        item = library[name]
-        doc_path = item["path"]
-        fmt = item["format"]
-        rel_path = str(doc_path.relative_to(LABOUR_LAW_DIR))
-        safe_path = urllib.parse.quote(rel_path)
-        content += f"| {name} | {fmt} | [Download](/public/docs/labour_law/{safe_path}) |\n"
-    
-    content += "| Privacy Policy | MD | [View Root Policy](/public/docs/PRIVACY.md) |\n"
-        
-    content += "\n---\n\n**Note**: This library is dynamically synchronized with the forensic database."
-    
-    readme_path = Path("chainlit.md")
-    if readme_path.exists():
-        readme_path.write_text(content, encoding="utf-8")
-        logger.info(f"[startup] Synchronized Knowledge Base with {len(library)} unique documents.")
 
 
 # ─── App Logic ──────────────────────────────────────────────────────────────
@@ -659,8 +614,6 @@ def startup(force_rebuild: bool = False):
         _source_path_map = { _get_source_name(p.stem): p for p in all_files }
         report = get_integrity_report()
     
-    # ── Document Library Preparation ──────────────────────────────────────
-    _update_readme_kb()
     doc_list = _get_download_source_files()
     logger.info(f"[startup] {len(doc_list)} reference documents found.")
 
