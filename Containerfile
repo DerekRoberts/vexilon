@@ -30,7 +30,6 @@ RUN pip install --no-cache-dir uv==$(grep -oP 'uv==\K[\d.]+' pyproject.toml)
 
 RUN uv pip install --system sentence-transformers
 RUN --mount=type=cache,target=/root/.cache/hf_v4 \
-    echo "Cache-buster: 2026-05-08-v5" && \
     python -c "from sentence_transformers import SentenceTransformer; model = SentenceTransformer('BAAI/bge-small-en-v1.5', cache_folder='/root/.cache/hf_v4'); model.save('/model')" && \
     ls -l /model/modules.json
 
@@ -87,15 +86,26 @@ RUN --mount=type=cache,target=/app/.pdf_cache_mount \
 # ─── Stage 2.5: Functional Builder (Dev/Test Source) ──────────────────────────
 FROM indexed_builder AS functional_builder
 
-
 # Layer dev dependencies on top of the production venv (Cached unless uv.lock changes)
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project
 
-# Now copy the remaining source code (Fast, frequently changed)
-COPY app/ ./
-COPY app/data/labour_law/ ./public/docs/labour_law/
+# Copy source files in optimal cache order:
+# 1. Static files first (least frequent changes)
+# 2. Config files next
+# 3. Application code last (most frequent changes)
 COPY PRIVACY.md ./public/docs/
+COPY app/.chainlit/ ./app/.chainlit/
+COPY app/public/ ./app/public/
+
+# Then source code (code changes often; trigger only code rebuilds)
+COPY app/main.py ./
+COPY app/indexing.py ./
+COPY app/patches.py ./
+COPY app/prompts/ ./prompts/
+
+# Finally, test config (if present)
+COPY tests/ ./tests/ 2>/dev/null || true
 
 # Prepare directories for testing and ensure permissions
 RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache && \
@@ -107,15 +117,12 @@ FROM base AS runner
 # Use venv path for all subsequent commands
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Copy everything from the builder (including the pre-computed index)
+# Copy everything from the builder (including the pre-computed index and venv)
 COPY --from=indexed_builder /app /app
 COPY --from=model_fetcher /model /model
 
-# Copy the actual application source code
-COPY app/main.py ./
-COPY app/prompts/ ./prompts/
-COPY app/data/labour_law/ ./public/docs/labour_law/
-COPY PRIVACY.md ./public/docs/
+# No need to duplicate COPY commands—indexed_builder already has all source files
+# and functional_builder layers them optimally. The runner stage just needs to copy the venv.
 
 # Only create and chown (by UID) the specific directories that MUST be writable
 RUN mkdir -p /app/.pdf_cache /app/reports /hf_cache /app/.files && \
