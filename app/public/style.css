@@ -137,36 +137,41 @@ body {
 /* Save/Load button wrapper and styling */
 #save-load-button-wrapper {
     display: inline-flex !important;
-    gap: 6px !important;
+    gap: 4px !important;
     align-items: center !important;
-    height: auto !important;
-    margin-right: 8px !important;
-    margin-bottom: 0 !important;
-    flex-shrink: 0 !important;
+    margin-right: 12px !important;
+    margin-left: 4px !important;
+    vertical-align: middle !important;
 }
 
 #save-conversation-btn,
 #load-conversation-btn {
-    padding: 6px 10px !important;
-    min-width: 50px !important;
-    width: auto !important;
-    height: auto !important;
-    background: #fff !important;
-    border: 1px solid #ccc !important;
+    appearance: none !important;
+    background: #ffffff !important;
+    border: 1px solid #d1d5db !important;
     border-radius: 4px !important;
+    color: #374151 !important;
     cursor: pointer !important;
-    font-size: 0.8rem !important;
-    color: #2c3e50 !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    height: 24px !important;
+    line-height: 22px !important;
+    padding: 0 8px !important;
+    text-align: center !important;
+    transition: all 0.15s ease-in-out !important;
+    user-select: none !important;
     white-space: nowrap !important;
-    flex-shrink: 0 !important;
-    display: inline-block !important;
-    transition: all 0.2s !important;
-    margin: 0 !important;
-    line-height: 1 !important;
 }
 
 #save-conversation-btn:hover,
 #load-conversation-btn:hover {
-    background-color: #f5f5f5 !important;
-    border-color: #999 !important;
+    background-color: #f9fafb !important;
+    border-color: #9ca3af !important;
+    color: #111827 !important;
+}
+
+#save-conversation-btn:active,
+#load-conversation-btn:active {
+    background-color: #f3f4f6 !important;
+    transform: translateY(1px) !important;
 }

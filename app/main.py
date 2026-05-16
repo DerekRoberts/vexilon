@@ -874,7 +874,7 @@ async def on_chat_start():
 
 
 # ── Message handler ────────────────────────────────────────────────────────
-def _client_id(message: cl.Message) -> str:
+def _client_id() -> str:
     """Best-effort client identifier for rate limiting.
 
     Chainlit doesn't expose request headers on cl.Message directly; fall back
@@ -950,7 +950,7 @@ async def on_save_conversation(action: cl.Action):
         except OSError as cleanup_err:
             logger.warning(f"[save] Failed to clean up tempfile: {cleanup_err}")
         
-        logger.info(f"[save] Conversation saved by {_client_id(None)} ({len(history)} messages)")
+        logger.info(f"[save] Conversation saved by {_client_id()} ({len(history)} messages)")
     except Exception as e:
         logger.error(f"[save] Failed to save conversation: {e}")
         await cl.Message(content=f"Error saving conversation: {e}", author="System").send()
@@ -994,7 +994,7 @@ async def on_load_conversation(action: cl.Action):
             msg_obj.metadata = {"restored": True, "readonly": True}
             await msg_obj.send()
         
-        logger.info(f"[load] Conversation loaded by {_client_id(None)} ({len(messages)} messages)")
+        logger.info(f"[load] Conversation loaded by {_client_id()} ({len(messages)} messages)")
     except json.JSONDecodeError as e:
         logger.error(f"[load] Invalid JSON in file: {e}")
         await cl.Message(content="Invalid conversation file format. Expected JSON.", author="System").send()
@@ -1014,7 +1014,7 @@ async def on_message(message: cl.Message) -> None:
         return
 
     # Rate limit (per session)
-    allowed, rate_msg = _rate_limiter.is_allowed(_client_id(message))
+    allowed, rate_msg = _rate_limiter.is_allowed(_client_id())
     if not allowed:
         return
 
