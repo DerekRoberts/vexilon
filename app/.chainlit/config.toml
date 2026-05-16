@@ -56,7 +56,7 @@ reaction_on_message_received = false
 
 # Authorize users to spontaneously upload files with messages
 [features.spontaneous_file_upload]
-    enabled = true
+    enabled = false
     # Define accepted file types using MIME types
     # Examples:
     # 1. For specific file types:
@@ -176,7 +176,7 @@ default_avatar_file_url = ""
 [[UI.header_links]]
     name = "Privacy"
     display_name = "Privacy Policy"
-    url = "/privacy"
+    url = "https://github.com/MinionTech/vexilon/blob/main/app/docs/PRIVACY.md"
     target = "_blank"
 
 [meta]

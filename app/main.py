@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+# 2026-05-15: Removed hardcoded paths for portability (PR #495)
 CACHE_DIR = Path(os.getenv("AGNAV_CACHE_DIR", "./.pdf_cache"))
 os.environ["CHAINLIT_FILES_DIR"] = str(CACHE_DIR / ".files")
 CACHE_DIR.joinpath(".files").mkdir(parents=True, exist_ok=True)
@@ -11,6 +12,8 @@ os.environ["TRANSFORMERS_OFFLINE"] = "1"
 import sys
 import re
 # Agreement Navigator - UI Version: 2026-05-10
+# Integrated RAG Backend + Chainlit UI
+import time
 import logging
 import asyncio
 import datetime
@@ -28,7 +31,7 @@ import anyio._backends._asyncio as _anyio_asyncio_backend
 import sniffio
 
 from patches import apply_patches
-apply_patches()
+34: apply_patches()
 # ─── Agnav Imports ────────────────────────────────────────────────────────
 from indexing import (
     _get_source_name,
@@ -416,7 +419,7 @@ async def verify_response(assistant_response: str, context: str) -> str:
             messages=[{"role": "user", "content": f"RESPONSE:\n{assistant_response}\n\nCONTEXT:\n{context}"}]
         )
     except Exception as exc:
-        return f"⚠️ Verification unavailable: {exc}"
+        return f"Warning: Verification unavailable: {exc}"
 
 def get_system_prompt(developer_mode: bool = False) -> str:
     now = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -427,7 +430,7 @@ def get_system_prompt(developer_mode: bool = False) -> str:
 async def rag_stream(message: str, history: list[dict]) -> AsyncIterator[tuple[str, str]]:
     """Yields (chunk, context) for tests and legacy callers."""
     if _index is None:
-        yield "⚠️ Knowledge base not loaded.", ""
+        yield "Warning: Knowledge base not loaded.", ""
         return
     try:
         queries, context, snippets = await get_multi_perspective_context(message, history)
@@ -453,7 +456,7 @@ async def rag_stream(message: str, history: list[dict]) -> AsyncIterator[tuple[s
                 has_yielded_context = True
             yield chunk, ""
     except Exception as exc:
-        yield f"⚠️ API error: {exc}", ""
+        yield f"Warning: API error: {exc}", ""
 
 # ─── RAG Pipeline Functions ─────────────────────────────────────────────────
 async def condense_query(message: str, history: list[dict]) -> str:
@@ -560,7 +563,7 @@ async def rag_review_stream(message: str, history: list[dict], persona_mode: str
             yield text
     except Exception as exc:
         logger.error(f"[rag] Pipeline error: {exc}", exc_info=True)
-        yield f"⚠️ API error: {exc}"
+        yield f"Warning: API error: {exc}"
 
 # ─── UI Utility Functions ───────────────────────────────────────────────────
 def _get_download_source_files() -> list[Path]:
@@ -658,7 +661,7 @@ async def set_starters():
             message="What are my rights as a steward during an investigation meeting?",
         ),
         cl.Starter(
-            label="Nexus Analysis",
+            label="Nexus Test Analysis",
             message="How does the nexus test apply to off-duty conduct discipline?",
         ),
     ]
@@ -784,15 +787,17 @@ async def on_chat_start():
         [
             cl.input_widget.Select(
                 id="Persona",
-                label="Navigator Persona",
+                label="Forensic Persona",
                 values=["Lookup", "Grieve", "Audit", "Manage"],
                 initial="Lookup",
+                description="Select the analytical mode for the Navigator."
             ),
             cl.input_widget.Switch(
                 id="ShowReasoning",
-                label="Show Internal Reasoning",
+                label="Trace Reasoning",
                 initial=False,
-            )
+                description="Expose the internal forensic logic and search strategy."
+            ),
         ]
     ).send()
     
@@ -915,7 +920,7 @@ async def on_message(message: cl.Message) -> None:
             await out.update()
     except Exception as exc:  # defensive — rag_review_stream already catches
         logger.error(f"[chat] Unexpected error: {exc}", exc_info=True)
-        accumulated = f"⚠️ API error: {exc}"
+        accumulated = f"Warning: API error: {exc}"
         out.content = accumulated
 
     await out.update()
