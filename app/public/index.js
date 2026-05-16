@@ -27,7 +27,7 @@
     }
 
     function hideReadmeDrawerTitle() {
-        document.querySelectorAll('span').forEach(el => {
+        document.querySelectorAll('h2').forEach(el => {
             if (el.textContent.trim() === 'Readme') el.style.display = 'none';
         });
     }
