@@ -896,6 +896,7 @@ async def on_message(message: cl.Message) -> None:
         queries, context, snippets = await get_multi_perspective_context(sanitized, history)
         
         # Attach sources as inline file chips (PDF preferred, MD fallback)
+        # TODO: clickable links blocked by Chainlit only linkifying http/https — see issue #501
         elements = []
         seen_sources = set()
         for s in snippets:
@@ -918,17 +919,6 @@ async def on_message(message: cl.Message) -> None:
                 continue
             accumulated += chunk
             await out.stream_token(chunk)
-
-        # Append plain-text page reference footer (Chainlit only linkifies http/https)
-        if seen_sources:
-            footer = "\n\n---\n**Sources:** "
-            parts = []
-            for source_name in sorted(seen_sources):
-                pages = sorted(set(str(s.get("page", "?")) for s in snippets if s.get("source") == source_name))
-                parts.append(f"{source_name} p.{', '.join(pages)}")
-            footer += " · ".join(parts)
-            accumulated += footer
-            await out.stream_token(footer)
     except Exception as exc:  # defensive — rag_review_stream already catches
         logger.error(f"[chat] Unexpected error: {exc}", exc_info=True)
         accumulated = f"⚠️ API error: {exc}"
