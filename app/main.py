@@ -916,12 +916,22 @@ async def on_message(message: cl.Message) -> None:
         
         # Automatic Source Footer (Hard-coded safety net)
         if seen_sources:
+            import urllib.parse
             footer = "\n\n---\n**Sources Reference:**\n"
             for source_name in sorted(list(seen_sources)):
-                # Find the page number from the snippets
                 pages = sorted(list(set(str(s.get("page", "?")) for s in snippets if s.get("source") == source_name)))
                 page_str = ", ".join(pages)
-                footer += f"- **{source_name}**, Page(s): {page_str}\n"
+                # Build a public download link: prefer PDF, fall back to MD
+                src_path = _source_path_map.get(source_name)
+                if src_path:
+                    rel = src_path.relative_to(LABOUR_LAW_DIR)
+                    pdf_path = src_path.with_suffix(".pdf")
+                    if pdf_path.exists():
+                        rel = pdf_path.relative_to(LABOUR_LAW_DIR)
+                    url = "/public/docs/labour_law/" + urllib.parse.quote(str(rel))
+                    footer += f"- **[{source_name}]({url})**, Page(s): {page_str}\n"
+                else:
+                    footer += f"- **{source_name}**, Page(s): {page_str}\n"
             accumulated += footer
             out.content = accumulated
             await out.update()
