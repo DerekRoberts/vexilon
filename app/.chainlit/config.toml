@@ -170,14 +170,14 @@ default_avatar_file_url = ""
 [[UI.header_links]]
     name = "GitHub"
     display_name = "Source Code"
-    icon_url = "https://github.githubassets.com/favicons/favicon.svg"
+    # icon_url = "https://github.githubassets.com/favicons/favicon.svg"
     url = "https://github.com/MinionTech/vexilon"
     target = "_blank"
 
 [[UI.header_links]]
     name = "Privacy"
     display_name = "Privacy Policy"
-    icon_url = "https://www.gstatic.com/images/branding/product/1x/privacy_shield_24dp.png"
+    # icon_url = "https://www.gstatic.com/images/branding/product/1x/privacy_shield_24dp.png"
     url = "/privacy"
     target = "_blank"
 
