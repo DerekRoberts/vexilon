@@ -103,11 +103,14 @@ COPY app/main.py ./
 COPY app/indexing.py ./
 COPY app/patches.py ./
 COPY app/prompts/ ./prompts/
-COPY app/tests/ ./data/labour_law/tests/
+COPY app/tests/ ./tests/
 
-# Prepare directories for testing and Chainlit runtime, ensure permissions
-RUN mkdir -p /app/reports /app/.pytest_cache /app/.files /hf_cache && \
-    chown -R 1000:1000 /app/reports /app/.pytest_cache /app/.files /hf_cache
+# Prepare directories for testing and Chainlit runtime, ensure permissions.
+# CHAINLIT_FILES_DIR points at /tmp (set in runner stage ENV) so we don't
+# need to create /app/.files here. Keep /app/reports and /app/.pytest_cache
+# writable for tests; /hf_cache for HF model cache.
+RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache && \
+    chown -R 1000:1000 /app/reports /app/.pytest_cache /hf_cache
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
 FROM base AS runner
@@ -115,13 +118,18 @@ FROM base AS runner
 # Use venv path for all subsequent commands
 ENV PATH="/app/.venv/bin:$PATH"
 
+# PIPA: ephemeral file storage in /tmp (cleared on container restart).
+# Set BEFORE chainlit imports so it overrides chainlit's default /app/.files.
+ENV CHAINLIT_FILES_DIR=/tmp/chainlit_files
+
 # Copy everything from functional_builder (includes venv, source code, index, config)
 COPY --from=functional_builder /app /app
 COPY --from=model_fetcher /model /model
 
-# Only create and chown (by UID) the specific directories that MUST be writable
-RUN mkdir -p /app/.pdf_cache /app/reports /hf_cache /app/.files && \
-    chown -R 1000:1000 /app/.pdf_cache /app/reports /hf_cache /app/.files
+# Writable dirs: /tmp is world-writable already (sticky bit), Chainlit will
+# create /tmp/chainlit_files at startup. Only chown what HF Spaces requires.
+RUN mkdir -p /app/.pdf_cache /app/reports /hf_cache && \
+    chown -R 1000:1000 /app/.pdf_cache /app/reports /hf_cache
 
 USER 1000
 

@@ -1,8 +1,10 @@
 import os
 from pathlib import Path
 CACHE_DIR = Path(os.getenv("AGNAV_CACHE_DIR", "./.pdf_cache"))
-os.environ["CHAINLIT_FILES_DIR"] = "/tmp/chainlit_files"
-Path("/tmp/chainlit_files").mkdir(parents=True, exist_ok=True)
+# CHAINLIT_FILES_DIR is set in Containerfile ENV (must be set before
+# chainlit imports). Defensive fallback for non-container dev:
+os.environ.setdefault("CHAINLIT_FILES_DIR", "/tmp/chainlit_files")
+Path(os.environ["CHAINLIT_FILES_DIR"]).mkdir(parents=True, exist_ok=True)
 
 # Force online mode for the API but keep local models offline for speed
 os.environ["HF_HUB_OFFLINE"] = "0"
@@ -230,38 +232,86 @@ _rate_limiter = RateLimiter(RATE_LIMIT_PER_MINUTE, RATE_LIMIT_PER_HOUR)
 
 # ─── Save/Load Conversation ─────────────────────────────────────────────────
 def serialize_conversation(history: list[dict], persona: str) -> str:
-    """Serialize conversation history to JSON with timestamps and metadata.
+    """Serialize conversation history to markdown with JSON metadata.
+    
+    PIPA Compliance: Metadata and conversation are end-user readable markdown
+    (not encrypted, but client-side only). No PII logged on server.
     
     Args:
         history: List of message dicts with 'role' and 'content' keys
         persona: Current persona (Lookup/Grieve/Audit/Manage)
     
     Returns:
-        JSON string representation of conversation
+        Markdown string with YAML front matter and conversation turns
     """
+    saved_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    
+    # YAML front matter (end-user readable metadata)
+    md = f"""---
+saved_at: {saved_at}
+persona: {persona}
+message_count: {len(history)}
+---
+
+# Conversation Export
+
+**Persona:** {persona}  
+**Saved:** {saved_at}  
+**Messages:** {len(history)}
+
+---
+
+"""
+    
+    # Convert each turn to readable markdown
+    for i, msg in enumerate(history, 1):
+        role_label = "👤 You" if msg["role"] == "user" else "🤖 Assistant"
+        md += f"## Turn {i}: {role_label}\n\n{msg['content']}\n\n"
+    
+    # Append JSON payload at end in code block for re-import
     payload = {
-        "saved_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "saved_at": saved_at,
         "persona": persona,
         "messages": history,
     }
-    return json.dumps(payload, indent=2)
+    md += "---\n\n<details><summary>Technical Metadata (JSON)</summary>\n\n```json\n"
+    md += json.dumps(payload, indent=2)
+    md += "\n```\n\n</details>"
+    
+    return md
 
 
-def deserialize_conversation(json_str: str) -> tuple[list[dict], str, str]:
-    """Deserialize JSON conversation file.
+def deserialize_conversation(content: str) -> tuple[list[dict], str, str]:
+    """Deserialize conversation from markdown file (JSON fallback for compatibility).
+    
+    Extracts JSON metadata from either:
+    1. The technical JSON section in markdown export
+    2. Raw JSON (for backward compat)
     
     Args:
-        json_str: JSON string from saved conversation
+        content: Markdown file contents or raw JSON string
     
     Returns:
         Tuple of (messages, persona, saved_at timestamp)
     
     Raises:
-        ValueError: If JSON is invalid or missing required fields
+        ValueError: If format is invalid or missing required fields
     """
-    data = json.loads(json_str)
+    # Try to extract JSON from markdown <details> section
+    json_match = re.search(r'```json\n(.*?)\n```', content, re.DOTALL)
+    if json_match:
+        json_str = json_match.group(1)
+    else:
+        # Fallback: assume raw JSON (for old exports or direct JSON files)
+        json_str = content
+    
+    try:
+        data = json.loads(json_str)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Could not parse conversation data: {e}")
+    
     if not isinstance(data, dict):
-        raise ValueError("Invalid conversation file format")
+        raise ValueError("Invalid conversation file format: root must be an object")
     
     messages = data.get("messages", [])
     persona = data.get("persona", "Lookup")
@@ -855,7 +905,11 @@ async def on_action(action: cl.Action):
 
 @cl.action_callback("save_conversation")
 async def on_save_conversation(action: cl.Action):
-    """Save conversation history to downloadable JSON file."""
+    """Save conversation history to downloadable markdown file (PIPA-compliant).
+    
+    File is human-readable markdown with JSON metadata embedded. Saved to
+    ephemeral /tmp and deleted after Chainlit serves the download.
+    """
     history: list[dict] = cl.user_session.get("history") or []
     persona: str = cl.user_session.get("persona") or "Lookup"
     
@@ -863,24 +917,39 @@ async def on_save_conversation(action: cl.Action):
         await cl.Message(content="No conversation to save yet.", author="System").send()
         return
     
+    file_path = None
     try:
-        json_content = serialize_conversation(history, persona)
+        markdown_content = serialize_conversation(history, persona)
         
         # Generate timestamped filename (client-side, user controls final location)
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"conversation_{timestamp}.json"
+        filename = f"conversation_{timestamp}.md"
         
-        # Create a temporary file in a managed temp directory (auto-cleanup)
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', prefix='conversation_', delete=False, encoding='utf-8') as tmp_file:
-            tmp_file.write(json_content)
+        # PIPA: write to ephemeral CHAINLIT_FILES_DIR (/tmp), delete after download
+        chainlit_files_dir = Path(os.environ.get("CHAINLIT_FILES_DIR", "/tmp/chainlit_files"))
+        chainlit_files_dir.mkdir(parents=True, exist_ok=True)
+        
+        with tempfile.NamedTemporaryFile(
+            mode='w', suffix='.md', prefix='conversation_',
+            dir=str(chainlit_files_dir), delete=False, encoding='utf-8'
+        ) as tmp_file:
+            tmp_file.write(markdown_content)
             file_path = tmp_file.name
         
         msg = cl.Message(
-            content=f"Conversation saved. Click below to download.",
+            content=f"Conversation saved as markdown. Click below to download.",
             author="System",
             elements=[cl.File(name=filename, path=str(file_path), display="inline")]
         )
         await msg.send()
+        
+        # PIPA: best-effort cleanup. Chainlit streams the file into its element
+        # registry during send(), so it's safe to delete immediately after.
+        try:
+            Path(file_path).unlink(missing_ok=True)
+        except OSError as cleanup_err:
+            logger.warning(f"[save] Failed to clean up tempfile: {cleanup_err}")
+        
         logger.info(f"[save] Conversation saved by {_client_id(None)} ({len(history)} messages)")
     except Exception as e:
         logger.error(f"[save] Failed to save conversation: {e}")
@@ -889,16 +958,20 @@ async def on_save_conversation(action: cl.Action):
 
 @cl.action_callback("load_conversation")
 async def on_load_conversation(action: cl.Action):
-    """Load conversation from uploaded JSON file."""
+    """Load conversation from uploaded markdown or JSON file.
+    
+    NOTE: payload.files[0] is the file content string (read by FileReader in browser),
+    not a server-side path. Browser handles the upload stream; no server tempfile.
+    """
     files = action.payload.get("files", [])
     if not files:
         await cl.Message(content="No file selected.", author="System").send()
         return
     
-    file_path = files[0]
+    # Content was read by FileReader in browser as text
+    file_content = files[0]
     try:
-        json_content = file_path
-        messages, saved_persona, saved_at = deserialize_conversation(json_content)
+        messages, saved_persona, saved_at = deserialize_conversation(file_content)
         
         # Append to current history
         current_history: list[dict] = cl.user_session.get("history") or []
