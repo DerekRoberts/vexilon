@@ -535,7 +535,7 @@ async def rag_review_stream(message: str, history: list[dict], persona_mode: str
             queries = queries or q_new
 
         # 2. Forensic Analysis & Logic Injection
-        system_prompt = get_persona_prompt(persona_mode)
+        # Removed unused variable (was identical to base_persona)
         
         base_persona = get_persona_prompt(persona_mode)
         audit_rules = ""
@@ -613,7 +613,7 @@ The following reference documents form the primary authority for my analytical r
         safe_path = urllib.parse.quote(rel_path)
         content += f"| {name} | {fmt} | [Download](/public/docs/labour_law/{safe_path}) |\n"
     
-    content += "| Privacy Policy | PDF | [View Root Policy](/public/docs/PRIVACY.md) |\n"
+    content += "| Privacy Policy | MD | [View Root Policy](/public/docs/PRIVACY.md) |\n"
         
     content += "\n---\n\n**Note**: This library is dynamically synchronized with the forensic database."
     
