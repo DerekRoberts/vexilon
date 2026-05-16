@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
 CACHE_DIR = Path(os.getenv("AGNAV_CACHE_DIR", "./.pdf_cache"))
-os.environ["CHAINLIT_FILES_DIR"] = str(CACHE_DIR / ".files")
-CACHE_DIR.joinpath(".files").mkdir(parents=True, exist_ok=True)
+os.environ["CHAINLIT_FILES_DIR"] = "/tmp/chainlit_files"
+Path("/tmp/chainlit_files").mkdir(parents=True, exist_ok=True)
 
 # Force online mode for the API but keep local models offline for speed
 os.environ["HF_HUB_OFFLINE"] = "0"
