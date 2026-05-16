@@ -1,10 +1,10 @@
 # Tasks: Chainlit UI Overhaul
 
 ## Phase 1: Foundation & Cleanup
-- [ ] **T1: Patch Decoupling**
+- [x] **T1: Patch Decoupling** (Verified)
 
 ## Phase 2: UI Implementation
-- [ ] **T2: Forensic Starters**
+- [x] **T2: Forensic Starters** (Verified)
 - [ ] **T3: Action-Based Modes**
 - [ ] **T4: Session Controls**
 
