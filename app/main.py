@@ -907,6 +907,7 @@ async def on_message(message: cl.Message) -> None:
                     elements.append(cl.File(name=source_name, path=str(path), display="inline"))
                 seen_sources.add(source_name)
         out.elements = elements
+        await out.update()  # flush elements (message was already sent)
 
         async for chunk in rag_review_stream(sanitized, history, persona, context=context, queries=queries):
             if not chunk:
@@ -929,9 +930,9 @@ async def on_message(message: cl.Message) -> None:
                     if pdf_path.exists():
                         rel = pdf_path.relative_to(LABOUR_LAW_DIR)
                     url = "/public/docs/labour_law/" + urllib.parse.quote(str(rel))
-                    footer += f"- **[{source_name}]({url})**, Page(s): {page_str}\n"
+                    footer += f"- [{source_name}]({url}), Page(s): {page_str}\n"
                 else:
-                    footer += f"- **{source_name}**, Page(s): {page_str}\n"
+                    footer += f"- {source_name}, Page(s): {page_str}\n"
             accumulated += footer
             out.content = accumulated
             await out.update()
