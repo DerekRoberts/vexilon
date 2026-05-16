@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-# 2026-05-15: Removed hardcoded paths for portability (PR #495)
 CACHE_DIR = Path(os.getenv("AGNAV_CACHE_DIR", "./.pdf_cache"))
 os.environ["CHAINLIT_FILES_DIR"] = str(CACHE_DIR / ".files")
 CACHE_DIR.joinpath(".files").mkdir(parents=True, exist_ok=True)
@@ -12,8 +11,6 @@ os.environ["TRANSFORMERS_OFFLINE"] = "1"
 import sys
 import re
 # Agreement Navigator - UI Version: 2026-05-10
-# Integrated RAG Backend + Chainlit UI
-import time
 import logging
 import asyncio
 import datetime
