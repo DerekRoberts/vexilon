@@ -1006,7 +1006,7 @@ async def trigger_session_save():
         msg = cl.Message(
             content=f"Conversation saved as markdown. Click below to download.",
             author="System",
-            elements=[cl.File(name=filename, path=str(file_path), display="inline")]
+            elements=[cl.File(name=filename, path=str(file_path), display="inline", mime="text/markdown")]
         )
         await msg.send()
         
