@@ -52,8 +52,10 @@
                 verSpan.className = 'input-footer-separator';
                 verSpan.textContent = '•';
                 
-                const valSpan = document.createElement('span');
-                valSpan.className = 'input-footer-version';
+                const valSpan = document.createElement('a');
+                valSpan.href = 'https://github.com/MinionTech/vexilon/pkgs/container/vexilon%2Fagnav';
+                valSpan.target = '_blank';
+                valSpan.className = 'input-footer-link input-footer-version';
                 valSpan.textContent = cachedVersionInfo;
                 
                 container.appendChild(verSpan);
@@ -66,7 +68,7 @@
         document.querySelectorAll('div[role="article"]').forEach(el => {
             if (el.textContent.trim().includes('LLMs can make mistakes') && !el.dataset.footerInjected) {
                 const versionSegment = cachedVersionInfo 
-                    ? `<span class="input-footer-separator">•</span><span class="input-footer-version">${cachedVersionInfo}</span>` 
+                    ? `<span class="input-footer-separator">•</span><a href="https://github.com/MinionTech/vexilon/pkgs/container/vexilon%2Fagnav" class="input-footer-link input-footer-version" target="_blank">${cachedVersionInfo}</a>` 
                     : "";
                 
                 el.innerHTML = `
