@@ -852,44 +852,9 @@ if os.getenv("AGNAV_PASSWORD"):
         return None
 
 
-async def handle_session_action(action: str, persona: str):
-    """Executes session actions safely in the background with a tiny delay
-
-    to let the frontend finish its current settings update transition.
-    """
-    await asyncio.sleep(0.2)
-    if action == "Save Session":
-        await trigger_session_save()
-    elif action == "Load Session":
-        await _ask_for_session_file()
-
-    # Cleanly reset the dropdown back to 'None' in the UI
-    await cl.ChatSettings(
-        [
-            cl.input_widget.Select(
-                id="Persona",
-                label="Navigator Persona",
-                values=["Lookup", "Grieve", "Audit", "Manage"],
-                initial=persona,
-            ),
-            cl.input_widget.Select(
-                id="SessionAction",
-                label="Session Actions",
-                values=["None", "Save Session", "Load Session"],
-                initial="None",
-            ),
-        ]
-    ).send()
-
-
 @cl.on_settings_update
 async def setup_agent(settings):
-    persona = settings.get("Persona", "Lookup")
-    cl.user_session.set("persona", persona)
-    
-    action = settings.get("SessionAction", "None")
-    if action != "None":
-        asyncio.create_task(handle_session_action(action, persona))
+    cl.user_session.set("persona", settings["Persona"])
 
 
 PERSONAS = ["Lookup", "Grieve", "Audit", "Manage"]
@@ -957,12 +922,6 @@ async def on_chat_start():
                 label="Navigator Persona",
                 values=["Lookup", "Grieve", "Audit", "Manage"],
                 initial="Lookup",
-            ),
-            cl.input_widget.Select(
-                id="SessionAction",
-                label="Session Actions",
-                values=["None", "Save Session", "Load Session"],
-                initial="None",
             ),
         ]
     ).send()
