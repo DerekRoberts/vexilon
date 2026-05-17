@@ -1145,6 +1145,15 @@ async def on_message(message: cl.Message) -> None:
     if not msg_str:
         return
 
+    # Strip action buttons from the previous assistant message to keep thread clean
+    prev_msg = cl.user_session.get("last_assistant_message")
+    if prev_msg:
+        try:
+            prev_msg.actions = []
+            await prev_msg.update()
+        except Exception:
+            pass
+
     # Rate limit (per session)
     allowed, rate_msg = _rate_limiter.is_allowed(_client_id())
     if not allowed:
@@ -1199,6 +1208,13 @@ async def on_message(message: cl.Message) -> None:
         accumulated = f"⚠️ API error: {exc}"
         out.content = accumulated
 
+    out.actions = [
+        cl.Action(
+            name="save_conversation",
+            value="save",
+            label="💾 Save Session"
+        )
+    ]
     await out.update()
 
     # Async Verification pass as per SPEC.md Section 9
@@ -1214,6 +1230,7 @@ async def on_message(message: cl.Message) -> None:
     history.append({"role": "user", "content": sanitized})
     history.append({"role": "assistant", "content": accumulated})
     cl.user_session.set("history", history)
+    cl.user_session.set("last_assistant_message", out)
     logger.info(f"[chat] Stream completed. Total length: {len(accumulated)}")
 
 
