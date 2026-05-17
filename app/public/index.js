@@ -55,11 +55,48 @@
             }
         });
     }
+    function setupFileAutoSubmit() {
+        if (window.fileAutoSubmitObserverAttached) return;
+
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach(mutation => {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === 1 && node.closest) {
+                            // Check if the added node is inside the chat input container
+                            // Chainlit mounts file chips inside the form/input area when uploading
+                            const isInputArea = node.closest('#chat-input') || node.closest('form') || node.closest('.MuiFormControl-root');
+                            
+                            if (isInputArea) {
+                                const text = node.textContent?.toLowerCase() || '';
+                                if (text.includes('.md') || text.includes('.json')) {
+                                    // Wait for React to unlock the Send button state
+                                    setTimeout(() => {
+                                        const sendBtn = document.getElementById('send-button') || 
+                                                        document.querySelector('button[aria-label="Send message"]') ||
+                                                        document.querySelector('button.send-button');
+                                        if (sendBtn && !sendBtn.disabled) {
+                                            sendBtn.click();
+                                        }
+                                    }, 300);
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+        window.fileAutoSubmitObserverAttached = true;
+    }
+
     // Run periodically to catch re-renders
     setInterval(() => {
         setupEnterToSubmit();
         hideReadmeDrawerTitle();
         replaceBuildSha();
+        setupFileAutoSubmit();
     }, 100);
 
     setupEnterToSubmit();
