@@ -62,7 +62,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY app/ ./
 COPY app/data/labour_law/ ./public/docs/labour_law/
 COPY PRIVACY.md ./public/docs/
-COPY Containerfile /Containerfile
 
 # Prepare directories for testing and ensure permissions
 RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache && \
@@ -101,7 +100,6 @@ COPY app/.chainlit/ ./.chainlit/
 COPY app/public/ ./public/
 COPY app/chainlit.md ./
 COPY app/data/labour_law/ ./public/docs/labour_law/
-COPY Containerfile /Containerfile
 
 # Then source code (code changes often; trigger only code rebuilds)
 COPY app/main.py ./
