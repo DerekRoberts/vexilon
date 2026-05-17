@@ -859,6 +859,7 @@ async def setup_agent(settings):
 
 PERSONAS = ["Lookup", "Grieve", "Audit", "Manage"]
 DEFAULT_PERSONA = "Lookup"
+VEXILON_SAVE_SENTINEL = "__VEXILON_SAVE__"
 
 EXAMPLES = [
     "What are the Article 14 (Discipline) requirements for just cause?",
@@ -983,7 +984,6 @@ async def trigger_session_save():
         await cl.Message(content="No conversation to save yet.", author="System").send()
         return
     
-    file_path = None
     try:
         markdown_content = serialize_conversation(history, persona)
         
@@ -991,21 +991,10 @@ async def trigger_session_save():
         timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d_%H%M%S")
         filename = f"conversation_{timestamp}.md"
         
-        # PIPA: write to ephemeral CHAINLIT_FILES_DIR (/tmp), delete after download
-        chainlit_files_dir = Path(os.environ.get("CHAINLIT_FILES_DIR", "/tmp/chainlit_files"))
-        chainlit_files_dir.mkdir(parents=True, exist_ok=True)
-        
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.md', prefix='conversation_',
-            dir=str(chainlit_files_dir), delete=False, encoding='utf-8'
-        ) as tmp_file:
-            tmp_file.write(markdown_content)
-            file_path = tmp_file.name
-        
         msg = cl.Message(
             content=f"Conversation saved as markdown. Click below to download.",
             author="System",
-            elements=[cl.File(name=filename, path=str(file_path), display="inline", mime="text/markdown")]
+            elements=[cl.File(name=filename, content=markdown_content, display="inline", mime="text/markdown")]
         )
         await msg.send()
         
@@ -1118,7 +1107,7 @@ async def on_load_conversation(action: cl.Action):
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
     # Internal sentinel: toolbar save button bypasses normal message flow
-    if (message.content or "").strip() == "__VEXILON_SAVE__":
+    if (message.content or "").strip() == VEXILON_SAVE_SENTINEL:
         await trigger_session_save()
         return
 
