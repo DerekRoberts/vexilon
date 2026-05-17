@@ -54,7 +54,6 @@ x-dev-volumes: &dev-volumes
   - ./PRIVACY.md:/app/public/docs/PRIVACY.md:ro
   - ./app/data/labour_law:/app/public/docs/labour_law:ro
   - ./reports:/app/reports:z
-  - ./.pdf_cache:/app/.pdf_cache:z
   - ./.pytest_cache:/app/.pytest_cache:z
 
 services:

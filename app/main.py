@@ -718,26 +718,7 @@ def startup(force_rebuild: bool = False):
     logger.info(f"[startup] {len(doc_list)} reference documents found.")
 
 # ─── Chainlit UI ────────────────────────────────────────────────────────────
-@cl.set_starters
-async def set_starters():
-    return [
-        cl.Starter(
-            label="Discipline Analysis",
-            message="What are the Article 14 (Discipline) requirements for just cause?",
-        ),
-        cl.Starter(
-            label="Grievance Builder",
-            message="I need to file a grievance for a member. What steps should I take?",
-        ),
-        cl.Starter(
-            label="Steward Rights",
-            message="What are my rights as a steward during an investigation meeting?",
-        ),
-        cl.Starter(
-            label="Nexus Analysis",
-            message="How does the nexus test apply to off-duty conduct discipline?",
-        ),
-    ]
+# Starters are handled by ChatProfiles now.
 
 # Module-level startup gate. startup() is sync (it does blocking I/O: PDF
 # fetch, FAISS index build/load, registry load). We run it exactly once,
