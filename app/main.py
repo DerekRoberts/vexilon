@@ -859,6 +859,7 @@ async def setup_agent(settings):
 
 PERSONAS = ["Lookup", "Grieve", "Audit", "Manage"]
 DEFAULT_PERSONA = "Lookup"
+VEXILON_SAVE_SENTINEL = "__VEXILON_SAVE__"
 
 EXAMPLES = [
     "What are the Article 14 (Discipline) requirements for just cause?",
@@ -873,8 +874,6 @@ def get_welcome_actions():
         cl.Action(name="starter_query", value="query1", payload={"value": "What are the Article 14 (Discipline) requirements for just cause?"}, label="How do I evaluate a disciplinary action for 'Just Cause'?"),
         cl.Action(name="starter_query", value="query2", payload={"value": "I need to file a grievance for a member. What steps should I take?"}, label="What are the mandatory steps for filing a formal grievance?"),
         cl.Action(name="starter_query", value="query3", payload={"value": "What are my rights as a steward during an investigation meeting?"}, label="What are my specific rights as a steward during an investigation?"),
-        cl.Action(name="save_conversation", value="save", payload={}, label="[ Save Session ]"),
-        cl.Action(name="load_conversation", value="load", payload={}, label="[ Load Session ]"),
     ]
 
 
@@ -985,7 +984,6 @@ async def trigger_session_save():
         await cl.Message(content="No conversation to save yet.", author="System").send()
         return
     
-    file_path = None
     try:
         markdown_content = serialize_conversation(history, persona)
         
@@ -993,21 +991,10 @@ async def trigger_session_save():
         timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d_%H%M%S")
         filename = f"conversation_{timestamp}.md"
         
-        # PIPA: write to ephemeral CHAINLIT_FILES_DIR (/tmp), delete after download
-        chainlit_files_dir = Path(os.environ.get("CHAINLIT_FILES_DIR", "/tmp/chainlit_files"))
-        chainlit_files_dir.mkdir(parents=True, exist_ok=True)
-        
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.md', prefix='conversation_',
-            dir=str(chainlit_files_dir), delete=False, encoding='utf-8'
-        ) as tmp_file:
-            tmp_file.write(markdown_content)
-            file_path = tmp_file.name
-        
         msg = cl.Message(
             content=f"Conversation saved as markdown. Click below to download.",
             author="System",
-            elements=[cl.File(name=filename, path=str(file_path), display="inline", mime="text/markdown")]
+            elements=[cl.File(name=filename, content=markdown_content, display="inline", mime="text/markdown")]
         )
         await msg.send()
         
@@ -1015,12 +1002,11 @@ async def trigger_session_save():
     except Exception as e:
         logger.error(f"[save] Failed to save conversation: {e}")
         await cl.Message(content=f"Error saving conversation: {e}", author="System").send()
-    finally:
         if file_path:
             try:
                 Path(file_path).unlink(missing_ok=True)
-            except OSError as cleanup_err:
-                logger.warning(f"[save] Failed to clean up tempfile: {cleanup_err}")
+            except OSError:
+                pass
 
 
 @cl.action_callback("save_conversation")
@@ -1120,6 +1106,11 @@ async def on_load_conversation(action: cl.Action):
 
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
+    # Internal sentinel: toolbar save button bypasses normal message flow
+    if (message.content or "").strip() == VEXILON_SAVE_SENTINEL:
+        await trigger_session_save()
+        return
+
     await _ensure_startup()
 
     # Intercept session file uploads natively
@@ -1130,6 +1121,8 @@ async def on_message(message: cl.Message) -> None:
                     with open(element.path, 'r', encoding='utf-8') as f:
                         file_content = f.read()
                     await trigger_session_load(file_content)
+                    # Cleanly close the execution loop so the UI stop button unlocks
+                    await cl.Message(content="✓ Session restored successfully.", author="System").send()
                 except Exception as e:
                     logger.error(f"[load] Failed to read uploaded session file: {e}")
                     await cl.Message(content="Failed to read the uploaded session file.", author="System").send()
@@ -1138,6 +1131,15 @@ async def on_message(message: cl.Message) -> None:
     msg_str = (message.content or "").strip()
     if not msg_str:
         return
+
+    # Strip action buttons from the previous assistant message to keep thread clean
+    prev_msg = cl.user_session.get("last_assistant_message")
+    if prev_msg:
+        try:
+            prev_msg.actions = []
+            await prev_msg.update()
+        except Exception:
+            pass
 
     # Rate limit (per session)
     allowed, rate_msg = _rate_limiter.is_allowed(_client_id())
@@ -1193,6 +1195,14 @@ async def on_message(message: cl.Message) -> None:
         accumulated = f"⚠️ API error: {exc}"
         out.content = accumulated
 
+    out.actions = [
+        cl.Action(
+            name="save_conversation",
+            value="save",
+            payload={},
+            label="💾 Save Session"
+        )
+    ]
     await out.update()
 
     # Async Verification pass as per SPEC.md Section 9
@@ -1208,6 +1218,7 @@ async def on_message(message: cl.Message) -> None:
     history.append({"role": "user", "content": sanitized})
     history.append({"role": "assistant", "content": accumulated})
     cl.user_session.set("history", history)
+    cl.user_session.set("last_assistant_message", out)
     logger.info(f"[chat] Stream completed. Total length: {len(accumulated)}")
 
 
