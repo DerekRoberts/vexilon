@@ -20,6 +20,13 @@ reports
 *~
 .env.local
 
+# Python artifacts
+**/.venv
+**/venv
+**/__pycache__
+**/*.pyc
+**/.coverage
+
 # CI/CD
 .github
 .agent
