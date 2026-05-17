@@ -62,23 +62,37 @@
             mutations.forEach(mutation => {
                 if (mutation.type === 'childList') {
                     mutation.addedNodes.forEach(node => {
-                        if (node.nodeType === 1 && node.closest) {
-                            // Check if the added node is inside the chat input container
-                            // Chainlit mounts file chips inside the form/input area when uploading
-                            const isInputArea = node.closest('#chat-input') || node.closest('form') || node.closest('.MuiFormControl-root');
-                            
-                            if (isInputArea) {
-                                const text = node.textContent?.toLowerCase() || '';
-                                if (text.includes('.md') || text.includes('.json')) {
-                                    // Wait for React to unlock the Send button state
-                                    setTimeout(() => {
+                        if (node.nodeType === 1) {
+                            // Look for the chip text
+                            const text = node.textContent?.toLowerCase() || '';
+                            if (text.includes('.md') || text.includes('.json')) {
+                                
+                                // Ensure it's down in the chat input area, not a message from the bot
+                                const isInputArea = node.closest && (
+                                    node.closest('#chat-input') || 
+                                    node.closest('form') || 
+                                    node.closest('[id*="chat-input"]') ||
+                                    // Fallback: check if the node is in the bottom half of the screen
+                                    (node.getBoundingClientRect && node.getBoundingClientRect().top > window.innerHeight / 2)
+                                );
+
+                                if (isInputArea) {
+                                    // File uploads take time. Poll for the send button to become enabled.
+                                    let attempts = 0;
+                                    const clickInterval = setInterval(() => {
+                                        attempts++;
                                         const sendBtn = document.getElementById('send-button') || 
                                                         document.querySelector('button[aria-label="Send message"]') ||
                                                         document.querySelector('button.send-button');
+                                        
                                         if (sendBtn && !sendBtn.disabled) {
                                             sendBtn.click();
+                                            clearInterval(clickInterval);
+                                        } else if (attempts > 50) {
+                                            // Give up after 5 seconds to prevent memory leaks
+                                            clearInterval(clickInterval);
                                         }
-                                    }, 300);
+                                    }, 100);
                                 }
                             }
                         }
