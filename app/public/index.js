@@ -55,149 +55,14 @@
             }
         });
     }
-    /**
-     * Interaction Logic: Session Save/Load Click Handlers via clinical `/persist` command pipeline
-     */
-    function setupSessionClickHandlers() {
-        if (document.datasetSessionHandlersAttached) return;
-        
-        document.addEventListener('click', (e) => {
-            const target = e.target.closest('a');
-            if (!target) return;
-
-            const href = target.getAttribute('href');
-            if (href === '#save') {
-                e.preventDefault();
-                console.log("[session] Triggering save_conversation via clinical pipeline...");
-                submitTechnicalCommand('/persist save');
-            } else if (href === '#load') {
-                e.preventDefault();
-                console.log("[session] Prompting for file upload...");
-                triggerFilePicker();
-            }
-        });
-        
-        document.datasetSessionHandlersAttached = "true";
-    }
-
-    function submitTechnicalCommand(command) {
-        const chatInput = document.getElementById('chat-input') || document.querySelector('textarea, [contenteditable="true"]');
-        if (!chatInput) {
-            if (command.includes('save')) {
-                alert("System notice: There is no active conversation to save. Please start a session first (e.g., by clicking a Starter Query), then click Save.");
-            } else {
-                alert("System notice: Unable to inject session file from the Welcome screen. Please start a session first so the chat input becomes active, then click Load.");
-            }
-            return;
-        }
-        
-        if (chatInput.tagName.toLowerCase() === 'textarea') {
-            // React 16+ setter bypass hack for textareas
-            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
-            if (nativeInputValueSetter) {
-                nativeInputValueSetter.call(chatInput, command);
-            } else {
-                chatInput.value = command; // fallback
-            }
-            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-        } else if (chatInput.isContentEditable) {
-            // Bulletproof insert hack for modern React contenteditable frameworks
-            chatInput.focus();
-            document.execCommand('selectAll', false, null);
-            document.execCommand('insertText', false, command);
-            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-        } else {
-            chatInput.value = command;
-            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-        
-        setTimeout(() => {
-            const sendBtn = document.getElementById('send-button') || 
-                            document.querySelector('button[aria-label="Send message"]') || 
-                            document.querySelector('button.send-button');
-            if (sendBtn && !sendBtn.disabled) {
-                sendBtn.click();
-            } else {
-                const enterEvent = new KeyboardEvent('keydown', {
-                    key: 'Enter',
-                    code: 'Enter',
-                    keyCode: 13,
-                    which: 13,
-                    bubbles: true
-                });
-                chatInput.dispatchEvent(enterEvent);
-            }
-        }, 50);
-    }
-
-    function triggerFilePicker() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.md,.MD,.mD,.Md';
-        
-        input.addEventListener('change', (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-
-            // Strict case-insensitive extension check
-            const suffixMatch = file.name.match(/\.[^.]+$/);
-            const suffix = suffixMatch ? suffixMatch[0].toLowerCase() : "";
-            if (suffix !== ".md") {
-                alert(`Upload failed: The file "${file.name}" is not a markdown file. Only markdown (.md) session files are accepted.`);
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.addEventListener('load', (event) => {
-                const content = event.target?.result;
-                if (typeof content !== 'string') {
-                    alert("Upload failed: Unable to read file content as a string.");
-                    return;
-                }
-
-                // Client-side pre-flight validation
-                if (!content.includes('Technical Metadata (JSON)') && !content.includes('```json')) {
-                    alert("Upload failed: The selected file does not contain valid technical session metadata.");
-                    return;
-                }
-
-                console.log(`[session] File parsed successfully, sending to backend: ${file.name}`);
-                submitTechnicalCommand(`/persist load ${content}`);
-            });
-
-            reader.addEventListener('error', () => {
-                alert("Upload failed: A disk error occurred while reading the selected file.");
-            });
-
-            reader.readAsText(file);
-        });
-
-        input.click();
-    }
-
-    function hidePersistCommands() {
-        document.querySelectorAll('.message, .message-user, .message-content').forEach(el => {
-            if (el.textContent.includes('/persist')) {
-                const messageContainer = el.closest('.message');
-                if (messageContainer && messageContainer.style.display !== 'none') {
-                    messageContainer.style.display = 'none';
-                }
-            }
-        });
-    }
-
     // Run periodically to catch re-renders
     setInterval(() => {
         setupEnterToSubmit();
         hideReadmeDrawerTitle();
         replaceBuildSha();
-        setupSessionClickHandlers();
-        hidePersistCommands();
     }, 100);
 
     setupEnterToSubmit();
     hideReadmeDrawerTitle();
     replaceBuildSha();
-    setupSessionClickHandlers();
-    hidePersistCommands();
 })();

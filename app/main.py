@@ -872,6 +872,8 @@ def get_welcome_actions():
         cl.Action(name="starter_query", payload={"value": "What are the Article 14 (Discipline) requirements for just cause?"}, label="How do I evaluate a disciplinary action for 'Just Cause'?"),
         cl.Action(name="starter_query", payload={"value": "I need to file a grievance for a member. What steps should I take?"}, label="What are the mandatory steps for filing a formal grievance?"),
         cl.Action(name="starter_query", payload={"value": "What are my rights as a steward during an investigation meeting?"}, label="What are my specific rights as a steward during an investigation?"),
+        cl.Action(name="save_conversation", payload={}, label="[ Save Session ]"),
+        cl.Action(name="load_conversation", payload={}, label="[ Load Session ]"),
     ]
 
 
@@ -1080,11 +1082,27 @@ async def trigger_session_load(file_content: str):
 @cl.action_callback("load_conversation")
 async def on_load_conversation(action: cl.Action):
     """Callback for native Chainlit Action button."""
-    files = action.payload.get("files", [])
-    if not files:
-        await cl.Message(content="No file selected.", author="System").send()
+    allowed, rate_msg = _rate_limiter.is_allowed(_client_id())
+    if not allowed:
+        await cl.Message(content=rate_msg, author="System").send()
         return
-    await trigger_session_load(files[0])
+
+    res = await cl.AskFileMessage(
+        content="Please drag and drop your `.md` session backup file here.",
+        accept=["text/markdown", ".md", ".MD"],
+        max_size_mb=2,
+        timeout=120
+    ).send()
+
+    if res:
+        try:
+            file = res[0]
+            with open(file.path, 'r', encoding='utf-8') as f:
+                file_content = f.read()
+            await trigger_session_load(file_content)
+        except Exception as e:
+            logger.error(f"[load] Failed to read uploaded session file: {e}")
+            await cl.Message(content="Failed to read the uploaded session file.", author="System").send()
 
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
@@ -1092,18 +1110,6 @@ async def on_message(message: cl.Message) -> None:
 
     msg_str = (message.content or "").strip()
     if not msg_str:
-        return
-
-    # Clinical session commands interceptor
-    if msg_str == "/persist save":
-        await message.remove()
-        await trigger_session_save()
-        return
-        
-    if msg_str.startswith("/persist load "):
-        await message.remove()
-        file_content = msg_str[len("/persist load "):]
-        await trigger_session_load(file_content)
         return
 
     # Rate limit (per session)

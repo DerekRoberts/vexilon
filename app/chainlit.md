@@ -1,7 +1,7 @@
 ---
 
 **Privacy Policy**: [View Policy](/public/docs/PRIVACY.md) | **Source Code**: [GitHub Repository](https://github.com/MinionTech/vexilon)
-**Build Integrity**: `{{BUILD_SHA}}` | **Session**: [Save](#save) | [Load](#load)
+**Build Integrity**: `{{BUILD_SHA}}`
 
 ---
 
