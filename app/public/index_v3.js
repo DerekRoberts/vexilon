@@ -1,23 +1,22 @@
-/* app/public/index_v2.js */
+/* app/public/index_v3.js */
 
 (function() {
-    console.log("Vexilon Forensic UI Initialized (v2)");
+    console.log("Vexilon Forensic UI Initialized (v3)");
 
     /**
      * Interaction Logic: Enter-to-Submit
      * (Mandated by UI Standards Section 2.3)
      */
     function setupEnterToSubmit() {
-        const chatInput = document.querySelector('textarea');
+        const chatInput = document.getElementById('chat-input') || document.querySelector('textarea');
         if (!chatInput || chatInput.dataset.listenerAttached) return;
 
         chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                const sendBtn = document.querySelector('button[aria-label="Send message"]') || 
-                                document.querySelector('button.send-button');
-                if (sendBtn && !sendBtn.disabled) {
-                    sendBtn.click();
+                const form = chatInput.closest('form');
+                if (form) {
+                    form.requestSubmit();
                 }
             }
         });
