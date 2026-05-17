@@ -1181,6 +1181,8 @@ async def on_message(message: cl.Message) -> None:
                     with open(element.path, 'r', encoding='utf-8') as f:
                         file_content = f.read()
                     await trigger_session_load(file_content)
+                    # Cleanly close the execution loop so the UI stop button unlocks
+                    await cl.Message(content="✓ Session restored successfully.", author="System").send()
                 except Exception as e:
                     logger.error(f"[load] Failed to read uploaded session file: {e}")
                     await cl.Message(content="Failed to read the uploaded session file.", author="System").send()
