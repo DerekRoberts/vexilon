@@ -852,50 +852,44 @@ if os.getenv("AGNAV_PASSWORD"):
         return None
 
 
+async def handle_session_action(action: str, persona: str):
+    """Executes session actions safely in the background with a tiny delay
+
+    to let the frontend finish its current settings update transition.
+    """
+    await asyncio.sleep(0.2)
+    if action == "Save Session":
+        await trigger_session_save()
+    elif action == "Load Session":
+        await _ask_for_session_file()
+
+    # Cleanly reset the dropdown back to 'None' in the UI
+    await cl.ChatSettings(
+        [
+            cl.input_widget.Select(
+                id="Persona",
+                label="Navigator Persona",
+                values=["Lookup", "Grieve", "Audit", "Manage"],
+                initial=persona,
+            ),
+            cl.input_widget.Select(
+                id="SessionAction",
+                label="Session Actions",
+                values=["None", "Save Session", "Load Session"],
+                initial="None",
+            ),
+        ]
+    ).send()
+
+
 @cl.on_settings_update
 async def setup_agent(settings):
     persona = settings.get("Persona", "Lookup")
     cl.user_session.set("persona", persona)
     
     action = settings.get("SessionAction", "None")
-    if action == "Save Session":
-        await trigger_session_save()
-        # Reset state to 'None' so it doesn't trigger again on persona change
-        await cl.ChatSettings(
-            [
-                cl.input_widget.Select(
-                    id="Persona",
-                    label="Navigator Persona",
-                    values=["Lookup", "Grieve", "Audit", "Manage"],
-                    initial=persona,
-                ),
-                cl.input_widget.Select(
-                    id="SessionAction",
-                    label="Session Actions",
-                    values=["None", "Save Session", "Load Session"],
-                    initial="None",
-                ),
-            ]
-        ).send()
-    elif action == "Load Session":
-        asyncio.create_task(_ask_for_session_file())
-        # Reset state to 'None'
-        await cl.ChatSettings(
-            [
-                cl.input_widget.Select(
-                    id="Persona",
-                    label="Navigator Persona",
-                    values=["Lookup", "Grieve", "Audit", "Manage"],
-                    initial=persona,
-                ),
-                cl.input_widget.Select(
-                    id="SessionAction",
-                    label="Session Actions",
-                    values=["None", "Save Session", "Load Session"],
-                    initial="None",
-                ),
-            ]
-        ).send()
+    if action != "None":
+        asyncio.create_task(handle_session_action(action, persona))
 
 
 PERSONAS = ["Lookup", "Grieve", "Audit", "Manage"]
