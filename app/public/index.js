@@ -112,11 +112,30 @@
         container.insertBefore(wrapper, container.firstChild);
     }
 
+    /**
+     * Custom Forensic Footer
+     * Injects a clean, centered footer at the bottom of the viewport.
+     */
+    function setupFooter() {
+        if (document.getElementById('forensic-footer')) return;
+
+        const footer = document.createElement('div');
+        footer.id = 'forensic-footer';
+        footer.innerHTML = `
+            <a href="https://github.com/MinionTech/vexilon" target="_blank">Source Code</a>
+            <span class="footer-separator">•</span>
+            <a href="/public/docs/PRIVACY.md" target="_blank">Privacy Policy</a>
+        `;
+        
+        document.body.appendChild(footer);
+    }
+
     // Initialize MutationObserver for reactive UI elements
     const observer = new MutationObserver(() => {
         setupEnterToSubmit();
         sanitizeUI();
         setupSaveLoadButtons();
+        setupFooter();
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
@@ -125,4 +144,5 @@
     setupEnterToSubmit();
     sanitizeUI();
     setupSaveLoadButtons();
+    setupFooter();
 })();
