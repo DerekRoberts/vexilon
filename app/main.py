@@ -1120,6 +1120,11 @@ async def on_load_conversation(action: cl.Action):
 
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
+    # Internal sentinel: toolbar save button bypasses normal message flow
+    if (message.content or "").strip() == "__VEXILON_SAVE__":
+        await trigger_session_save()
+        return
+
     await _ensure_startup()
 
     # Intercept session file uploads natively
