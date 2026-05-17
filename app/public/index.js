@@ -81,20 +81,31 @@
     }
 
     function submitTechnicalCommand(command) {
-        const chatInput = document.getElementById('chat-input') || document.querySelector('textarea');
+        const chatInput = document.getElementById('chat-input') || document.querySelector('textarea, [contenteditable="true"]');
         if (!chatInput) {
             alert("System notice: Unable to find chat input text area. Please make sure the chat tab is active.");
             return;
         }
         
-        // React 16+ setter bypass hack
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
-        if (nativeInputValueSetter) {
-            nativeInputValueSetter.call(chatInput, command);
+        if (chatInput.tagName.toLowerCase() === 'textarea') {
+            // React 16+ setter bypass hack for textareas
+            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+            if (nativeInputValueSetter) {
+                nativeInputValueSetter.call(chatInput, command);
+            } else {
+                chatInput.value = command; // fallback
+            }
+            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+        } else if (chatInput.isContentEditable) {
+            // Bulletproof insert hack for modern React contenteditable frameworks
+            chatInput.focus();
+            document.execCommand('selectAll', false, null);
+            document.execCommand('insertText', false, command);
+            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
         } else {
-            chatInput.value = command; // fallback
+            chatInput.value = command;
+            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
-        chatInput.dispatchEvent(new Event('input', { bubbles: true }));
         
         setTimeout(() => {
             const sendBtn = document.getElementById('send-button') || 
