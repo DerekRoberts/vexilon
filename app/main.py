@@ -696,13 +696,7 @@ def startup(force_rebuild: bool = False):
 
     # Resolve dynamic build SHA (CI environment or local 'dev mode' default)
     build_sha = os.getenv("BUILD_SHA", "dev mode")
-            
-    try:
-        meta_path = Path(__file__).parent / "public" / "build_metadata.json"
-        meta_path.write_text(json.dumps({"sha": build_sha}), encoding="utf-8")
-        logger.info(f"[startup] Build Integrity: {build_sha}")
-    except Exception as e:
-        logger.warning(f"[startup] Failed to write build_metadata.json: {e}")
+    logger.info(f"[startup] Build Integrity: {build_sha}")
 
     _test_registry.load(TESTS_DIR)
     # Ensure cache directory is writable
@@ -1082,3 +1076,11 @@ async def on_message(message: cl.Message) -> None:
     history.append({"role": "assistant", "content": accumulated})
     cl.user_session.set("history", history)
     logger.info(f"[chat] Stream completed. Total length: {len(accumulated)}")
+
+
+# ─── Custom FastAPI Routes ───────────────────────────────────────────────────
+from chainlit.server import app as cl_app
+
+@cl_app.get("/public/build_metadata.json")
+def get_build_metadata():
+    return {"sha": os.getenv("BUILD_SHA", "dev mode")}
