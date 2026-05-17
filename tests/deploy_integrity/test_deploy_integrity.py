@@ -78,8 +78,3 @@ def test_hf_cache_security_lock():
     # Safe version: COPY --from=builder /app/hf_cache /app/hf_cache
     assert "--chown=1001:1001 /app/hf_cache" not in content, \
         "Security Breach: hf_cache MUST NOT be owned by the app user. Revert the chown to root."
-
-
-# Issue #276 (Enter-key capture-phase listener) was a Gradio-specific
-# workaround. After migrating to Chainlit (which handles Enter natively),
-# the regression guard is obsolete and has been removed.
