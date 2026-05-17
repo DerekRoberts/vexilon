@@ -1087,26 +1087,27 @@ async def on_load_conversation(action: cl.Action):
         await cl.Message(content=rate_msg, author="System").send()
         return
 
-    res = await cl.AskFileMessage(
-        content="Please drag and drop your `.md` session backup file here.",
-        accept=["text/markdown", ".md", ".MD"],
-        max_size_mb=2,
-        timeout=120
+    await cl.Message(
+        content="**Load Session:** Please drag and drop your `.md` backup file directly into the chat input below (or click the 📎 paperclip icon), then press Send.",
+        author="System"
     ).send()
-
-    if res:
-        try:
-            file = res[0]
-            with open(file.path, 'r', encoding='utf-8') as f:
-                file_content = f.read()
-            await trigger_session_load(file_content)
-        except Exception as e:
-            logger.error(f"[load] Failed to read uploaded session file: {e}")
-            await cl.Message(content="Failed to read the uploaded session file.", author="System").send()
 
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
     await _ensure_startup()
+
+    # Intercept session file uploads natively
+    if message.elements:
+        for element in message.elements:
+            if element.mime in ["text/markdown", "text/plain", "application/json", "application/octet-stream"] or element.name.lower().endswith((".md", ".json")):
+                try:
+                    with open(element.path, 'r', encoding='utf-8') as f:
+                        file_content = f.read()
+                    await trigger_session_load(file_content)
+                except Exception as e:
+                    logger.error(f"[load] Failed to read uploaded session file: {e}")
+                    await cl.Message(content="Failed to read the uploaded session file.", author="System").send()
+                return
 
     msg_str = (message.content or "").strip()
     if not msg_str:
