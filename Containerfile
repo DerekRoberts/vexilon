@@ -123,14 +123,14 @@ ENV PATH="/app/.venv/bin:$PATH" \
     CHAINLIT_FILES_DIR=/tmp/chainlit_files
 
 # Copy everything from functional_builder (includes venv, source code, index, config)
-# Ensure the entire /app directory is owned by user 1000 to prevent permission errors on runtime workspaces like .chainlit
-COPY --chown=1000:1000 --from=functional_builder /app /app
+# Ensure the entire /app directory is owned by the app user to prevent permission errors on runtime workspaces like .chainlit
+COPY --chown=app:app --from=functional_builder /app /app
 COPY --from=model_fetcher /model /model
 
 # Writable dirs: /tmp is world-writable already (sticky bit), Chainlit will
-# create /tmp/chainlit_files at startup. Ensure necessary directories exist.
-RUN mkdir -p /app/.pdf_cache /app/reports /hf_cache && \
-    chown -R 1000:1000 /app/.pdf_cache /app/reports /hf_cache
+# create /tmp/chainlit_files at startup. Ensure the Hugging Face cache directory exists.
+RUN mkdir -p /hf_cache && \
+    chown -R app:app /hf_cache
 
 USER 1000
 
