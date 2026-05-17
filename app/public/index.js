@@ -112,37 +112,11 @@
         container.insertBefore(wrapper, container.firstChild);
     }
 
-    /**
-     * Custom Forensic Footer
-     * Injects a clean, centered footer below the chat input box.
-     */
-    function setupFooter() {
-        if (document.getElementById('forensic-footer')) return;
-
-        // Find the input container by locating the composer textarea.
-        const textarea = document.querySelector('textarea');
-        if (!textarea) return;
-
-        const composer = textarea.closest('form') || textarea.parentElement;
-        if (!composer) return;
-
-        const footer = document.createElement('div');
-        footer.id = 'forensic-footer';
-        footer.innerHTML = `
-            <a href="https://github.com/MinionTech/vexilon" target="_blank">Source Code</a>
-            <span class="footer-separator">•</span>
-            <a href="/public/docs/PRIVACY.md" target="_blank">Privacy Policy</a>
-        `;
-        
-        composer.after(footer);
-    }
-
     // Initialize MutationObserver for reactive UI elements
     const observer = new MutationObserver(() => {
         setupEnterToSubmit();
         sanitizeUI();
         setupSaveLoadButtons();
-        setupFooter();
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
@@ -151,5 +125,4 @@
     setupEnterToSubmit();
     sanitizeUI();
     setupSaveLoadButtons();
-    setupFooter();
 })();

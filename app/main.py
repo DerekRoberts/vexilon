@@ -1081,7 +1081,7 @@ async def on_message(message: cl.Message) -> None:
 # ─── Custom FastAPI Routes ───────────────────────────────────────────────────
 from chainlit.server import app as cl_app
 
-@cl_app.get("/version")
+@cl_app.get("/api/version")
 def get_version():
     return {
         "version": AGNAV_VERSION,
