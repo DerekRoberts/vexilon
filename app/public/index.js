@@ -83,7 +83,11 @@
     function submitTechnicalCommand(command) {
         const chatInput = document.getElementById('chat-input') || document.querySelector('textarea, [contenteditable="true"]');
         if (!chatInput) {
-            alert("System notice: Unable to find chat input text area. Please make sure the chat tab is active.");
+            if (command.includes('save')) {
+                alert("System notice: There is no active conversation to save. Please start a session first (e.g., by clicking a Starter Query), then click Save.");
+            } else {
+                alert("System notice: Unable to inject session file from the Welcome screen. Please start a session first so the chat input becomes active, then click Load.");
+            }
             return;
         }
         
