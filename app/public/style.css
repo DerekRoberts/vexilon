@@ -121,11 +121,6 @@ body {
     background-color: #f1f3f4 !important;
 }
 
-/* Hide the native React-managed disclaimer entirely to prevent conflicts & flickering */
-div[role="article"] {
-    display: none !important;
-}
-
 /* 5. Custom Input-Anchored Footer Links */
 #vexilon-input-footer {
     display: flex !important;

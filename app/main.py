@@ -1046,19 +1046,12 @@ async def on_message(message: cl.Message) -> None:
                 if md_path:
                     pdf_path = md_path.with_suffix(".pdf")
                     download_path = pdf_path if pdf_path.exists() else md_path
-                    if download_path.suffix.lower() == ".pdf":
-                        elements.append(cl.Pdf(
-                            name=f"{source_name} (PDF)",
-                            path=str(download_path),
-                            display="inline",
-                        ))
-                    else:
-                        elements.append(cl.File(
-                            name=f"{source_name} (MD)",
-                            path=str(download_path),
-                            mime="text/markdown",
-                            display="side",
-                        ))
+                    elements.append(cl.File(
+                        name=f"{source_name} ({download_path.suffix.lstrip('.').upper()})",
+                        path=str(download_path),
+                        mime="application/pdf" if download_path.suffix.lower() == ".pdf" else "text/markdown",
+                        display="inline",
+                    ))
                 seen_sources.add(source_name)
         out.elements = elements
 
