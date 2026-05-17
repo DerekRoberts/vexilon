@@ -103,7 +103,7 @@ def apply_patches():
 
     # 6. Force Chainlit to use a writable directory for temporary files
     import chainlit.config
-    chainlit.config.FILES_DIRECTORY = Path("/app/.pdf_cache/.files").absolute()
+    chainlit.config.FILES_DIRECTORY = Path(".pdf_cache/.files").absolute()
     try:
         chainlit.config.FILES_DIRECTORY.mkdir(exist_ok=True, parents=True)
     except Exception as e:
