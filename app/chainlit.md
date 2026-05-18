@@ -12,15 +12,7 @@ The following reference documents form the primary authority for my analytical r
 | BC Labour Relations Code | [PDF](/public/docs/BC_Labour_Relations_Code.pdf) |
 | BC OHS Regulation | [PDF](/public/docs/BC_OHS_Regulation.pdf) |
 | BC Social Media Guidance for Public Service Employees | [PDF](/public/docs/BC_Social_Media_Guidance_for_Public_Service_Employees.pdf) |
-| BC Workers Compensation Act - Introduction | [MD](/public/docs/labour_law/02_statutory/BC_Workers_Compensation_Act_-_Introduction.md) |
-| BC Workers Compensation Act - Part 01 | [MD](/public/docs/labour_law/02_statutory/BC_Workers_Compensation_Act_-_Part_01.md) |
-| BC Workers Compensation Act - Part 02 | [MD](/public/docs/labour_law/02_statutory/BC_Workers_Compensation_Act_-_Part_02.md) |
-| BC Workers Compensation Act - Part 03 | [MD](/public/docs/labour_law/02_statutory/BC_Workers_Compensation_Act_-_Part_03.md) |
-| BC Workers Compensation Act - Part 04 | [MD](/public/docs/labour_law/02_statutory/BC_Workers_Compensation_Act_-_Part_04.md) |
-| BC Workers Compensation Act - Part 05 | [MD](/public/docs/labour_law/02_statutory/BC_Workers_Compensation_Act_-_Part_05.md) |
-| BC Workers Compensation Act - Part 06 | [MD](/public/docs/labour_law/02_statutory/BC_Workers_Compensation_Act_-_Part_06.md) |
-| BC Workers Compensation Act - Part 07 | [MD](/public/docs/labour_law/02_statutory/BC_Workers_Compensation_Act_-_Part_07.md) |
-| BC Workers Compensation Act - Part 08 | [MD](/public/docs/labour_law/02_statutory/BC_Workers_Compensation_Act_-_Part_08.md) |
+| BC Workers Compensation Act | [PDF](/public/docs/BC_Workers_Compensation_Act.pdf) |
 | BCGEU 19th Main Agreement | [PDF](/public/docs/BCGEU_19th_Main_Agreement.pdf) |
 | BCGEU Steward Resources | [PDF](/public/docs/BCGEU_Steward_Resources.pdf) |
 | Gov BC Standards of Conduct | [PDF](/public/docs/Gov_BC_Standards_of_Conduct.pdf) |
