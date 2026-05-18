@@ -40,8 +40,9 @@
             if (data.version === "Dev mode") {
                 buildSha = "Dev mode";
             } else {
-                const shaShort = data.sha ? data.sha.substring(0, 7) : "";
-                buildSha = `${data.version}${shaShort ? ` (${shaShort})` : ""}`;
+                const shaShort = (data.sha && data.sha !== "dev mode") ? data.sha.substring(0, 7) : "";
+                const shaSuffix = data.sha === "dev mode" ? " (dev mode)" : (shaShort ? ` (${shaShort})` : "");
+                buildSha = `${data.version}${shaSuffix}`;
             }
             replaceBuildSha();
         })
