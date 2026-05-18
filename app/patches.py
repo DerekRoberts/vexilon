@@ -114,7 +114,7 @@ def apply_patches():
     try:
         import chainlit.server
         chainlit.server.FILES_DIRECTORY = new_files_dir
-    except ImportError:
+    except (ImportError, AttributeError):
         pass
 
     try:
