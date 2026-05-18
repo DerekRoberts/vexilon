@@ -72,33 +72,36 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build and Cache (Unit Tests)
-        uses: docker/bake-action@v7
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
         with:
-          load: true
-          files: compose.yml
-          targets: test-unit
-          set: |
-            *.cache-from=type=gha
-            *.cache-from=type=registry,ref=ghcr.io/miniontech/vexilon/agnav:buildcache
-            *.cache-to=type=gha,mode=max
+          enable-cache: true
+          cache-dependency-glob: "app/uv.lock"
 
-      - name: Run Containerized Unit Tests
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install Dependencies
+        run: |
+          cd app
+          uv sync --frozen
+
+      - name: Run Unit & Deploy Integrity Tests
+        env:
+          VERIFY_ENABLED: "true"
         run: |
           mkdir -p reports
-          docker compose up --abort-on-container-exit test-unit
-
-      - name: Dump Logs on Failure
-        if: failure()
-        run: docker compose logs test-unit
+          cd app
+          uv run python -m pytest tests/test_*.py ../tests/deploy_integrity/test_*.py -v \
+            --junitxml=../reports/junit.xml \
+            --cov=indexing --cov=main --cov-report=xml:../reports/coverage.xml
 
       - name: Upload Coverage
         uses: actions/upload-artifact@v7
@@ -130,7 +133,6 @@ jobs:
           set: |
             *.cache-from=type=gha
             *.cache-from=type=registry,ref=ghcr.io/miniontech/vexilon/agnav:buildcache
-            *.cache-to=type=gha,mode=max
 
       - name: Validate Cache Manifest
         run: docker compose up test-cache
@@ -164,7 +166,6 @@ jobs:
           set: |
             *.cache-from=type=gha
             *.cache-from=type=registry,ref=ghcr.io/miniontech/vexilon/agnav:buildcache
-            *.cache-to=type=gha,mode=max
 
       - name: Run Integration Tests
         run: docker compose up test-integration-model
@@ -200,7 +201,6 @@ jobs:
           set: |
             *.cache-from=type=gha
             *.cache-from=type=registry,ref=ghcr.io/miniontech/vexilon/agnav:buildcache
-            *.cache-to=type=gha,mode=max
 
       - name: Run Integration Tests (App)
         run: docker compose up test-integration-app
@@ -242,7 +242,6 @@ jobs:
           set: |
             *.cache-from=type=gha
             *.cache-from=type=registry,ref=ghcr.io/miniontech/vexilon/agnav:buildcache
-            *.cache-to=type=gha,mode=max
 
       - name: Run E2E Tests
         run: docker compose up test-everything

@@ -29,9 +29,9 @@ HEALTHCHECK --interval=30s --timeout=15s --start-period=120s --retries=10 \
 # ─── Stage 1: Model Fetcher ──────────────────────────────────────────────────
 # Downloads heavy embedding model weights separately to leverage build caches.
 FROM base AS model_fetcher
-RUN --mount=type=cache,target=/root/.cache/hf_v4 \
-    uv pip install --system --extra-index-url https://download.pytorch.org/whl/cpu torch sentence-transformers && \
-    python -c "from sentence_transformers import SentenceTransformer; model = SentenceTransformer('BAAI/bge-small-en-v1.5', cache_folder='/root/.cache/hf_v4'); model.save('/model')" && \
+RUN --mount=type=cache,target=/root/.cache/huggingface \
+    pip install --no-cache-dir huggingface_hub && \
+    python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='BAAI/bge-small-en-v1.5', local_dir='/model', ignore_patterns=['*.msgpack', '*.h5', '*.ot'])" && \
     ls -l /model/modules.json
 
 # ─── Stage 2: Unified Developer & Testing Builder ────────────────────────────
