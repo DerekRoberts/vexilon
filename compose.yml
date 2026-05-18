@@ -52,7 +52,9 @@ x-dev-volumes: &dev-volumes
   - ./app/chainlit_en-US.md:/app/chainlit_en-US.md:ro
   - ./app/public/index.js:/app/public/index.js:ro,z
   - ./app/public/style.css:/app/public/style.css:ro,z
-  - ./app/prompts:/app/prompts:ro
+  - ./app/prompts:/app/prompts:ro,z
+  - ./PRIVACY.md:/app/public/docs/PRIVACY.md:ro,z
+  - ./app/data/forms:/app/public/docs/forms:ro,z
   - ./reports:/app/reports:z
   - ./.pytest_cache:/app/.pytest_cache:z
 
