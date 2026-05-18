@@ -629,10 +629,8 @@ async def status_step(name: str):
                 pass
         yield DummyStep()
 
-async def condense_query(message: str, history: list[dict]) -> str:
-    """Turn the conversation history and new message into a standalone search query."""
-    if not history: return message
-    
+def _format_history(history: list[dict]) -> str:
+    """Format conversation history list into a standardized string for LLM prompts."""
     history_text = ""
     for turn in history[-5:]:
         role = (turn["role"] if isinstance(turn, dict) else turn.role).capitalize()
@@ -640,7 +638,17 @@ async def condense_query(message: str, history: list[dict]) -> str:
         if isinstance(content, list):
             content = "".join([p.get("text", "") if isinstance(p, dict) else str(p) for p in content])
         history_text += f"{role}: {content}\n"
+    return history_text
+
+def _should_use_perspectives(query: str) -> bool:
+    """Determine if a query is complex enough to benefit from multi-perspective search angles."""
+    return len(query.split()) > 10 or os.getenv("AGNAV_FORCE_PERSPECTIVES") == "true"
+
+async def condense_query(message: str, history: list[dict]) -> str:
+    """Turn the conversation history and new message into a standalone search query."""
+    if not history: return message
     
+    history_text = _format_history(history)
     prompt = f"CONVERSATION HISTORY:\n{history_text}\nUSER MESSAGE: {message}\n\nTask: Condense into a standalone search query."
     try:
         resp_text = await unified_chat_create(
@@ -704,14 +712,7 @@ async def condense_and_generate_perspectives(message: str, history: list[dict]) 
     if not history:
         return message, [message]
     
-    history_text = ""
-    for turn in history[-5:]:
-        role = (turn["role"] if isinstance(turn, dict) else turn.role).capitalize()
-        content = turn["content"] if isinstance(turn, dict) else turn.content
-        if isinstance(content, list):
-            content = "".join([p.get("text", "") if isinstance(p, dict) else str(p) for p in content])
-        history_text += f"{role}: {content}\n"
-    
+    history_text = _format_history(history)
     prompt = (
         "You are an expert AI optimizer for RAG database searches.\n\n"
         "CONVERSATION HISTORY:\n"
@@ -739,6 +740,8 @@ async def condense_and_generate_perspectives(message: str, history: list[dict]) 
         match = re.search(r"(\{.*\})", resp_text, re.DOTALL)
         if match:
             parsed = json.loads(match.group(1))
+            if not isinstance(parsed, dict):
+                raise ValueError("LLM response is not a JSON object")
             condensed = parsed.get("condensed_query", "").strip()
             perspectives = parsed.get("perspectives", [])
             
@@ -766,7 +769,7 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
     if IS_DEV or not history:
         condensed = message
         # Issue #361: Heuristic for complexity - Use perspectives for long/complex queries
-        if len(condensed.split()) > 10 or os.getenv("AGNAV_FORCE_PERSPECTIVES") == "true":
+        if _should_use_perspectives(condensed):
             async with status_step("Expanding search perspectives...") as step:
                 queries = await generate_perspective_queries(condensed, history)
                 step.output = "Generated search perspectives:\n" + "\n".join(f"- {q}" for q in queries)
@@ -777,7 +780,7 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
         async with status_step("Analyzing conversation context & search perspectives...") as step:
             condensed, queries_all = await condense_and_generate_perspectives(message, history)
             # Apply complexity heuristic: if condensed is <= 10 and FORCE is not set, we don't need perspectives
-            if len(condensed.split()) > 10 or os.getenv("AGNAV_FORCE_PERSPECTIVES") == "true":
+            if _should_use_perspectives(condensed):
                 queries = queries_all
                 step.output = (
                     f"Condensed query: \"{condensed}\"\n"

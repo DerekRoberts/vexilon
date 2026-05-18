@@ -93,3 +93,20 @@ async def test_status_step_dummy_fallback():
         await step.remove()
         
     assert step.output == "Setting dummy step output"
+
+@pytest.mark.asyncio
+async def test_condense_and_generate_perspectives_non_dict_json():
+    """Verify that if LLM returns valid JSON but it is a list rather than a dict, it raises a ValueError and falls back gracefully."""
+    message = "Any updates?"
+    history = [{"role": "user", "content": "Tell me about grievances."}]
+    
+    mock_client = MagicMock()
+    mock_completion = MagicMock()
+    mock_completion.choices = [MagicMock(message=MagicMock(content='["some", "random", "list"]'))]
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_completion)
+    
+    with patch("main.get_llm_client", return_value=mock_client):
+        condensed, perspectives = await app.condense_and_generate_perspectives(message, history)
+        
+    assert condensed == message
+    assert perspectives == [message]
