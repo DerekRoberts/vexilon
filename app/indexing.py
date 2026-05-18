@@ -5,6 +5,7 @@ import hashlib
 import fitz
 import logging
 from pathlib import Path
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,9 @@ CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 512))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 100))
 EMBED_DIM = int(os.getenv("EMBED_DIM", "384"))
 SIMILARITY_TOP_K = int(os.getenv("SIMILARITY_TOP_K", 40))
+# Document score boosting weights
+TIER1_BOOST = float(os.getenv("AGNAV_TIER1_BOOST", "1.2"))
+TIER3_BOOST = float(os.getenv("AGNAV_TIER3_BOOST", "0.8"))
 
 
 _embed_model: Any = None
@@ -121,7 +125,7 @@ def _is_toc_or_index_page(page_text: str) -> bool:
         return True
     return False
 
-def chunk_text(full_text: str, token_data: list[tuple[int, int, int, str]], source_name: str) -> list[dict]:
+def chunk_text(full_text: str, token_data: list[tuple[int, int, int, str]], source_name: str, path: str = "") -> list[dict]:
     chunks = []
     if not token_data:
         return chunks
@@ -140,6 +144,7 @@ def chunk_text(full_text: str, token_data: list[tuple[int, int, int, str]], sour
             "source": source_name,
             "header": header,
             "chunk_index": idx,
+            "path": path,
         })
         idx += 1
         start += step
@@ -206,7 +211,11 @@ def load_md_chunks(md_path: Path) -> list[dict]:
             
         char_offset += len(line) + 1
 
-    return chunk_text(filtered_content, token_metadata, source_name)
+    try:
+        rel_path = str(md_path.relative_to(DATA_DIR))
+    except ValueError:
+        rel_path = md_path.name
+    return chunk_text(filtered_content, token_metadata, source_name, path=rel_path)
 
 def load_pdf_chunks(pdf_path: Path, strict: bool = False) -> list[dict]:
     source_name = _get_source_name(pdf_path.stem)
@@ -247,7 +256,11 @@ def load_pdf_chunks(pdf_path: Path, strict: bool = False) -> list[dict]:
 
             char_offset += len(page_text) + 1
             
-        return chunk_text(full_text, token_metadata, source_name)
+        try:
+            rel_path = str(pdf_path.relative_to(DATA_DIR))
+        except ValueError:
+            rel_path = pdf_path.name
+        return chunk_text(full_text, token_metadata, source_name, path=rel_path)
     except Exception as e:
         if strict:
             raise FileIntegrityError(f"Critical error parsing {pdf_path}: {e}")
@@ -262,21 +275,66 @@ def embed_texts(texts: list[str]) -> "np.ndarray":
     embeddings = model.encode(texts, show_progress_bar=False, convert_to_numpy=True)
     return embeddings.astype(np.float32)
 
+@lru_cache(maxsize=128)
+def get_document_tier_weight(source_name: str, path: str = "") -> float:
+    """
+    Determine the retrieval boost weight for a document based on its tier.
+    - Tier 1: 19th Main Agreement & Standards of Conduct (default 1.2)
+    - Tier 3: Statutory and general secondary resources (default 0.8)
+    - Tier 2: Core agreements, jurisprudence, forms, etc. (default 1.0)
+    """
+    # Normalise input paths and source names for robust matching
+    path_lower = path.lower().replace("\\", "/")
+    source_lower = source_name.lower()
+
+    # Tier 1 checks:
+    # 1. Gov BC Standards of Conduct (either via relative path or source name)
+    # 2. BCGEU 19th Main Agreement (either via relative path or source name)
+    is_standards_of_conduct = (
+        "standards_of_conduct" in path_lower 
+        or "standards of conduct" in source_lower
+    )
+    is_19th_agreement = (
+        "19th_main_agreement" in path_lower 
+        or "19th main agreement" in source_lower
+    )
+
+    if is_standards_of_conduct or is_19th_agreement:
+        return TIER1_BOOST
+
+    # Tier 3 checks:
+    # 1. Statutory regulations: '02_statutory/' folder or source names
+    # 2. Other general resources: '03_resources/' folder except Standards of Conduct
+    is_statutory = (
+        "02_statutory" in path_lower 
+        or "statutory" in path_lower
+        or "ohs_regulation" in path_lower
+        or "workers_compensation" in path_lower
+    )
+    is_general_resource = (
+        "03_resources" in path_lower
+        and not is_standards_of_conduct
+    )
+
+    if is_statutory or is_general_resource:
+        return TIER3_BOOST
+
+    # Tier 2: Default
+    return 1.0
+
 def search_index(index: "faiss.IndexFlatIP", chunks: list[dict], query: str, top_k: int | None = None) -> list[dict]:
-    import faiss
     if top_k is None:
         top_k = SIMILARITY_TOP_K
     
-    query_vec = embed_texts([query])
-
-    faiss.normalize_L2(query_vec)
-    _scores, indices = index.search(query_vec, top_k)
-    return [chunks[i] for i in indices[0] if i < len(chunks)]
+    # Reuse the batch-based search implementation with score weighting
+    results = search_index_batch(index, chunks, [query], [top_k])
+    return results[0] if results else []
 
 def search_index_batch(index: "faiss.IndexFlatIP", chunks: list[dict], queries: list[str], top_ks: list[int]) -> list[list[dict]]:
     """
     Search multiple queries in a single embedding pass to reduce CPU overhead.
     Uses FAISS's native batch search for maximum efficiency (#323).
+    Applies document-tier score boosting to retrieve context preferentially.
     """
     import faiss
     import numpy as np
@@ -288,15 +346,46 @@ def search_index_batch(index: "faiss.IndexFlatIP", chunks: list[dict], queries: 
     query_vecs = embed_texts(queries)
     faiss.normalize_L2(query_vecs)
     
-    # 2. Batch Search (FAISS native multi-vector search)
+    # 2. Determine a larger candidate pool size for re-ranking
+    # We retrieve more candidates from FAISS so that top-tier matches 
+    # can bubble up through re-ranking.
     max_k = max(top_ks)
-    _scores, all_indices = index.search(query_vecs, max_k)
+    candidate_k = max(max_k * 3, 50)
+    # Ensure candidate_k does not exceed total indexed chunks
+    candidate_k = min(candidate_k, len(chunks))
+    if candidate_k <= 0:
+        return [[] for _ in queries]
+    
+    # 3. Batch Search (FAISS native multi-vector search)
+    scores, all_indices = index.search(query_vecs, candidate_k)
     
     results = []
     for i, indices in enumerate(all_indices):
-        # Truncate to the specific top_k for this query perspective
+        query_scores = scores[i]
         k = top_ks[i]
-        results.append([chunks[idx] for idx in indices[:k] if 0 <= idx < len(chunks)])
+        
+        # Build candidate chunks with original and weighted scores
+        candidates = []
+        for idx_in_search, chunk_idx in enumerate(indices):
+            if 0 <= chunk_idx < len(chunks):
+                chunk = chunks[chunk_idx]
+                orig_score = float(query_scores[idx_in_search])
+                
+                # Determine weight based on tier
+                weight = get_document_tier_weight(
+                    chunk.get("source", ""),
+                    chunk.get("path", "")
+                )
+                weighted_score = orig_score * weight
+                
+                candidates.append((chunk, weighted_score))
+        
+        # Sort candidates by weighted score in descending order
+        candidates.sort(key=lambda item: item[1], reverse=True)
+        
+        # Extract the top-k chunks
+        top_k_chunks = [item[0] for item in candidates[:k]]
+        results.append(top_k_chunks)
         
     return results
 
@@ -346,6 +435,7 @@ def build_index_from_sources(force: bool = False) -> tuple[Any, Any] | tuple[Non
             "chunk_size": CHUNK_SIZE,
             "chunk_overlap": CHUNK_OVERLAP,
             "embed_model": EMBED_MODEL,
+            "tiering_version": "v1",
         },
         "files": {}
     }
