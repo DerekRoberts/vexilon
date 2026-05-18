@@ -67,6 +67,7 @@ logger = logging.getLogger(__name__)
 _chunks: list[dict] = []
 _index: "faiss.IndexFlatIP | None" = None
 INTEGRITY_WARNING: str | None = None
+_background_tasks: set[asyncio.Task] = set()
 
 AGNAV_VERSION = os.getenv("AGNAV_VERSION", "Dev mode")
 IS_DEV = AGNAV_VERSION == "Dev mode"
@@ -1102,7 +1103,9 @@ async def on_load_conversation(action: cl.Action):
         await cl.Message(content=rate_msg, author="System").send()
         return
 
-    asyncio.create_task(_ask_for_session_file())
+    task = asyncio.create_task(_ask_for_session_file())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
@@ -1208,12 +1211,17 @@ async def on_message(message: cl.Message) -> None:
     # Async Verification pass as per SPEC.md Section 9
     if VERIFY_ENABLED:
         async def verify_and_update():
-            report = await verify_response(accumulated, context)
-            if report and "ALL_CLAIMS_VERIFIED" not in report:
-                out.content += f"\n\n---\n**Verification Note:**\n{report}"
-                await out.update()
+            try:
+                report = await verify_response(accumulated, context)
+                if report and "ALL_CLAIMS_VERIFIED" not in report:
+                    out.content += f"\n\n---\n**Verification Note:**\n{report}"
+                    await out.update()
+            except Exception as e:
+                logger.error(f"[chat] Background verification task failed: {e}", exc_info=True)
         
-        cl.run_task(verify_and_update())
+        task = asyncio.create_task(verify_and_update())
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
 
     history.append({"role": "user", "content": sanitized})
     history.append({"role": "assistant", "content": accumulated})
