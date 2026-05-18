@@ -32,7 +32,7 @@ x-common-build: &common-build
 
 x-build-dev: &build-dev
   <<: *common-build
-  target: functional_builder
+  target: builder
 
 x-build-staging: &build-staging
   <<: *common-build
@@ -163,10 +163,8 @@ services:
   test-unit:
     container_name: vexilon-test-unit
     <<: *service-defaults
-    image: vexilon:test-unit
-    build:
-      <<: *common-build
-      target: test_builder
+    image: vexilon:dev
+    build: *build-dev
     environment: *test-env
     # Shared healthcheck not needed for one-off test runners
     command: >
@@ -178,10 +176,8 @@ services:
   test-deploy-integrity:
     container_name: vexilon-test-deploy-integrity
     <<: *service-defaults
-    image: vexilon:test-unit
-    build:
-      <<: *common-build
-      target: test_builder
+    image: vexilon:dev
+    build: *build-dev
     environment: *test-env
     volumes:
       - ./Containerfile:/Containerfile:ro

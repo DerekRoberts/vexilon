@@ -1,47 +1,43 @@
-# ─── Stage 0: Base ────────────────────────────────────────────────────────────
+# ─── Stage 0: Base System & Package Manager ───────────────────────────────────
 FROM python:3.14-slim AS base
 
-# Silence Hugging Face nag messages globally
+# System paths, Hugging Face configurations, and environment variables
 ENV HF_HOME=/hf_cache \
     EMBED_MODEL=/model \
-    CHAINLIT_FILES_DIR=/tmp/chainlit_files \
-    UV_PROJECT_ENVIRONMENT=/venv \
-    PATH="/venv/bin:$PATH"
+    CHAINLIT_FILES_DIR=/tmp/chainlit_files
 
-# Install common runtime dependencies
+# Install basic runtime libraries and extraction utilities
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     libjpeg62-turbo \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-privileged user once (UID 1000 is standard for Hugging Face Spaces)
+# Extract and install uv (in sync with pyproject.toml Renovate tracking)
+COPY app/pyproject.toml /tmp/pyproject.toml
+RUN pip install --no-cache-dir uv==$(grep -oP 'uv==\K[\d.]+' /tmp/pyproject.toml) && \
+    rm /tmp/pyproject.toml
+
+# Create unprivileged container user once
 RUN useradd --uid 1000 --create-home --shell /sbin/nologin app
 WORKDIR /app
 
-# Shared Runtime Configuration
 EXPOSE 7860
 HEALTHCHECK --interval=30s --timeout=15s --start-period=120s --retries=10 \
   CMD curl -f http://localhost:7860/ || exit 1
 
 # ─── Stage 1: Model Fetcher ──────────────────────────────────────────────────
+# Downloads heavy embedding model weights separately to leverage build caches.
 FROM base AS model_fetcher
-
-# Extract uv version from app/pyproject.toml to stay in sync with Renovate
-COPY app/pyproject.toml .
-RUN pip install --no-cache-dir uv==$(grep -oP 'uv==\K[\d.]+' pyproject.toml)
-
-RUN uv pip install --system --extra-index-url https://download.pytorch.org/whl/cpu torch sentence-transformers
 RUN --mount=type=cache,target=/root/.cache/hf_v4 \
+    uv pip install --system --extra-index-url https://download.pytorch.org/whl/cpu torch sentence-transformers && \
     python -c "from sentence_transformers import SentenceTransformer; model = SentenceTransformer('BAAI/bge-small-en-v1.5', cache_folder='/root/.cache/hf_v4'); model.save('/model')" && \
     ls -l /model/modules.json
 
-# ─── Stage 2: Builder (Dependencies, Indexing, and Source) ────────────────────
+# ─── Stage 2: Unified Developer & Testing Builder ────────────────────────────
+# The primary local build target. Contains build headers, full dev/test environments,
+# and compiles the pre-computed FAISS RAG index.
 FROM base AS builder
-
-# Extract uv version from app/pyproject.toml
-COPY app/pyproject.toml .
-RUN pip install --no-cache-dir uv==$(grep -oP 'uv==\K[\d.]+' pyproject.toml)
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -49,96 +45,62 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies (Cached unless uv.lock changes)
+# Build isolated Production and Development virtual environments
 COPY app/pyproject.toml app/uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    HF_HUB_OFFLINE=1 UV_LINK_MODE=copy uv sync --frozen --no-dev --no-install-project
+    UV_PROJECT_ENVIRONMENT=/venv uv sync --frozen --no-dev --no-install-project && \
+    UV_PROJECT_ENVIRONMENT=/venv-dev uv sync --frozen --no-install-project
 
-# ─── Stage 2.1: Test Builder (Unit Tests - Lightweight) ──────────────────────
-FROM builder AS test_builder
-COPY --from=model_fetcher /model /model
-# Layer dev dependencies on top of the production venv
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project
+# Inherit dev environment path for dev/test container runs
+ENV PATH="/venv-dev/bin:$PATH" \
+    UV_PROJECT_ENVIRONMENT=/venv-dev
 
-COPY app/ ./
-COPY app/data/ ./public/docs/
-
-# Prepare directories for testing and ensure permissions
-RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache && \
-    chown -R 1000:1000 /app/reports /app/.pytest_cache /hf_cache
-
-# ─── Stage 2.2: Indexed Builder (Production Indexing) ────────────────────────
-FROM builder AS indexed_builder
-
-# Model and FAISS Index (Cached unless data/ or scripts change)
+# Compile RAG index (Cached unless data/ or indexing logic changes)
 COPY --from=model_fetcher /model /model
 COPY app/data/ ./data/
 COPY app/indexing.py ./
 COPY app/scripts/build_index.py ./scripts/
-
 RUN --mount=type=cache,target=/app/.pdf_cache_mount \
     mkdir -p /app/.pdf_cache && \
     cp -r /app/.pdf_cache_mount/* /app/.pdf_cache/ 2>/dev/null || true && \
     TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=1 python scripts/build_index.py && \
     cp -r /app/.pdf_cache/* /app/.pdf_cache_mount/ 2>/dev/null || true
 
-# (Source code will be copied in leaf stages to maximize cache hits)
-
-# ─── Stage 2.5: Functional Builder (Dev/Test Source) ──────────────────────────
-FROM indexed_builder AS functional_builder
-
-# Layer dev dependencies on top of the production venv (Cached unless uv.lock changes)
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project
-
-# Copy source files in optimal cache order:
-# 1. Static files first (least frequent changes)
-# 2. Config files next
-# 3. Application code last (most frequent changes)
+# Copy rest of the application files in optimal cache order
 COPY app/.chainlit/ ./.chainlit/
 COPY app/public/ ./public/
 COPY app/chainlit.md app/chainlit_en-US.md ./
 COPY app/data/ ./public/docs/
-
-# Then source code (code changes often; trigger only code rebuilds)
 COPY app/main.py ./
-COPY app/indexing.py ./
 COPY app/patches.py ./
 COPY app/conftest.py ./
 COPY app/prompts/ ./prompts/
 COPY app/scripts/ ./scripts/
 COPY app/tests/ ./tests/
 
-# Prepare directories for testing and Chainlit runtime, ensure permissions.
-# CHAINLIT_FILES_DIR points at /tmp (set in runner stage ENV) so we don't
-# need to create /app/.files here. Keep /app/reports and /app/.pytest_cache
-# writable for tests; /hf_cache for HF model cache.
+# Prepare directories for local testing and Chainlit runtime with non-root ownership
 RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache /app/.files /app/.pdf_cache && \
     chown -R 1000:1000 /app/reports /app/.pytest_cache /hf_cache /app/.files /app/.pdf_cache /app/.chainlit
 
-
-# ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
+# ─── Stage 3: Minimal, Hardened Production Runner ─────────────────────────────
+# The clean, locked-down image compiled for production deployments.
 FROM base AS runner
 
-ENV CHAINLIT_FILES_DIR=/tmp/chainlit_files
+ENV CHAINLIT_FILES_DIR=/tmp/chainlit_files \
+    PATH="/venv/bin:$PATH" \
+    UV_PROJECT_ENVIRONMENT=/venv
 
-# Copy everything from functional_builder (includes venv, source code, index, config)
-# Ensure the entire /app and /venv directories are owned by the app user to prevent permission errors
-COPY --chown=app:app --from=functional_builder /venv /venv
-COPY --chown=app:app --from=functional_builder /app /app
+# Copy pure production dependencies and built app (with compiled FAISS index)
+COPY --chown=app:app --from=builder /venv /venv
+COPY --chown=app:app --from=builder /app /app
 COPY --from=model_fetcher /model /model
 
-# Writable dirs: /tmp is world-writable already (sticky bit), Chainlit will
-# create /tmp/chainlit_files at startup. Ensure the Hugging Face cache directory exists.
-RUN mkdir -p /hf_cache && \
-    chown -R app:app /hf_cache
-
+RUN mkdir -p /hf_cache && chown -R app:app /hf_cache
 USER 1000
 
 ARG VERSION="Dev mode"
 ARG REPO_URL="https://github.com/MinionTech/vexilon"
-ENV AGNAV_VERSION=$VERSION
-ENV AGNAV_REPO_URL=$REPO_URL
+ENV AGNAV_VERSION=$VERSION \
+    AGNAV_REPO_URL=$REPO_URL
 
 CMD ["sh", "-c", "TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=0 chainlit run main.py --host 0.0.0.0 --port 7860 --headless"]
