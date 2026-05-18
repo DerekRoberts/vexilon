@@ -1300,9 +1300,21 @@ async def on_message(message: cl.Message) -> None:
                 seen_sources.add(source_name)
         out.elements = elements
 
+        first_token_received = False
         async for chunk in rag_review_stream(sanitized, history, persona, context=context, queries=queries):
             if not chunk:
                 continue
+            if not first_token_received:
+                first_token_received = True
+                # Clean up intermediate steps immediately as streaming begins to keep scrolling smooth!
+                steps_to_remove = cl.user_session.get("steps_to_remove") or []
+                for s in steps_to_remove:
+                    try:
+                        await s.remove()
+                    except Exception as e:
+                        logger.error(f"[chat] Failed to remove step: {e}")
+                cl.user_session.set("steps_to_remove", [])
+            
             accumulated += chunk
             await out.stream_token(chunk)
     except Exception as exc:  # defensive — rag_review_stream already catches
