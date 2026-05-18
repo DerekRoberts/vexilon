@@ -115,7 +115,8 @@ COPY app/tests/ ./tests/
 # need to create /app/.files here. Keep /app/reports and /app/.pytest_cache
 # writable for tests; /hf_cache for HF model cache.
 RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache /app/.files /app/.pdf_cache && \
-    chown -R 1000:1000 /app/reports /app/.pytest_cache /hf_cache /app/.files /app/.pdf_cache
+    chown -R 1000:1000 /app/reports /app/.pytest_cache /hf_cache /app/.files /app/.pdf_cache /app/.chainlit
+
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
 FROM base AS runner
