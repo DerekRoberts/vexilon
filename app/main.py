@@ -850,7 +850,6 @@ EXAMPLES = [
     "What are my rights as a steward during an investigation meeting?",
     "What is the nexus test for establishing a link in off-duty conduct cases?",
     "Show me the Harassment Threshold test.",
-    "Does my employer have a social media policy?",
     "I need to file a grievance for a member. What steps should I take?",
 ]
 @cl.set_chat_profiles
