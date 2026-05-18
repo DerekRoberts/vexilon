@@ -637,6 +637,16 @@ async def status_step(name: str, remove_on_exit: bool = False):
                 pass
         yield DummyStep()
 
+async def clear_active_status_steps() -> None:
+    """Wipe any registered intermediate UI steps to keep chat history clean and autoscroll smooth."""
+    steps_to_remove = cl.user_session.get("steps_to_remove") or []
+    for s in steps_to_remove:
+        try:
+            await s.remove()
+        except Exception as e:
+            logger.error(f"[chat] Failed to remove step: {e}")
+    cl.user_session.set("steps_to_remove", [])
+
 def _format_history(history: list[dict]) -> str:
     """Format conversation history list into a standardized string for LLM prompts."""
     history_text = ""
@@ -752,15 +762,18 @@ async def condense_and_generate_perspectives(message: str, history: list[dict]) 
                 raise ValueError("LLM response is not a JSON object")
             condensed = parsed.get("condensed_query", "").strip()
             perspectives = parsed.get("perspectives", [])
+            if isinstance(perspectives, str):
+                perspectives = [perspectives]
             
             if not condensed:
                 condensed = message
             
             # Sanitize perspectives list
             cleaned_perspectives = []
-            for p in perspectives:
-                if isinstance(p, str) and p.strip():
-                    cleaned_perspectives.append(p.strip())
+            if isinstance(perspectives, list):
+                for p in perspectives:
+                    if isinstance(p, str) and p.strip():
+                        cleaned_perspectives.append(p.strip())
             
             if not cleaned_perspectives:
                 cleaned_perspectives = [condensed]
@@ -1307,13 +1320,7 @@ async def on_message(message: cl.Message) -> None:
             if not first_token_received:
                 first_token_received = True
                 # Clean up intermediate steps immediately as streaming begins to keep scrolling smooth!
-                steps_to_remove = cl.user_session.get("steps_to_remove") or []
-                for s in steps_to_remove:
-                    try:
-                        await s.remove()
-                    except Exception as e:
-                        logger.error(f"[chat] Failed to remove step: {e}")
-                cl.user_session.set("steps_to_remove", [])
+                await clear_active_status_steps()
             
             accumulated += chunk
             await out.stream_token(chunk)
@@ -1353,13 +1360,7 @@ async def on_message(message: cl.Message) -> None:
     cl.user_session.set("last_assistant_message", out)
 
     # Clean up intermediate steps to keep chat history pristine
-    steps_to_remove = cl.user_session.get("steps_to_remove") or []
-    for s in steps_to_remove:
-        try:
-            await s.remove()
-        except Exception as e:
-            logger.error(f"[chat] Failed to remove step: {e}")
-    cl.user_session.set("steps_to_remove", [])
+    await clear_active_status_steps()
 
     logger.info(f"[chat] Stream completed. Total length: {len(accumulated)}")
 
