@@ -1,13 +1,8 @@
-**Privacy Policy**: [View Policy](https://github.com/MinionTech/vexilon/blob/main/PRIVACY.md)
-**Source Code**: [GitHub Repository](https://github.com/MinionTech/vexilon)
-
----
-
 ## Knowledge Base
 
 ### Data Privacy (PIPA Compliance)
 
-This tool is designed to uphold the BC [Personal Information Protection Act (PIPA)](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/03063_01).
+This [open source](https://github.com/MinionTech/vexilon) tool is designed around the BC [Personal Information Protection Act (PIPA)](https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/03063_01).
 
 For more information about our zero-storage model see our [Privacy Policy](https://github.com/MinionTech/vexilon/blob/main/PRIVACY.md).
 
@@ -39,4 +34,4 @@ For more information about our zero-storage model see our [Privacy Policy](https
 
 ---
 
-**Build Integrity**: `{{BUILD_SHA}}`
+`{{BUILD_SHA}}`
