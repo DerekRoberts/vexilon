@@ -70,7 +70,7 @@ INTEGRITY_WARNING: str | None = None
 _background_tasks: set[asyncio.Task] = set()
 
 AGNAV_VERSION = os.getenv("AGNAV_VERSION", "Dev mode")
-IS_DEV = AGNAV_VERSION == "Dev mode"
+IS_DEV = "dev" in AGNAV_VERSION.lower()
 AGNAV_REPO_URL = os.getenv("AGNAV_REPO_URL", "https://github.com/MinionTech/vexilon")
 GITHUB_DATA_URL = os.getenv(
     "AGNAV_KNOWLEDGE_URL", f"{AGNAV_REPO_URL}/tree/main/app/data"
@@ -196,6 +196,7 @@ class TestRegistry:
 
 _test_registry = TestRegistry()
 TESTS_DIR = DATA_DIR / "test_fixtures"
+PUBLIC_DOCS_DIR = Path(__file__).parent / "public" / "docs"
 
 # ─── Rate Limiter ───────────────────────────────────────────────────────────
 RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "999999" if IS_DEV else "10"))
@@ -1077,6 +1078,29 @@ async def on_load_conversation(action: cl.Action):
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
 
+def resolve_pdf_path(md_path: Path) -> Path:
+    """Resolve the matching PDF file path for a given Markdown source path."""
+    if md_path.suffix.lower() == ".pdf":
+        return md_path
+
+    # 1. Try same directory PDF
+    pdf_same_dir = md_path.with_suffix(".pdf")
+    if pdf_same_dir.exists():
+        return pdf_same_dir
+
+    # 2. Try public docs directory
+    exact_pdf = PUBLIC_DOCS_DIR / f"{md_path.stem}.pdf"
+    if exact_pdf.exists():
+        return exact_pdf
+
+    if "_-_" in md_path.stem:
+        base_stem = md_path.stem.split("_-_")[0]
+        prefix_pdf = PUBLIC_DOCS_DIR / f"{base_stem}.pdf"
+        if prefix_pdf.exists():
+            return prefix_pdf
+
+    return md_path
+
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
     # Internal sentinel: toolbar save button bypasses normal message flow
@@ -1147,8 +1171,7 @@ async def on_message(message: cl.Message) -> None:
             if source_name not in seen_sources:
                 md_path = _source_path_map.get(source_name)
                 if md_path:
-                    pdf_path = md_path.with_suffix(".pdf")
-                    download_path = pdf_path if pdf_path.exists() else md_path
+                    download_path = resolve_pdf_path(md_path)
                     elements.append(cl.File(
                         name=f"{source_name} ({download_path.suffix.lstrip('.').upper()})",
                         path=str(download_path),

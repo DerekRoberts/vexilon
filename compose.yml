@@ -47,7 +47,7 @@ x-service-defaults: &service-defaults
 x-dev-volumes: &dev-volumes
   - ./app/main.py:/app/main.py:ro
   - ./app/indexing.py:/app/indexing.py:ro
-  - ./app/.chainlit:/app/.chainlit:ro
+  - ./app/.chainlit/config.toml:/app/.chainlit/config.toml:ro
   - ./app/chainlit.md:/app/chainlit.md:ro
   - ./app/chainlit_en-US.md:/app/chainlit_en-US.md:ro
   - ./app/public:/app/public:ro,z
@@ -73,6 +73,7 @@ services:
     volumes: *dev-volumes
     environment:
       <<: *common-env
+      AGNAV_LLM_PROVIDER: ollama
       WATCHFILES_FORCE_POLLING: "true"
       PORT: *PORT
     mem_limit: 2g
