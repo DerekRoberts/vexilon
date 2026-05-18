@@ -69,8 +69,8 @@
                 titleEl.style.textAlign = "center";
                 titleEl.style.fontSize = "2.25rem";
                 titleEl.style.fontWeight = "700";
-                titleEl.style.marginTop = "4rem";
-                titleEl.style.marginBottom = "2rem";
+                titleEl.style.marginTop = "1rem"; // Default is 4rem, reduced for aesthetic reasons
+                titleEl.style.marginBottom = "1rem"; // Default is 2rem, reduced for aesthetic reasons
                 titleEl.style.color = "inherit";
                 titleEl.style.opacity = "0.9";
                 titleEl.textContent = "BCGEU Navigator";
