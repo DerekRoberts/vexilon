@@ -1,9 +1,5 @@
-# BCGEU Navigator
-
----
-
-**Privacy Policy**: [View Policy](/public/docs/PRIVACY.md) | **Source Code**: [GitHub Repository](https://github.com/MinionTech/vexilon)
-**Build Integrity**: `{{BUILD_SHA}}`
+**Privacy Policy**: [View Policy](/public/docs/PRIVACY.md)
+**Source Code**: [GitHub Repository](https://github.com/MinionTech/vexilon)
 
 ---
 
@@ -73,3 +69,7 @@ The following reference documents form the primary authority for my analytical r
 ---
 
 **Note**: This library is dynamically synchronized with the forensic database.
+
+---
+
+**Build Integrity**: `{{BUILD_SHA}}`
