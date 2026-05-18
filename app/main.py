@@ -869,14 +869,7 @@ EXAMPLES = [
     "I need to file a grievance for a member. What steps should I take?",
 ]
 
-WELCOME_MSG = """# BCGEU Navigator"""
 
-def get_welcome_actions():
-    return [
-        cl.Action(name="starter_query", value="query1", payload={"value": "What are the Article 14 (Discipline) requirements for just cause?"}, label="How do I evaluate a disciplinary action for 'Just Cause'?"),
-        cl.Action(name="starter_query", value="query2", payload={"value": "What is the nexus test for establishing a link in off-duty conduct cases?"}, label="What is the nexus test for off-duty conduct?"),
-        cl.Action(name="starter_query", value="query3", payload={"value": "What are my rights as a steward during an investigation meeting?"}, label="What are my specific rights as a steward in an investigation?"),
-    ]
 
 
 @cl.set_chat_profiles
@@ -936,12 +929,7 @@ async def on_chat_start():
     cl.user_session.set("history", [])
     cl.user_session.set("persona", "Lookup")
 
-    # ── Welcome Header ────────────────────────────────────────────────────
-    await cl.Message(
-        content=WELCOME_MSG, 
-        author="System", 
-        actions=get_welcome_actions()
-    ).send()
+
 
     if INTEGRITY_WARNING:
         await cl.Message(content=INTEGRITY_WARNING, author="system").send()
