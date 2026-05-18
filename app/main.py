@@ -618,6 +618,10 @@ async def status_step(name: str, remove_on_exit: bool = False):
     """Safe context manager to show Chainlit steps only when a UI context exists."""
     if has_chainlit_context():
         async with cl.Step(name=name) as step:
+            # Register the step to be removed later if there is a registry in user_session
+            steps_list = cl.user_session.get("steps_to_remove")
+            if isinstance(steps_list, list):
+                steps_list.append(step)
             try:
                 yield step
             finally:
@@ -774,14 +778,14 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
         condensed = message
         # Issue #361: Heuristic for complexity - Use perspectives for long/complex queries
         if _should_use_perspectives(condensed):
-            async with status_step("perspectives...", remove_on_exit=True) as step:
+            async with status_step("perspectives...") as step:
                 queries = await generate_perspective_queries(condensed, history)
                 step.output = "Generated search perspectives:\n" + "\n".join(f"- {q}" for q in queries)
         else:
             queries = [condensed]
     else:
         # Run the single-pass combined LLM call!
-        async with status_step("context synthesis...", remove_on_exit=True) as step:
+        async with status_step("context synthesis...") as step:
             condensed, queries_all = await condense_and_generate_perspectives(message, history)
             # Apply complexity heuristic: if condensed is <= 10 and FORCE is not set, we don't need perspectives
             if _should_use_perspectives(condensed):
@@ -794,7 +798,7 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
                 queries = [condensed]
                 step.output = f"Condensed query: \"{condensed}\""
     
-    async with status_step("retrieval...", remove_on_exit=True) as step:
+    async with status_step("retrieval...") as step:
         # Optimization: Fewer chunks in dev to speed up inference
         top_k_count = 3 if IS_DEV else 5
         # Embedding is CPU-heavy; offload to thread to keep the event loop alive
@@ -1215,6 +1219,9 @@ def resolve_pdf_path(md_path: Path) -> Path:
 
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
+    # Initialize steps to remove at the start of message processing
+    cl.user_session.set("steps_to_remove", [])
+
     # Internal sentinel: toolbar save button bypasses normal message flow
     if (message.content or "").strip() == VEXILON_SAVE_SENTINEL:
         await trigger_session_save()
@@ -1332,6 +1339,16 @@ async def on_message(message: cl.Message) -> None:
     history.append({"role": "assistant", "content": accumulated})
     cl.user_session.set("history", history)
     cl.user_session.set("last_assistant_message", out)
+
+    # Clean up intermediate steps to keep chat history pristine
+    steps_to_remove = cl.user_session.get("steps_to_remove") or []
+    for s in steps_to_remove:
+        try:
+            await s.remove()
+        except Exception as e:
+            logger.error(f"[chat] Failed to remove step: {e}")
+    cl.user_session.set("steps_to_remove", [])
+
     logger.info(f"[chat] Stream completed. Total length: {len(accumulated)}")
 
 
