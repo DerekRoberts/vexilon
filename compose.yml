@@ -73,6 +73,7 @@ services:
     volumes: *dev-volumes
     environment:
       <<: *common-env
+      AGNAV_LLM_PROVIDER: ollama
       WATCHFILES_FORCE_POLLING: "true"
       PORT: *PORT
     mem_limit: 2g
