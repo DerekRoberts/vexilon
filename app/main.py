@@ -195,7 +195,7 @@ class TestRegistry:
             return [test for test in self.tests if any(k in q_lower for k in test.keywords)]
 
 _test_registry = TestRegistry()
-TESTS_DIR = LABOUR_LAW_DIR / "tests"
+TESTS_DIR = LABOUR_LAW_DIR / "test_fixtures"
 
 # ─── Rate Limiter ───────────────────────────────────────────────────────────
 RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "999999" if IS_DEV else "10"))
@@ -746,11 +746,11 @@ async def rag_review_stream(message: str, history: list[dict], persona_mode: str
 
 # ─── UI Utility Functions ───────────────────────────────────────────────────
 def _get_download_source_files() -> list[Path]:
-    """Scan LABOUR_LAW_DIR for PDF and MD files. Excludes tests/."""
+    """Scan LABOUR_LAW_DIR for PDF and MD files. Excludes test_fixtures/."""
     if not LABOUR_LAW_DIR.exists(): return []
-    tests_dir = LABOUR_LAW_DIR / "tests"
+    fixtures_dir = LABOUR_LAW_DIR / "test_fixtures"
     files = [p for p in LABOUR_LAW_DIR.rglob("*") if p.suffix.lower() in (".pdf", ".md")
-             and not p.is_relative_to(tests_dir)
+             and not p.is_relative_to(fixtures_dir)
              and not p.name.endswith(".integrity.md")]
     return sorted(list(set(files)), key=lambda p: str(p))
 
@@ -859,7 +859,7 @@ async def chat_profiles(user: cl.User):
         cl.Starter(label="Steward Rights", message=EXAMPLES[1]),
         cl.Starter(label="Nexus Off-Duty Test", message=EXAMPLES[2]),
         cl.Starter(label="Harassment Threshold", message=EXAMPLES[3]),
-        cl.Starter(label="Grievance Builder", message=EXAMPLES[5]),
+        cl.Starter(label="Grievance Builder", message=EXAMPLES[4]),
     ]
     return [
         cl.ChatProfile(
