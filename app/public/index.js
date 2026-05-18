@@ -37,24 +37,18 @@
     fetch("/api/version")
         .then((res) => res.json())
         .then((data) => {
-            const isDevVersion = !data.version || data.version.toLowerCase().includes("dev");
-            const isDevSha = data.sha && data.sha.toLowerCase() === "dev mode";
             const isShaVersion = data.version && data.version.toLowerCase().startsWith("sha-");
-            
+            const isDevSha = data.sha && data.sha.toLowerCase() === "dev mode";
             const shaShort = (!isDevSha && data.sha) ? data.sha.substring(0, 7) : "";
             
             let shaSuffix = "";
             if (isDevSha) {
-                shaSuffix = (isShaVersion || isDevVersion) ? "" : " (dev mode)";
+                shaSuffix = isShaVersion ? "" : " (dev mode)";
             } else if (shaShort) {
                 shaSuffix = " (" + shaShort + ")";
             }
             
-            let versionStr = (data.version || "unknown");
-            if (isDevVersion) {
-                versionStr = "Dev mode";
-            }
-            buildSha = versionStr + shaSuffix;
+            buildSha = (data.version || "unknown") + shaSuffix;
             replaceBuildSha();
         })
         .catch((err) => console.error("Error fetching version:", err));
