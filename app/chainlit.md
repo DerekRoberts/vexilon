@@ -1,4 +1,4 @@
-**Privacy Policy**: [View Policy](/public/docs/PRIVACY.md)
+**Privacy Policy**: [View Policy](https://github.com/MinionTech/vexilon/blob/main/PRIVACY.md)
 **Source Code**: [GitHub Repository](https://github.com/MinionTech/vexilon)
 
 ---
@@ -7,7 +7,7 @@
 
 ### Data Privacy (PIPA Compliance)
 
-This tool is custom-built to uphold the BC *Personal Information Protection Act* (PIPA). We operate on a strict zero-storage model: nothing you type, upload, or generate is ever saved, logged, or retained on our systems. Your consultations remain entirely private, ephemeral, and secure. Learn more about our concrete data safeguards in our [Privacy Policy](/public/docs/PRIVACY.md).
+This tool is custom-built to uphold the BC *Personal Information Protection Act* (PIPA). We operate on a strict zero-storage model: nothing you type, upload, or generate is ever saved, logged, or retained on our systems. Your consultations remain entirely private, ephemeral, and secure. Learn more about our concrete data safeguards in our [Privacy Policy](https://github.com/MinionTech/vexilon/blob/main/PRIVACY.md).
 
 ### Primary Authority
 
