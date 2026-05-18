@@ -5,6 +5,7 @@ import hashlib
 import fitz
 import logging
 from pathlib import Path
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,9 @@ CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 512))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 100))
 EMBED_DIM = int(os.getenv("EMBED_DIM", "384"))
 SIMILARITY_TOP_K = int(os.getenv("SIMILARITY_TOP_K", 40))
+# Document score boosting weights
+TIER1_BOOST = float(os.getenv("AGNAV_TIER1_BOOST", "1.2"))
+TIER3_BOOST = float(os.getenv("AGNAV_TIER3_BOOST", "0.8"))
 
 
 _embed_model: Any = None
@@ -271,6 +275,7 @@ def embed_texts(texts: list[str]) -> "np.ndarray":
     embeddings = model.encode(texts, show_progress_bar=False, convert_to_numpy=True)
     return embeddings.astype(np.float32)
 
+@lru_cache(maxsize=128)
 def get_document_tier_weight(source_name: str, path: str = "") -> float:
     """
     Determine the retrieval boost weight for a document based on its tier.
@@ -278,9 +283,6 @@ def get_document_tier_weight(source_name: str, path: str = "") -> float:
     - Tier 3: Statutory and general secondary resources (default 0.8)
     - Tier 2: Core agreements, jurisprudence, forms, etc. (default 1.0)
     """
-    tier1_boost = float(os.getenv("AGNAV_TIER1_BOOST", "1.2"))
-    tier3_boost = float(os.getenv("AGNAV_TIER3_BOOST", "0.8"))
-
     # Normalise input paths and source names for robust matching
     path_lower = path.lower().replace("\\", "/")
     source_lower = source_name.lower()
@@ -298,7 +300,7 @@ def get_document_tier_weight(source_name: str, path: str = "") -> float:
     )
 
     if is_standards_of_conduct or is_19th_agreement:
-        return tier1_boost
+        return TIER1_BOOST
 
     # Tier 3 checks:
     # 1. Statutory regulations: '02_statutory/' folder or source names
@@ -315,7 +317,7 @@ def get_document_tier_weight(source_name: str, path: str = "") -> float:
     )
 
     if is_statutory or is_general_resource:
-        return tier3_boost
+        return TIER3_BOOST
 
     # Tier 2: Default
     return 1.0
