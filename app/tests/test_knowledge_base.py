@@ -3,11 +3,11 @@ from pathlib import Path
 
 # The repository root (relative to tests/)
 REPO_ROOT = Path(__file__).parent.parent
-DATA_DIR = REPO_ROOT / "data" / "labour_law"
+DATA_DIR = REPO_ROOT / "data"
 
 def test_pdf_md_parity():
     """
-    Ensure every PDF in data/labour_law/ has a corresponding .md file.
+    Ensure every PDF in data/ has a corresponding .md file.
     This test serves as a CI quality gate to enforce 'Markdown-First' AI indexing.
     """
     if not DATA_DIR.exists():

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 # ─── Configuration ───────────────────────────────────────────────────────────
 _PKG_ROOT = Path(__file__).parent
 PDF_CACHE_DIR = Path(os.getenv("AGNAV_CACHE_DIR", _PKG_ROOT / ".pdf_cache"))
-LABOUR_LAW_DIR = Path(os.getenv("AGNAV_DATA_DIR", _PKG_ROOT / "data/labour_law"))
+DATA_DIR = Path(os.getenv("AGNAV_DATA_DIR", _PKG_ROOT / "data"))
 INDEX_PATH = PDF_CACHE_DIR / "index.faiss"
 CHUNKS_PATH = PDF_CACHE_DIR / "chunks.json"
 MANIFEST_PATH = PDF_CACHE_DIR / "manifest.json"
@@ -72,14 +72,14 @@ def get_embed_model() -> "SentenceTransformer":
     return _embed_model
 
 def _get_rag_source_files() -> list[Path]:
-    if not LABOUR_LAW_DIR.exists():
+    if not DATA_DIR.exists():
         return []
     
-    fixtures_dir = LABOUR_LAW_DIR / "test_fixtures"
+    fixtures_dir = DATA_DIR / "test_fixtures"
     files = []
     # Targeted glob patterns for better performance
     for pattern in ["*.md", "*.pdf"]:
-        for p in LABOUR_LAW_DIR.rglob(pattern):
+        for p in DATA_DIR.rglob(pattern):
             # Skip hidden files, tests, and integrity files
             # CRITICAL: Skip any paths that may exist in sibling worktrees if context is shared
             if (not p.name.startswith(".") 
@@ -355,7 +355,7 @@ def build_index_from_sources(force: bool = False) -> tuple[Any, Any] | tuple[Non
             while chunk := f.read(65536):
                 hasher.update(chunk)
         # Use relative path to avoid clashes with duplicate names in subdirs
-        rel_key = str(source_file.relative_to(LABOUR_LAW_DIR))
+        rel_key = str(source_file.relative_to(DATA_DIR))
         current_manifest["files"][rel_key] = hasher.hexdigest()
 
     if not force and MANIFEST_PATH.exists():

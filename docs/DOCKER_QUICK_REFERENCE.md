@@ -22,7 +22,7 @@ docker compose build dev     # Rebuilds from builder stage (~3 min)
 docker compose restart dev
 
 # Updated knowledge base
-# Edit app/data/labour_law/*.pdf
+# Edit app/data/*.pdf
 docker compose build dev     # Rebuilds from indexed_builder (~2 min)
 
 # Updated Containerfile
@@ -62,7 +62,7 @@ docker compose up dev
 | `app/main.py` | functional_builder (1 layer) | ~30 sec | ✅ Fast |
 | `app/prompts/` | functional_builder (1 layer) | ~30 sec | ✅ Fast |
 | `app/public/` | functional_builder (1 layer) | ~30 sec | ✅ Fast |
-| `app/data/labour_law/` | indexed_builder + functional | ~2 min | Uses cached FAISS if size same |
+| `app/data/` | indexed_builder + functional | ~2 min | Uses cached FAISS if size same |
 | `uv.lock` | builder + all downstream | ~3 min | Dependencies changed |
 | `.git/*` | None (excluded in .dockerignore) | - | ✅ Ignored |
 | `.pytest_cache/` | None (excluded in .dockerignore) | - | ✅ Ignored |

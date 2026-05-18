@@ -4,7 +4,7 @@ Issue #239: Optimize FAISS Cache Persistence & Resolve Binary Bloat
 
 ## Overview
 
-This project uses a FAISS index for fast similarity search over PDF and Markdown documents. The index is built from source files in `data/labour_law/`.
+This project uses a FAISS index for fast similarity search over PDF and Markdown documents. The index is built from source files in `data/`.
 
 ## Git LFS Configuration
 
@@ -19,7 +19,7 @@ Binary cache files are tracked via Git LFS to prevent repository bloat:
 
 ## Cache Validation
 
-The `data/labour_law/manifest.json` tracks SHA256 hashes of all source files (PDF and MD). This enables:
+The `data/manifest.json` tracks SHA256 hashes of all source files (PDF and MD). This enables:
 
 1. **Automated staleness detection** — CI validates that the cache matches current sources
 2. **Reproducible builds** — Knowing exactly which source files were indexed
@@ -27,7 +27,7 @@ The `data/labour_law/manifest.json` tracks SHA256 hashes of all source files (PD
 
 ### Regenerating the Manifest
 
-After updating source files in `data/labour_law/`:
+After updating source files in `data/`:
 
 ```bash
 python scripts/generate_cache_manifest.py
