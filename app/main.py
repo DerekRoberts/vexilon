@@ -1077,6 +1077,31 @@ async def on_load_conversation(action: cl.Action):
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
 
+def resolve_pdf_path(md_path: Path) -> Path:
+    """Resolve the matching PDF file path for a given Markdown source path."""
+    if md_path.suffix.lower() == ".pdf":
+        return md_path if md_path.exists() else md_path
+
+    # 1. Try same directory PDF
+    pdf_same_dir = md_path.with_suffix(".pdf")
+    if pdf_same_dir.exists():
+        return pdf_same_dir
+
+    # 2. Try public docs directory
+    public_docs_dir = Path(__file__).parent / "public" / "docs"
+    
+    exact_pdf = public_docs_dir / f"{md_path.stem}.pdf"
+    if exact_pdf.exists():
+        return exact_pdf
+
+    if "_-_" in md_path.stem:
+        base_stem = md_path.stem.split("_-_")[0]
+        prefix_pdf = public_docs_dir / f"{base_stem}.pdf"
+        if prefix_pdf.exists():
+            return prefix_pdf
+
+    return md_path
+
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
     # Internal sentinel: toolbar save button bypasses normal message flow
@@ -1147,8 +1172,7 @@ async def on_message(message: cl.Message) -> None:
             if source_name not in seen_sources:
                 md_path = _source_path_map.get(source_name)
                 if md_path:
-                    pdf_path = md_path.with_suffix(".pdf")
-                    download_path = pdf_path if pdf_path.exists() else md_path
+                    download_path = resolve_pdf_path(md_path)
                     elements.append(cl.File(
                         name=f"{source_name} ({download_path.suffix.lstrip('.').upper()})",
                         path=str(download_path),
