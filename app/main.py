@@ -605,6 +605,31 @@ async def rag_stream(message: str, history: list[dict]) -> AsyncIterator[tuple[s
         yield f"⚠️ API error: {exc}", ""
 
 # ─── RAG Pipeline Functions ─────────────────────────────────────────────────
+import contextlib
+
+def has_chainlit_context() -> bool:
+    try:
+        from chainlit.context import get_context
+        return get_context() is not None
+    except Exception:
+        return False
+
+@contextlib.asynccontextmanager
+async def status_step(name: str):
+    """Safe context manager to show Chainlit steps only when a UI context exists."""
+    if has_chainlit_context():
+        async with cl.Step(name=name) as step:
+            yield step
+    else:
+        class DummyStep:
+            def __init__(self):
+                self.output = ""
+            async def update(self):
+                pass
+            async def remove(self):
+                pass
+        yield DummyStep()
+
 async def condense_query(message: str, history: list[dict]) -> str:
     """Turn the conversation history and new message into a standalone search query."""
     if not history: return message
@@ -675,35 +700,116 @@ async def generate_perspective_queries(message: str, history: list[dict]) -> lis
     except Exception:
         return [message]
 
+async def condense_and_generate_perspectives(message: str, history: list[dict]) -> tuple[str, list[str]]:
+    """Condense the query history and generate 3 perspectives in a single LLM pass to save network latency."""
+    if not history:
+        return message, [message]
+    
+    history_text = ""
+    for turn in history[-5:]:
+        role = (turn["role"] if isinstance(turn, dict) else turn.role).capitalize()
+        content = turn["content"] if isinstance(turn, dict) else turn.content
+        if isinstance(content, list):
+            content = "".join([p.get("text", "") if isinstance(p, dict) else str(p) for p in content])
+        history_text += f"{role}: {content}\n"
+    
+    prompt = (
+        "You are an expert AI optimizer for RAG database searches.\n\n"
+        "CONVERSATION HISTORY:\n"
+        f"{history_text}\n"
+        f"USER MESSAGE: {message}\n\n"
+        "Your task is to:\n"
+        "1. Rephrase and condense the user's latest follow-up message using the conversation history into a standalone search query that contains all necessary context (e.g. replacing pronouns, referring back to the contract articles being discussed).\n"
+        "2. Generate exactly 3 different standalone search queries that search for the same core intent but from different analytical perspectives (e.g. legal, procedural, factual).\n\n"
+        "Format your output strictly as a JSON object with two keys:\n"
+        "{\n"
+        "  \"condensed_query\": \"<standalone condensed query string>\",\n"
+        "  \"perspectives\": [\"<perspective query 1>\", \"<perspective query 2>\", \"<perspective query 3>\"]\n"
+        "}\n\n"
+        "Return ONLY the raw JSON object. Do not include any markdown styling, conversational text, or triple backticks."
+    )
+    
+    try:
+        resp_text = await unified_chat_create(
+            model=CONDENSE_MODEL,
+            max_tokens=300,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        # Robust JSON extraction using regex in case LLM added styling or text around JSON
+        match = re.search(r"(\{.*\})", resp_text, re.DOTALL)
+        if match:
+            parsed = json.loads(match.group(1))
+            condensed = parsed.get("condensed_query", "").strip()
+            perspectives = parsed.get("perspectives", [])
+            
+            if not condensed:
+                condensed = message
+            
+            # Sanitize perspectives list
+            cleaned_perspectives = []
+            for p in perspectives:
+                if isinstance(p, str) and p.strip():
+                    cleaned_perspectives.append(p.strip())
+            
+            if not cleaned_perspectives:
+                cleaned_perspectives = [condensed]
+                
+            return condensed, cleaned_perspectives
+            
+    except Exception as e:
+        logger.error(f"[rag] Failed to condense and generate perspectives in a single pass: {e}")
+        
+    return message, [message]
+
 async def get_multi_perspective_context(message: str, history: list[dict]) -> tuple[list[str], str, list[dict]]:
     # Optimization: Skip condensation in DEV or if no history exists to save ~30s of latency
     if IS_DEV or not history:
         condensed = message
+        # Issue #361: Heuristic for complexity - Use perspectives for long/complex queries
+        if len(condensed.split()) > 10 or os.getenv("AGNAV_FORCE_PERSPECTIVES") == "true":
+            async with status_step("Expanding search perspectives...") as step:
+                queries = await generate_perspective_queries(condensed, history)
+                step.output = "Generated search perspectives:\n" + "\n".join(f"- {q}" for q in queries)
+        else:
+            queries = [condensed]
     else:
-        condensed = await condense_query(message, history)
-
-    # Issue #361: Heuristic for complexity - Use perspectives for long/complex queries
-    if len(condensed.split()) > 10 or os.getenv("AGNAV_FORCE_PERSPECTIVES") == "true":
-        queries = await generate_perspective_queries(condensed, history)
-    else:
-        queries = [condensed]
+        # Run the single-pass combined LLM call!
+        async with status_step("Analyzing conversation context & search perspectives...") as step:
+            condensed, queries_all = await condense_and_generate_perspectives(message, history)
+            # Apply complexity heuristic: if condensed is <= 10 and FORCE is not set, we don't need perspectives
+            if len(condensed.split()) > 10 or os.getenv("AGNAV_FORCE_PERSPECTIVES") == "true":
+                queries = queries_all
+                step.output = (
+                    f"Condensed query: \"{condensed}\"\n"
+                    "Generated search perspectives:\n" + "\n".join(f"- {q}" for q in queries)
+                )
+            else:
+                queries = [condensed]
+                step.output = f"Condensed query: \"{condensed}\""
     
-    # Optimization: Fewer chunks in dev to speed up inference
-    top_k_count = 3 if IS_DEV else 5
-    # Embedding is CPU-heavy; offload to thread to keep the event loop alive
-    all_res = await asyncio.to_thread(search_index_batch, _index, _chunks, queries, [top_k_count] * len(queries))
-    seen = set()
-    context_parts = []
-    unique_snippets = []
-    for res_list in all_res:
-        for c in res_list:
-            if c["text"] not in seen:
-                seen.add(c["text"])
-                unique_snippets.append(c)
-                source = c.get("source", "Unknown")
-                page = c.get("page", "?")
-                context_parts.append(f"<<< SOURCE: {source} | Page: {page} >>>\n{c['text']}")
+    async with status_step("Searching knowledge base...") as step:
+        # Optimization: Fewer chunks in dev to speed up inference
+        top_k_count = 3 if IS_DEV else 5
+        # Embedding is CPU-heavy; offload to thread to keep the event loop alive
+        all_res = await asyncio.to_thread(search_index_batch, _index, _chunks, queries, [top_k_count] * len(queries))
+        seen = set()
+        context_parts = []
+        unique_snippets = []
+        for res_list in all_res:
+            for c in res_list:
+                if c["text"] not in seen:
+                    seen.add(c["text"])
+                    unique_snippets.append(c)
+                    source = c.get("source", "Unknown")
+                    page = c.get("page", "?")
+                    context_parts.append(f"<<< SOURCE: {source} | Page: {page} >>>\n{c['text']}")
+        
+        sources_found = set(c.get("source", "Unknown") for c in unique_snippets)
+        step.output = f"Retrieved {len(unique_snippets)} matching excerpts from {len(sources_found)} reference documents."
+        
     return queries, "\n\n".join(context_parts), unique_snippets
+
 
 async def rag_review_stream(message: str, history: list[dict], persona_mode: str = "Lookup", context: str | None = None, queries: list[str] | None = None) -> AsyncIterator[str]:
     try:
