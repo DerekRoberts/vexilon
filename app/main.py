@@ -815,22 +815,7 @@ async def _ensure_startup() -> None:
         if _startup_done:
             return
         
-        msg = None
-        try:
-            # Attempt to show progress if we're in a chat session
-            msg = cl.Message(content="Initializing Knowledge Base... This may take a moment if indexing is required.")
-            await msg.send()
-        except Exception:
-            pass
-
         await asyncio.to_thread(startup)
-        
-        if msg:
-            try:
-                msg.content = "Knowledge Base initialized."
-                await msg.update()
-            except Exception:
-                pass
         
         _startup_done = True
 

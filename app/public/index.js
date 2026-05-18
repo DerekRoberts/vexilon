@@ -55,14 +55,44 @@
         });
     }
 
+    function manageWelcomeTitle() {
+        const chatArea = document.querySelector(".flex-grow.overflow-y-auto");
+        if (!chatArea) return;
+
+        const messages = document.querySelectorAll(".message");
+        const existingTitle = document.getElementById("custom-welcome-title");
+
+        if (messages.length === 0) {
+            if (!existingTitle) {
+                const titleEl = document.createElement("h1");
+                titleEl.id = "custom-welcome-title";
+                titleEl.style.textAlign = "center";
+                titleEl.style.fontSize = "2.25rem";
+                titleEl.style.fontWeight = "700";
+                titleEl.style.marginTop = "4rem";
+                titleEl.style.marginBottom = "2rem";
+                titleEl.style.color = "inherit";
+                titleEl.style.opacity = "0.9";
+                titleEl.textContent = "BCGEU Navigator";
+                chatArea.prepend(titleEl);
+            }
+        } else {
+            if (existingTitle) {
+                existingTitle.remove();
+            }
+        }
+    }
+
     // Poll for React-rendered elements that appear/disappear on navigation.
     setInterval(() => {
         setupEnterToSubmit();
         hideReadmeDrawerTitle();
         replaceBuildSha();
+        manageWelcomeTitle();
     }, 500);
 
     setupEnterToSubmit();
     hideReadmeDrawerTitle();
     replaceBuildSha();
+    manageWelcomeTitle();
 })();
