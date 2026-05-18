@@ -855,36 +855,33 @@ EXAMPLES = [
 ]
 @cl.set_chat_profiles
 async def chat_profiles(user: cl.User):
+    all_starters = [
+        cl.Starter(label="Discipline Just Cause", message=EXAMPLES[0]),
+        cl.Starter(label="Steward Rights", message=EXAMPLES[1]),
+        cl.Starter(label="Nexus Off-Duty Test", message=EXAMPLES[2]),
+        cl.Starter(label="Harassment Threshold", message=EXAMPLES[3]),
+        cl.Starter(label="Social Media Policy", message=EXAMPLES[4]),
+        cl.Starter(label="Grievance Builder", message=EXAMPLES[5]),
+    ]
     return [
         cl.ChatProfile(
             name="Lookup",
             icon="",
             default=True,
             markdown_description="Forensic lookup of labor law excerpts.",
-            starters=[
-                cl.Starter(label="Discipline Just Cause", message=EXAMPLES[0]),
-                cl.Starter(label="Social Media Policy", message=EXAMPLES[4])
-            ],
+            starters=all_starters,
         ),
         cl.ChatProfile(
             name="Grieve",
             icon="",
             markdown_description="Strategic guidance and forensic auditing for grievance filing.",
-            starters=[
-                cl.Starter(label="Grievance Builder", message=EXAMPLES[5]),
-                cl.Starter(label="Steward Rights", message=EXAMPLES[1]),
-                cl.Starter(label="Nexus Off-Duty Test", message=EXAMPLES[2]),
-                cl.Starter(label="Harassment Threshold", message=EXAMPLES[3])
-            ],
+            starters=all_starters,
         ),
         cl.ChatProfile(
             name="Manage",
             icon="",
             markdown_description="Strategic management consulting.",
-            starters=[
-                cl.Starter(label="Strategy Session", message=EXAMPLES[0]),
-                cl.Starter(label="Compliance Check", message=EXAMPLES[4])
-            ],
+            starters=all_starters,
         ),
     ]
 
