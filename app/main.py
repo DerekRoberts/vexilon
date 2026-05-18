@@ -614,11 +614,15 @@ def has_chainlit_context() -> bool:
         return False
 
 @contextlib.asynccontextmanager
-async def status_step(name: str):
+async def status_step(name: str, remove_on_exit: bool = False):
     """Safe context manager to show Chainlit steps only when a UI context exists."""
     if has_chainlit_context():
         async with cl.Step(name=name) as step:
-            yield step
+            try:
+                yield step
+            finally:
+                if remove_on_exit:
+                    await step.remove()
     else:
         class DummyStep:
             def __init__(self):
@@ -770,14 +774,14 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
         condensed = message
         # Issue #361: Heuristic for complexity - Use perspectives for long/complex queries
         if _should_use_perspectives(condensed):
-            async with status_step("perspectives...") as step:
+            async with status_step("perspectives...", remove_on_exit=True) as step:
                 queries = await generate_perspective_queries(condensed, history)
                 step.output = "Generated search perspectives:\n" + "\n".join(f"- {q}" for q in queries)
         else:
             queries = [condensed]
     else:
         # Run the single-pass combined LLM call!
-        async with status_step("context synthesis...") as step:
+        async with status_step("context synthesis...", remove_on_exit=True) as step:
             condensed, queries_all = await condense_and_generate_perspectives(message, history)
             # Apply complexity heuristic: if condensed is <= 10 and FORCE is not set, we don't need perspectives
             if _should_use_perspectives(condensed):
@@ -790,7 +794,7 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
                 queries = [condensed]
                 step.output = f"Condensed query: \"{condensed}\""
     
-    async with status_step("retrieval...") as step:
+    async with status_step("retrieval...", remove_on_exit=True) as step:
         # Optimization: Fewer chunks in dev to speed up inference
         top_k_count = 3 if IS_DEV else 5
         # Embedding is CPU-heavy; offload to thread to keep the event loop alive
