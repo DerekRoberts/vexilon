@@ -868,28 +868,6 @@ EXAMPLES = [
     "Does my employer have a social media policy?",
     "I need to file a grievance for a member. What steps should I take?",
 ]
-WELCOME_MSG = """# BCGEU Navigator
-
-### Suggested Inquiries:
-* **Q1**: What are the Article 14 (Discipline) requirements for just cause?
-* **Q2**: What are my rights as a steward during an investigation meeting?
-* **Q3**: What is the nexus test for establishing a link in off-duty conduct cases?
-* **Q4**: Show me the Harassment Threshold test.
-* **Q5**: Does my employer have a social media policy?
-* **Q6**: I need to file a grievance for a member. What steps should I take?
-"""
-
-def get_welcome_actions():
-    return [
-        cl.Action(name="starter_query", value="query1", payload={"value": EXAMPLES[0]}, label="Q1"),
-        cl.Action(name="starter_query", value="query2", payload={"value": EXAMPLES[1]}, label="Q2"),
-        cl.Action(name="starter_query", value="query3", payload={"value": EXAMPLES[2]}, label="Q3"),
-        cl.Action(name="starter_query", value="query4", payload={"value": EXAMPLES[3]}, label="Q4"),
-        cl.Action(name="starter_query", value="query5", payload={"value": EXAMPLES[4]}, label="Q5"),
-        cl.Action(name="starter_query", value="query6", payload={"value": EXAMPLES[5]}, label="Q6"),
-    ]
-
-
 @cl.set_chat_profiles
 async def chat_profiles(user: cl.User):
     return [
@@ -898,19 +876,30 @@ async def chat_profiles(user: cl.User):
             icon="",
             default=True,
             markdown_description="Forensic lookup of labor law excerpts.",
-            starters=[cl.Starter(label="Discipline Analysis", message=EXAMPLES[0])],
+            starters=[
+                cl.Starter(label="Discipline Just Cause", message=EXAMPLES[0]),
+                cl.Starter(label="Social Media Policy", message=EXAMPLES[4])
+            ],
         ),
         cl.ChatProfile(
             name="Grieve",
             icon="",
             markdown_description="Strategic guidance and forensic auditing for grievance filing.",
-            starters=[cl.Starter(label="Grievance Builder", message=EXAMPLES[5])],
+            starters=[
+                cl.Starter(label="Grievance Builder", message=EXAMPLES[5]),
+                cl.Starter(label="Steward Rights", message=EXAMPLES[1]),
+                cl.Starter(label="Nexus Off-Duty Test", message=EXAMPLES[2]),
+                cl.Starter(label="Harassment Threshold", message=EXAMPLES[3])
+            ],
         ),
         cl.ChatProfile(
             name="Manage",
             icon="",
             markdown_description="Strategic management consulting.",
-            starters=[cl.Starter(label="Strategy Session", message=EXAMPLES[0])],
+            starters=[
+                cl.Starter(label="Strategy Session", message=EXAMPLES[0]),
+                cl.Starter(label="Compliance Check", message=EXAMPLES[4])
+            ],
         ),
     ]
 
@@ -935,13 +924,6 @@ async def on_chat_start():
     # Initialize session state
     cl.user_session.set("history", [])
     cl.user_session.set("persona", "Lookup")
-
-    # ── Welcome Header ────────────────────────────────────────────────────
-    await cl.Message(
-        content=WELCOME_MSG, 
-        author="System", 
-        actions=get_welcome_actions()
-    ).send()
 
 
 
