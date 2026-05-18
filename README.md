@@ -226,8 +226,8 @@ podman compose up --build test-integration-app
 # Run full e2e suite (Live UI + Live LLM)
 podman compose up --build test-e2e
 
-# Verify everything at once (The "Grand Slam")
-podman compose up --build test-everything && podman compose down
+# Verify everything at once (The "Grand Slam") and launch the dev app if successful
+podman compose up --build test-everything && podman compose up dev
 ```
 
 ---

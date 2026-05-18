@@ -45,16 +45,8 @@ x-service-defaults: &service-defaults
 
 # Development volumes: Mount source files for hot-reload, preserve built venv
 x-dev-volumes: &dev-volumes
-  - ./app/main.py:/app/main.py:ro
-  - ./app/indexing.py:/app/indexing.py:ro
-  - ./app/.chainlit/config.toml:/app/.chainlit/config.toml:ro
-  - ./app/chainlit.md:/app/chainlit.md:ro
-  - ./app/chainlit_en-US.md:/app/chainlit_en-US.md:ro
-  - ./app/public/index.js:/app/public/index.js:ro,z
-  - ./app/public/style.css:/app/public/style.css:ro,z
-  - ./app/prompts:/app/prompts:ro,z
+  - ./app:/app:ro,z
   - ./PRIVACY.md:/app/public/docs/PRIVACY.md:ro,z
-  - ./app/data/forms:/app/public/docs/forms:ro,z
   - ./reports:/app/reports:z
   - ./.pytest_cache:/app/.pytest_cache:z
 
@@ -239,7 +231,7 @@ services:
     image: vexilon:dev
     build: *build-dev
     environment: *common-env
-    command: /app/.venv/bin/python scripts/generate_cache_manifest.py validate
+    command: /venv/bin/python scripts/generate_cache_manifest.py validate
 
   # True End-to-End tests against the live running Chainlit application.
   # Verifies actual HTTP responses from both Dev (Ollama) and Staging (HF).

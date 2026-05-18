@@ -4,7 +4,9 @@ FROM python:3.14-slim AS base
 # Silence Hugging Face nag messages globally
 ENV HF_HOME=/hf_cache \
     EMBED_MODEL=/model \
-    CHAINLIT_FILES_DIR=/tmp/chainlit_files
+    CHAINLIT_FILES_DIR=/tmp/chainlit_files \
+    UV_PROJECT_ENVIRONMENT=/venv \
+    PATH="/venv/bin:$PATH"
 
 # Install common runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -61,7 +63,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY app/ ./
 COPY app/data/ ./public/docs/
-COPY PRIVACY.md ./public/docs/
 
 # Prepare directories for testing and ensure permissions
 RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache && \
@@ -79,7 +80,7 @@ COPY app/scripts/build_index.py ./scripts/
 RUN --mount=type=cache,target=/app/.pdf_cache_mount \
     mkdir -p /app/.pdf_cache && \
     cp -r /app/.pdf_cache_mount/* /app/.pdf_cache/ 2>/dev/null || true && \
-    TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=1 PATH="/app/.venv/bin:$PATH" python scripts/build_index.py && \
+    TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=1 python scripts/build_index.py && \
     cp -r /app/.pdf_cache/* /app/.pdf_cache_mount/ 2>/dev/null || true
 
 # (Source code will be copied in leaf stages to maximize cache hits)
@@ -95,7 +96,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # 1. Static files first (least frequent changes)
 # 2. Config files next
 # 3. Application code last (most frequent changes)
-COPY PRIVACY.md ./public/docs/
 COPY app/.chainlit/ ./.chainlit/
 COPY app/public/ ./public/
 COPY app/chainlit.md app/chainlit_en-US.md ./
@@ -121,12 +121,11 @@ RUN mkdir -p /app/reports /app/.pytest_cache /hf_cache /app/.files /app/.pdf_cac
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
 FROM base AS runner
 
-# Use venv path for all subsequent commands
-ENV PATH="/app/.venv/bin:$PATH" \
-    CHAINLIT_FILES_DIR=/tmp/chainlit_files
+ENV CHAINLIT_FILES_DIR=/tmp/chainlit_files
 
 # Copy everything from functional_builder (includes venv, source code, index, config)
-# Ensure the entire /app directory is owned by the app user to prevent permission errors on runtime workspaces like .chainlit
+# Ensure the entire /app and /venv directories are owned by the app user to prevent permission errors
+COPY --chown=app:app --from=functional_builder /venv /venv
 COPY --chown=app:app --from=functional_builder /app /app
 COPY --from=model_fetcher /model /model
 
