@@ -1208,12 +1208,15 @@ async def on_message(message: cl.Message) -> None:
     # Async Verification pass as per SPEC.md Section 9
     if VERIFY_ENABLED:
         async def verify_and_update():
-            report = await verify_response(accumulated, context)
-            if report and "ALL_CLAIMS_VERIFIED" not in report:
-                out.content += f"\n\n---\n**Verification Note:**\n{report}"
-                await out.update()
+            try:
+                report = await verify_response(accumulated, context)
+                if report and "ALL_CLAIMS_VERIFIED" not in report:
+                    out.content += f"\n\n---\n**Verification Note:**\n{report}"
+                    await out.update()
+            except Exception as e:
+                logger.error(f"[chat] Background verification task failed: {e}", exc_info=True)
         
-        cl.run_task(verify_and_update())
+        asyncio.create_task(verify_and_update())
 
     history.append({"role": "user", "content": sanitized})
     history.append({"role": "assistant", "content": accumulated})
