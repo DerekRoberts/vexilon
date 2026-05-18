@@ -88,12 +88,27 @@ fi
 echo "[verify] 🔍 Running functional smoke test..."
 SPACE_URL="https://$(echo "$SPACE_ID" | tr '[:upper:]' '[:lower:]' | tr '/' '-').hf.space"
 
-# 1. Query the custom /api/version route to verify the FastAPI backend is running and responding
-VERSION_JSON=$(curl -s -f "$SPACE_URL/api/version")
-CURL_EXIT=$?
+# Since the server may take a few seconds to fully initialize even after the Space
+# status reports 'running', we run the probe with a brief retry loop.
+MAX_RETRIES=6
+RETRY_INTERVAL=10
+CURL_EXIT=0
+
+for i in $(seq 1 $MAX_RETRIES); do
+  echo "[verify] Querying /api/version (Attempt $i/$MAX_RETRIES)..."
+  CURL_EXIT=0
+  VERSION_JSON=$(curl -s -f "$SPACE_URL/api/version") || CURL_EXIT=$?
+  
+  if [ $CURL_EXIT -eq 0 ] && [ -n "$VERSION_JSON" ]; then
+    break
+  fi
+  
+  echo "[verify] Attempt $i failed (exit code: $CURL_EXIT). Retrying in $RETRY_INTERVAL seconds..."
+  sleep $RETRY_INTERVAL
+done
 
 if [ $CURL_EXIT -ne 0 ] || [ -z "$VERSION_JSON" ]; then
-  echo "❌ Error: Functional smoke test failed. Could not query /api/version (exit code: $CURL_EXIT). Response: $VERSION_JSON"
+  echo "❌ Error: Functional smoke test failed. Could not query /api/version after $MAX_RETRIES attempts. curl returned: $CURL_EXIT. Response: $VERSION_JSON"
   exit 1
 fi
 
@@ -108,4 +123,5 @@ fi
 echo "[verify] App version detected: $APP_VERSION"
 echo "✅ Success: Functional smoke test passed! AgNav is fully operational at $SPACE_URL"
 exit 0
+
 
