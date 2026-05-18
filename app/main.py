@@ -14,6 +14,7 @@ import sys
 import re
 import time
 import json
+import contextlib
 # Agreement Navigator - UI Version: 2026-05-10
 import logging
 import asyncio
@@ -605,8 +606,6 @@ async def rag_stream(message: str, history: list[dict]) -> AsyncIterator[tuple[s
         yield f"⚠️ API error: {exc}", ""
 
 # ─── RAG Pipeline Functions ─────────────────────────────────────────────────
-import contextlib
-
 def has_chainlit_context() -> bool:
     try:
         from chainlit.context import get_context
