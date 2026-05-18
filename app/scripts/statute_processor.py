@@ -20,7 +20,7 @@ from pathlib import Path
 
 # Project-relative paths
 ROOT_DIR = Path(__file__).parent.parent
-DEST_DIR = ROOT_DIR / "data" / "labour_law" / "02_statutory"
+DEST_DIR = ROOT_DIR / "data" / "02_statutory"
 
 def clean_content(text: str) -> str:
     """Robustly strip HTML and bclaws noise while preserving structure."""

@@ -45,7 +45,7 @@ We have provided a specialized script `scripts/pdf_to_md.py` that uses a **Foren
 2.  **Run the Converter**:
     ```bash
     # High-Integrity mode is ON by default
-    python scripts/pdf_to_md.py "data/labour_law/01_primary/BC Labour Relations Code.pdf"
+    python scripts/pdf_to_md.py "data/01_primary/BC Labour Relations Code.pdf"
     ```
 
 3.  **Audit the Result**:

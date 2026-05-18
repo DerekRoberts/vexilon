@@ -31,7 +31,7 @@ Agreement Navigator is programmed to prioritize the **Collective Agreement** abo
 
 Agreement Navigator indexes **Markdown files** (`.md`), not PDFs. PDFs are kept only for the "Download Original" links in the UI.
 
-Add or replace Markdown files in `app/data/labour_law/` using the naming convention:
+Add or replace Markdown files in `app/data/` using the naming convention:
 
 | Category | Path | Use case |
 |---|---|---|

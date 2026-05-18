@@ -23,8 +23,8 @@ def hash_file(filepath: Path) -> str:
 
 _PKG_ROOT = Path(__file__).parent.parent
 def generate_manifest(
-    data_dir: Path = _PKG_ROOT / "data/labour_law",
-    output_path: Path = _PKG_ROOT / "data/labour_law/manifest.json"
+    data_dir: Path = _PKG_ROOT / "data",
+    output_path: Path = _PKG_ROOT / "data/manifest.json"
 ) -> dict:
     """Generate manifest of all source files in data directory."""
     manifest = {
@@ -64,8 +64,8 @@ def generate_manifest(
 
 
 def validate_cache(
-    data_dir: Path = _PKG_ROOT / "data/labour_law",
-    manifest_path: Path = _PKG_ROOT / "data/labour_law/manifest.json"
+    data_dir: Path = _PKG_ROOT / "data",
+    manifest_path: Path = _PKG_ROOT / "data/manifest.json"
 ) -> bool:
     """Validate that cache matches current source files."""
     if not manifest_path.exists():

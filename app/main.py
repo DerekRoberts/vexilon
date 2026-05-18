@@ -43,7 +43,7 @@ from indexing import (
     load_precomputed_index,
     search_index_batch,
     _fetch_pdf_cache_if_missing,
-    LABOUR_LAW_DIR,
+    DATA_DIR,
     get_embed_model,
     EMBED_DIM,
     chunk_text,
@@ -72,8 +72,8 @@ _background_tasks: set[asyncio.Task] = set()
 AGNAV_VERSION = os.getenv("AGNAV_VERSION", "Dev mode")
 IS_DEV = AGNAV_VERSION == "Dev mode"
 AGNAV_REPO_URL = os.getenv("AGNAV_REPO_URL", "https://github.com/MinionTech/vexilon")
-GITHUB_LABOUR_LAW_URL = os.getenv(
-    "AGNAV_KNOWLEDGE_URL", f"{AGNAV_REPO_URL}/tree/main/data/labour_law"
+GITHUB_DATA_URL = os.getenv(
+    "AGNAV_KNOWLEDGE_URL", f"{AGNAV_REPO_URL}/tree/main/app/data"
 )
 
 # Models & Providers
@@ -195,7 +195,7 @@ class TestRegistry:
             return [test for test in self.tests if any(k in q_lower for k in test.keywords)]
 
 _test_registry = TestRegistry()
-TESTS_DIR = LABOUR_LAW_DIR / "test_fixtures"
+TESTS_DIR = DATA_DIR / "test_fixtures"
 
 # ─── Rate Limiter ───────────────────────────────────────────────────────────
 RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "999999" if IS_DEV else "10"))
@@ -746,10 +746,10 @@ async def rag_review_stream(message: str, history: list[dict], persona_mode: str
 
 # ─── UI Utility Functions ───────────────────────────────────────────────────
 def _get_download_source_files() -> list[Path]:
-    """Scan LABOUR_LAW_DIR for PDF and MD files. Excludes test_fixtures/."""
-    if not LABOUR_LAW_DIR.exists(): return []
-    fixtures_dir = LABOUR_LAW_DIR / "test_fixtures"
-    files = [p for p in LABOUR_LAW_DIR.rglob("*") if p.suffix.lower() in (".pdf", ".md")
+    """Scan DATA_DIR for PDF and MD files. Excludes test_fixtures/."""
+    if not DATA_DIR.exists(): return []
+    fixtures_dir = DATA_DIR / "test_fixtures"
+    files = [p for p in DATA_DIR.rglob("*") if p.suffix.lower() in (".pdf", ".md")
              and not p.is_relative_to(fixtures_dir)
              and not p.name.endswith(".integrity.md")]
     return sorted(list(set(files)), key=lambda p: str(p))

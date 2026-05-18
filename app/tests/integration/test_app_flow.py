@@ -12,12 +12,12 @@ from pathlib import Path
 @pytest.mark.asyncio
 async def test_full_rag_flow_integration(monkeypatch, mock_llm_client, tmp_path):
     app_root = Path(__file__).parent.parent.parent
-    source_md = app_root / "data/labour_law/04_jurisprudence/Nexus Test and Off-Duty Conduct.md"
+    source_md = app_root / "data/04_jurisprudence/Nexus Test and Off-Duty Conduct.md"
     if not source_md.exists():
         pytest.skip(f"Agreement Markdown missing at {source_md}; cannot run full integration test.")
 
     # Set environment variables BEFORE importing app or indexing
-    test_data_dir = tmp_path / "data/labour_law"
+    test_data_dir = tmp_path / "data"
     cache_dir = tmp_path / "pdf_cache"
     
     monkeypatch.setenv("AGNAV_CACHE_DIR", str(cache_dir))
@@ -42,7 +42,7 @@ async def test_full_rag_flow_integration(monkeypatch, mock_llm_client, tmp_path)
     
     import shutil
     shutil.copy(source_md, test_data_dir / source_md.name)
-    shutil.copytree(app_root / "data/labour_law/test_fixtures", test_data_dir / "test_fixtures", dirs_exist_ok=True)
+    shutil.copytree(app_root / "data/test_fixtures", test_data_dir / "test_fixtures", dirs_exist_ok=True)
 
     # Mock the LLM client globally for the app
     monkeypatch.setattr(app, "get_llm_client", lambda: mock_llm_client)

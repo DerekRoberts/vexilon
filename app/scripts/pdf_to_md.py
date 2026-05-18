@@ -281,7 +281,7 @@ def main():
 
     input_path = Path(args.input)
     if not input_path.exists():
-        matches = list(Path("data/labour_law").rglob(input_path.name))
+        matches = list(Path("data").rglob(input_path.name))
         if matches:
             input_path = matches[0]
             print(f"[*] Found '{input_path.name}' in {input_path.parent}")

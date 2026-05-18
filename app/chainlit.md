@@ -27,10 +27,12 @@ For more information about our zero-storage model see our [Privacy Policy](https
 
 ### Forms
 
-* [Grievance - 0 - Instructions](/public/docs/labour_law/forms/Grievance_-_0_-_Instructions.pdf)
-* [Grievance - A - Grievor Case](/public/docs/labour_law/forms/Grievance_-_A_-_Grievor_Case.pdf)
-* [Grievance - B - Notify Designates](/public/docs/labour_law/forms/Grievance_-_B_-_Notify_Designates.pdf)
-* [Grievance - C - Steward Case](/public/docs/labour_law/forms/Grievance_-_C_-_Steward_Case.pdf)
+* [Grievance - 0 - Instructions](/public/docs/forms/Grievance_-_0_-_Instructions.pdf)
+* [Grievance - A - Grievor Case](/public/docs/forms/Grievance_-_A_-_Grievor_Case.pdf)
+* [Grievance - B - Notify Designates](/public/docs/forms/Grievance_-_B_-_Notify_Designates.pdf)
+* [Grievance - C - Steward Case](/public/docs/forms/Grievance_-_C_-_Steward_Case.pdf)
+* [BCGEU Grievance Form Guide](/public/docs/forms/BCGEU_Grievance_Form_Guide.md)
+* [Policy Grievance Form Guide](/public/docs/forms/Policy_Grievance_Form_Guide.md)
 
 ---
 

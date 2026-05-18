@@ -13,7 +13,7 @@ import argparse
 import subprocess
 from pathlib import Path
 
-DATA_DIR = Path("data/labour_law")
+DATA_DIR = Path("data")
 
 def main():
     parser = argparse.ArgumentParser(description="Batch convert PDFs to forensic Markdown.")
