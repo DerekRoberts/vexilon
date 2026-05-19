@@ -45,21 +45,7 @@ x-service-defaults: &service-defaults
 
 # Development volumes: Mount source files for hot-reload, preserve built venv
 x-dev-volumes: &dev-volumes
-  # Mount specific source files and directories for hot-reloading
-  - ./main.py:/app/main.py:ro
-  - ./indexing.py:/app/indexing.py:ro
-  - ./patches.py:/app/patches.py:ro
-  - ./conftest.py:/app/conftest.py:ro
-  - ./pyproject.toml:/app/pyproject.toml:ro
-  - ./.chainlit:/app/.chainlit:ro
-  - ./prompts:/app/prompts:ro
-  - ./public:/app/public:ro
-  - ./tests:/app/tests:ro
-  - ./data:/app/data:ro
-  - ./scripts:/app/scripts:ro
-  - ./chainlit.md:/app/chainlit.md:ro
-  - ./chainlit_en-US.md:/app/chainlit_en-US.md:ro
-  # Mount writable directories for reports and cache
+  - .:/app:z
   - ../reports:/app/reports:z
   - ../.pytest_cache:/app/.pytest_cache:z
 
