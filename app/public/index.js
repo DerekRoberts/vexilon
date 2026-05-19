@@ -32,22 +32,12 @@
 
     // ── Build SHA ─────────────────────────────────────────────────────────────
 
-    let buildSha = "unknown";
+    let buildSha = "dev";
 
     fetch("/api/version")
         .then((res) => res.json())
         .then((data) => {
-            const isDevSha = data.sha && data.sha.toLowerCase() === "dev mode";
-            const shaShort = (!isDevSha && data.sha) ? data.sha.substring(0, 7) : "";
-            
-            let shaSuffix = "";
-            if (isDevSha) {
-                shaSuffix = "";
-            } else if (shaShort) {
-                shaSuffix = " (" + shaShort + ")";
-            }
-            
-            buildSha = (data.version || "unknown") + shaSuffix;
+            if (data.version) buildSha = data.version;
             replaceBuildSha();
         })
         .catch((err) => console.error("Error fetching version:", err));

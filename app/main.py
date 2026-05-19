@@ -95,7 +95,7 @@ def _get_default_model():
     if provider == "ollama":
         val = os.getenv("OLLAMA_MODEL")
         return val if (val and val.strip()) else CURRENT_MODEL_ID
-    return "Qwen/Qwen3-32B"
+    return "Qwen/Qwen3-14B"
 
 DEFAULT_MODEL_LLM = os.getenv("AGNAV_DEFAULT_MODEL", _get_default_model())
 HF_PROVIDER = os.getenv("AGNAV_HF_PROVIDER", "featherless-ai")
@@ -580,7 +580,7 @@ async def rag_stream(message: str, history: list[dict]) -> AsyncIterator[tuple[s
         yield "⚠️ Knowledge base not loaded.", ""
         return
     try:
-        queries, context, snippets = await get_multi_perspective_context(message, history)
+        queries, context, snippets = await get_rag_context(message, history)
         
         system = get_system_prompt().format(manifest="", verify_message="") + f"\n\nContext:\n{context}"
 
@@ -658,10 +658,6 @@ def _format_history(history: list[dict]) -> str:
         history_text += f"{role}: {content}\n"
     return history_text
 
-def _should_use_perspectives(query: str) -> bool:
-    """Determine if a query is complex enough to benefit from multi-perspective search angles."""
-    return len(query.split()) > 10 or os.getenv("AGNAV_FORCE_PERSPECTIVES") == "true"
-
 async def condense_query(message: str, history: list[dict]) -> str:
     """Turn the conversation history and new message into a standalone search query."""
     if not history: return message
@@ -678,138 +674,17 @@ async def condense_query(message: str, history: list[dict]) -> str:
     except Exception:
         return message
 
-async def generate_perspective_queries(message: str, history: list[dict]) -> list[str]:
-    """Generate 3 different search perspectives for a complex query."""
-    prompt = f"Given this user message: '{message}', generate 3 different standalone search queries that look at this from different angles (e.g. legal, procedural, factual). Return ONLY a JSON list of strings."
-    try:
-        text = await unified_chat_create(
-            model=CONDENSE_MODEL,
-            max_tokens=200,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        # More robust extraction using regex to find the JSON block (list or object)
-        match = re.search(r"(\[.*\]|\{.*\})", text, re.DOTALL)
-        if match:
-            import json
-            parsed = json.loads(match.group(0))
-            
-            # Handle if the LLM returned a dict with a list inside
-            if isinstance(parsed, dict):
-                for val in parsed.values():
-                    if isinstance(val, list):
-                        parsed = val
-                        break
-            
-            if isinstance(parsed, list):
-                sanitized_queries = []
-                for item in parsed:
-                    if isinstance(item, str):
-                        sanitized_queries.append(item)
-                    elif isinstance(item, dict):
-                        # Extract the query string from common keys, or fallback to the first string value
-                        q_val = item.get("q") or item.get("query") or item.get("text")
-                        if not q_val:
-                            for val in item.values():
-                                if isinstance(val, str):
-                                    q_val = val
-                                    break
-                        if q_val:
-                            sanitized_queries.append(str(q_val))
-                    else:
-                        sanitized_queries.append(str(item))
-                
-                final_queries = [q.strip() for q in sanitized_queries if q and isinstance(q, str)]
-                if final_queries:
-                    return final_queries
-        return [message]
-    except Exception:
-        return [message]
-
-async def condense_and_generate_perspectives(message: str, history: list[dict]) -> tuple[str, list[str]]:
-    """Condense the query history and generate 3 perspectives in a single LLM pass to save network latency."""
-    if not history:
-        return message, [message]
-    
-    history_text = _format_history(history)
-    prompt = (
-        "You are an expert AI optimizer for RAG database searches.\n\n"
-        "CONVERSATION HISTORY:\n"
-        f"{history_text}\n"
-        f"USER MESSAGE: {message}\n\n"
-        "Your task is to:\n"
-        "1. Rephrase and condense the user's latest follow-up message using the conversation history into a standalone search query that contains all necessary context (e.g. replacing pronouns, referring back to the contract articles being discussed).\n"
-        "2. Generate exactly 3 different standalone search queries that search for the same core intent but from different analytical perspectives (e.g. legal, procedural, factual).\n\n"
-        "Format your output strictly as a JSON object with two keys:\n"
-        "{\n"
-        "  \"condensed_query\": \"<standalone condensed query string>\",\n"
-        "  \"perspectives\": [\"<perspective query 1>\", \"<perspective query 2>\", \"<perspective query 3>\"]\n"
-        "}\n\n"
-        "Return ONLY the raw JSON object. Do not include any markdown styling, conversational text, or triple backticks."
-    )
-    
-    try:
-        resp_text = await unified_chat_create(
-            model=CONDENSE_MODEL,
-            max_tokens=300,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        
-        # Robust JSON extraction using regex in case LLM added styling or text around JSON
-        match = re.search(r"(\{.*\})", resp_text, re.DOTALL)
-        if match:
-            parsed = json.loads(match.group(1))
-            if not isinstance(parsed, dict):
-                raise ValueError("LLM response is not a JSON object")
-            condensed = parsed.get("condensed_query", "").strip()
-            perspectives = parsed.get("perspectives", [])
-            if isinstance(perspectives, str):
-                perspectives = [perspectives]
-            
-            if not condensed:
-                condensed = message
-            
-            # Sanitize perspectives list
-            cleaned_perspectives = []
-            if isinstance(perspectives, list):
-                for p in perspectives:
-                    if isinstance(p, str) and p.strip():
-                        cleaned_perspectives.append(p.strip())
-            
-            if not cleaned_perspectives:
-                cleaned_perspectives = [condensed]
-                
-            return condensed, cleaned_perspectives
-            
-    except Exception as e:
-        logger.error(f"[rag] Failed to condense and generate perspectives in a single pass: {e}")
-        
-    return message, [message]
-
-async def get_multi_perspective_context(message: str, history: list[dict]) -> tuple[list[str], str, list[dict]]:
-    # Optimization: Skip condensation in DEV or if no history exists to save ~30s of latency
-    if IS_DEV or not history:
-        condensed = message
-        # Issue #361: Heuristic for complexity - Use perspectives for long/complex queries
-        if _should_use_perspectives(condensed):
-            async with status_step("perspectives...") as step:
-                queries = await generate_perspective_queries(condensed, history)
-                step.output = "Generated search perspectives:\n" + "\n".join(f"- {q}" for q in queries)
-        else:
-            queries = [condensed]
-    else:
-        # Run the single-pass combined LLM call!
+async def get_rag_context(message: str, history: list[dict]) -> tuple[list[str], str, list[dict]]:
+    # Drop perspectives entirely: only use the user query.
+    # Bypassing condensation in local DEV saves huge latency on local LLM runtimes (e.g. 10-30s on CPU/Ollama).
+    if history and (not IS_DEV or os.getenv("AGNAV_FORCE_CONDENSE") == "true"):
         async with status_step("context synthesis...") as step:
-            condensed, queries_all = await condense_and_generate_perspectives(message, history)
-            # Apply complexity heuristic: if condensed is <= 10 and FORCE is not set, we don't need perspectives
-            if _should_use_perspectives(condensed):
-                queries = queries_all
-                step.output = (
-                    f"Condensed query: \"{condensed}\"\n"
-                    "Generated search perspectives:\n" + "\n".join(f"- {q}" for q in queries)
-                )
-            else:
-                queries = [condensed]
-                step.output = f"Condensed query: \"{condensed}\""
+            condensed = await condense_query(message, history)
+            step.output = f"Condensed query: \"{condensed}\""
+    else:
+        condensed = message
+        
+    queries = [condensed]
     
     async with status_step("retrieval...") as step:
         # Optimization: Fewer chunks in dev to speed up inference
@@ -837,7 +712,7 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
 async def rag_review_stream(message: str, history: list[dict], persona_mode: str = "Lookup", context: str | None = None, queries: list[str] | None = None) -> AsyncIterator[str]:
     try:
         if not context or not queries:
-            q_new, c_new, s_new = await get_multi_perspective_context(message, history)
+            q_new, c_new, s_new = await get_rag_context(message, history)
             context = context or c_new
             queries = queries or q_new
 
@@ -900,9 +775,7 @@ def startup(force_rebuild: bool = False):
     if get_llm_provider() == "huggingface":
         logger.info(f"[startup] HF Routing: {HF_PROVIDER}")
 
-    # Resolve dynamic build SHA (CI environment or local 'dev mode' default)
-    build_sha = os.getenv("BUILD_SHA", "dev mode")
-    logger.info(f"[startup] Build Integrity: {build_sha}")
+    logger.info(f"[startup] Build Integrity: {AGNAV_VERSION}")
 
     _test_registry.load(TESTS_DIR)
     # Ensure cache directory is writable
@@ -1292,7 +1165,7 @@ async def on_message(message: cl.Message) -> None:
     char_count = len(sanitized)
     logger.info(f"[chat] Starting stream for {persona} mode (Words: {word_count}, Chars: {char_count})")
     try:
-        queries, context, snippets = await get_multi_perspective_context(sanitized, history)
+        queries, context, snippets = await get_rag_context(sanitized, history)
         
         # Attach sources as inline file chips (PDF preferred, MD fallback)
         # TODO: clickable links blocked by Chainlit only linkifying http/https — see issue #501
@@ -1371,8 +1244,7 @@ from fastapi.routing import APIRoute
 
 def get_version():
     return {
-        "version": AGNAV_VERSION,
-        "sha": os.getenv("BUILD_SHA", "dev mode")
+        "version": AGNAV_VERSION
     }
 
 # Prepend the API route to bypass Chainlit's catch-all wildcard router
