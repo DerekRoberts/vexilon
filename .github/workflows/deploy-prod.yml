@@ -36,7 +36,7 @@ jobs:
           TEST: "true"
         run: |
           TAG=$(echo '${{ steps.resolve.outputs.images }}' | jq -r '.agnav')
-          ./.github/scripts/deploy.sh "MinionTech/vexilon" "$TAG"
+          ./.github/scripts/deploy.sh "DerekRoberts/vexilon" "$TAG"
 
       - name: Notify Owners on Failure
         if: failure()
