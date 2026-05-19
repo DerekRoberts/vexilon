@@ -675,8 +675,9 @@ async def condense_query(message: str, history: list[dict]) -> str:
         return message
 
 async def get_multi_perspective_context(message: str, history: list[dict]) -> tuple[list[str], str, list[dict]]:
-    # Drop perspectives entirely: only use the user query (condensed if history exists)
-    if history:
+    # Drop perspectives entirely: only use the user query.
+    # Bypassing condensation in local DEV saves huge latency on local LLM runtimes (e.g. 10-30s on CPU/Ollama).
+    if history and not IS_DEV:
         async with status_step("context synthesis...") as step:
             condensed = await condense_query(message, history)
             step.output = f"Condensed query: \"{condensed}\""

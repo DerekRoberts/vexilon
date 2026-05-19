@@ -5,6 +5,7 @@ import main as app
 @pytest.mark.asyncio
 async def test_rag_stream_single_query_flow(monkeypatch):
     """Verify that rag_stream successfully runs with a single query search and deduplicates context."""
+    monkeypatch.setattr(app, "IS_DEV", False)
     fake_index = MagicMock()
     monkeypatch.setattr(app, "_index", fake_index)
     
