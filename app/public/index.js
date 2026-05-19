@@ -32,12 +32,12 @@
 
     // ── Build SHA ─────────────────────────────────────────────────────────────
 
-    let buildSha = "unknown";
+    let buildSha = "dev";
 
     fetch("/api/version")
         .then((res) => res.json())
         .then((data) => {
-            buildSha = data.version || "unknown";
+            if (data.version) buildSha = data.version;
             replaceBuildSha();
         })
         .catch((err) => console.error("Error fetching version:", err));
