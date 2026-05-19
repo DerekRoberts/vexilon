@@ -89,22 +89,14 @@ services:
     environment:
       <<: *app-env
     entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        echo "Pulling model: $$OLLAMA_MODEL_ID"
-        ollama pull $$OLLAMA_MODEL_ID
+    command: ["-c", "ollama pull $$OLLAMA_MODEL_ID"]
 
   ollama-init-test:
     <<: *ollama-init-service
     container_name: vexilon-ollama-init-test
     environment:
       <<: *test-env
-    command:
-      - -c
-      - |
-        echo "Pulling test model: $$OLLAMA_MODEL_ID"
-        ollama pull $$OLLAMA_MODEL_ID || echo "Failed to pull $$OLLAMA_MODEL_ID, continuing..."
+    command: ["-c", "ollama pull $$OLLAMA_MODEL_ID || true"]
 
   # ── Tests
   # Pure logic tests with fully mocked external dependencies.
