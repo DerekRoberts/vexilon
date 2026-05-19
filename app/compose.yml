@@ -57,43 +57,6 @@ services:
     command: >
       sh -c "cd /app && uv run chainlit run main.py --host 0.0.0.0 --port 7860 --headless --watch"
 
-  # ── Local LLM (Ollama)
-  ollama:
-    container_name: vexilon-ollama
-    image: ollama/ollama:latest
-    ports: ["11434:11434"]
-    environment:
-      OLLAMA_FLASH_ATTENTION: 1
-      OLLAMA_HOST: 0.0.0.0
-    volumes:
-      - ${OLLAMA_DATA_PATH:-ollama_data}:/root/.ollama
-    mem_limit: 4g
-    memswap_limit: 4g
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # One-time service to pull the required model into the ollama volume.
-  ollama-init: &ollama-init-service
-    container_name: vexilon-ollama-init
-    image: ollama/ollama:latest
-    depends_on:
-      ollama:
-        condition: service_healthy
-    environment:
-      <<: *app-env
-    entrypoint: /bin/sh
-    command: ["-c", "ollama pull $$OLLAMA_MODEL_ID"]
-
-  ollama-init-test:
-    <<: *ollama-init-service
-    container_name: vexilon-ollama-init-test
-    environment:
-      <<: *test-env
-    command: ["-c", "ollama pull $$OLLAMA_MODEL_ID || true"]
-
   # ── Tests
   # Pure logic tests with fully mocked external dependencies.
   # Fast, zero RAM footprint, runs on every commit.
@@ -159,6 +122,50 @@ services:
         condition: service_completed_successfully
     command: >
       sh -c "echo 'ALL SYSTEMS VERIFIED'"
+
+  # ── Local LLM (Ollama)
+  # Core background daemon container. Runs 'ollama serve' indefinitely, loading
+  # and serving the pulled models in RAM/VRAM on port 11434.
+  ollama:
+    container_name: vexilon-ollama
+    image: ollama/ollama:latest
+    ports: ["11434:11434"]
+    environment:
+      OLLAMA_FLASH_ATTENTION: 1
+      OLLAMA_HOST: 0.0.0.0
+    volumes:
+      - ${OLLAMA_DATA_PATH:-ollama_data}:/root/.ollama
+    mem_limit: 4g
+    memswap_limit: 4g
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # One-time helper to pull the required model for local development.
+  # Boots up, pulls model from registry, then exits immediately.
+  # Fails loudly on network error so developer knows their dev env is broken.
+  ollama-init: &ollama-init-service
+    container_name: vexilon-ollama-init
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      <<: *app-env
+    entrypoint: /bin/sh
+    command: ["-c", "ollama pull $$OLLAMA_MODEL_ID"]
+
+  # One-time helper to pull the model specifically for the testing environment.
+  # Uses '*test-env' and has a safe '|| true' fallback: if registry is flaky/offline,
+  # but model is already stored in host-restored CI cache, integration tests will still pass.
+  ollama-init-test:
+    <<: *ollama-init-service
+    container_name: vexilon-ollama-init-test
+    environment:
+      <<: *test-env
+    command: ["-c", "ollama pull $$OLLAMA_MODEL_ID || true"]
 
 volumes:
   ollama_data: {}
