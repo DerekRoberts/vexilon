@@ -35,10 +35,6 @@ x-service-defaults: &service-defaults
   memswap_limit: 6g
   volumes: []
 
-# Development volumes: Mount source files for hot-reload
-x-dev-volumes: &dev-volumes
-  - .:/app:z
-
 services:
 
   # ── Main Application
@@ -50,7 +46,8 @@ services:
     depends_on:
       ollama-init:
         condition: service_completed_successfully
-    volumes: *dev-volumes
+    volumes:
+      - .:/app:z
     environment:
       <<: *app-env
       AGNAV_LLM_PROVIDER: ollama
@@ -89,17 +86,14 @@ services:
     depends_on:
       ollama:
         condition: service_healthy
-    volumes:
-      - ./main.py:/app/main.py:ro
     environment:
       <<: *app-env
     entrypoint: /bin/sh
     command:
       - -c
       - |
-        TARGET_MODEL=$${OLLAMA_MODEL_ID:-tinyllama}
-        echo "Pulling model: $$TARGET_MODEL"
-        ollama pull $$TARGET_MODEL
+        echo "Pulling model: $$OLLAMA_MODEL_ID"
+        ollama pull $$OLLAMA_MODEL_ID
 
   ollama-init-test:
     <<: *ollama-init-service
@@ -109,10 +103,8 @@ services:
     command:
       - -c
       - |
-        TARGET_MODEL=$${OLLAMA_MODEL_ID:-$$(sed -n 's/.*OLLAMA_MODEL_ID = "\(.*\)".*/\1/p' /app/main.py)}
-        echo "Determined target model: $$TARGET_MODEL"
-        # Intelligent fallback: If model-pull fails, we don't crash the whole test suite
-        ollama pull $$TARGET_MODEL || echo "Failed to pull $$TARGET_MODEL, continuing..."
+        echo "Pulling test model: $$OLLAMA_MODEL_ID"
+        ollama pull $$OLLAMA_MODEL_ID || echo "Failed to pull $$OLLAMA_MODEL_ID, continuing..."
 
   # ── Tests
   # Pure logic tests with fully mocked external dependencies.
