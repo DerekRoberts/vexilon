@@ -47,15 +47,28 @@ Docker deployments.
 - **Podman Compose** (or Docker Compose)
 - **Python 3.12+** (for local script execution)
 
-### Run
+### Task Runner (Recommended)
 
-Agreement Navigator is "Secure by Default" but optimized for a zero-config developer experience via Podman Compose.
+Agreement Navigator includes an executable `./run` bash task runner that automatically detects if `podman compose` or `docker compose` is installed. 
+
+Exposed commands (run from the repository root):
+- **Boot Local Development**: `./run dev`
+- **Graceful Tear Down**: `./run down`
+- **Run Local Pytest Suite**: `./run test`
+- **Run Full Containerized Test Suite**: `./run test-all`
+- **Build Docker Images**: `./run build`
+
+---
+
+### Manual Execution (Without Make)
+
+If you do not have `make` installed, you can specify the compose file manually:
 
 **1. Local Development (Zero-Config)**
 This is the default mode. It starts a local **Ollama** instance, pulls the required model weights, and launches the app with hot-reload. No API keys or tokens are required.
 
 ```bash
-podman compose up --build dev
+podman compose -f app/compose.yml up --build dev
 ```
 
 > [!NOTE]
@@ -67,7 +80,7 @@ Uses the **Hugging Face Inference API** for high-speed "Flash" responses. Requir
 ```bash
 # Add your HF_TOKEN to .env or export it
 export HF_TOKEN=your_token_here
-podman compose up --build staging
+podman compose -f app/compose.yml up --build staging
 ```
 
 > [!TIP]
@@ -172,19 +185,19 @@ Agreement Navigator features a strict **Quality Gate** deployment pattern—all 
 uv run pytest app/tests/ --ignore=app/tests/integration --ignore=app/scripts/smoke_multi.py
 
 # Run containerized unit tests (Mocked, zero-AI)
-podman compose up --build test-unit
+podman compose -f app/compose.yml up --build test-unit
 
 # Run model integration tests (FAISS + Embedding Model)
-podman compose up --build test-integration-model
+podman compose -f app/compose.yml up --build test-integration-model
 
 # Run app integration tests (Functional RAG flow)
-podman compose up --build test-integration-app
+podman compose -f app/compose.yml up --build test-integration-app
 
 # Run full e2e suite (Live UI + Live LLM)
-podman compose up --build test-e2e
+podman compose -f app/compose.yml up --build test-e2e
 
 # Verify everything at once (The "Grand Slam") and launch the dev app if successful
-podman compose up --build test-everything && podman compose up dev
+podman compose -f app/compose.yml up --build test-everything && podman compose -f app/compose.yml up dev
 ```
 
 ---
