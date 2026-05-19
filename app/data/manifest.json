@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-18T20:16:29.162131+00:00",
+  "generated_at": "2026-05-19T00:03:19.650178+00:00",
   "version": "1.0",
   "sources": {
     "01_primary/BCGEU_19th_Main_Agreement.md": {
@@ -209,6 +209,14 @@
     "04_jurisprudence/Nexus_Test_and_Off-Duty_Conduct.md": {
       "hash": "046df1349b82779be1aff9c91ac72931754069813d56efa39ca28f1ae69b6565",
       "size_bytes": 2672
+    },
+    "forms/BCGEU_Grievance_Form_Guide.md": {
+      "hash": "a22c2f219a48346e9fe30f83cc857a6c9444455b592a798139130ee8784d059b",
+      "size_bytes": 1787
+    },
+    "forms/Policy_Grievance_Form_Guide.md": {
+      "hash": "ece8d8f92b9086fac04aa0859a07bc738e409d31fb01aecf538fcb5ccde582e3",
+      "size_bytes": 475
     }
   }
 }
