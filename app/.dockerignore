@@ -1,18 +1,47 @@
-# Exclude large cache and metadata directories from docker build context
-.git/
-.github/
-hf_cache/
-# The FAISS index and chunks are built inside the image via a RUN step in
-# the Containerfile; they don't need to be in the build context.
-.pdf_cache/
+# Git metadata
+.git
+.gitignore
+.gitattributes
 
-# Standard Python ignores
-__pycache__/
-*.pyc
-.venv/
-.pytest_cache/
-.coverage
+# Development artifacts
+.pytest_cache
+.pdf_cache
+reports
+.tmp
+.files
+*.log
 
-# Exclude local scratchpads and workspaces
-.workspaces/
-.tmp/
+# IDE and local files
+.cursor*
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.env.local
+
+# Python artifacts
+**/.venv
+**/venv
+**/__pycache__
+**/*.pyc
+**/.coverage
+
+# CI/CD
+.github
+.agent
+.agents
+.worktree
+.worktrees
+.openspec.yaml
+openspec/
+
+# Documentation
+README.md
+LICENSE
+old-run.log
+25616569181-prepare.log
+
+# Config (not needed in image)
+compose.yml
+.dockerignore

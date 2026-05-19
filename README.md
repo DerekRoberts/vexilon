@@ -1,4 +1,4 @@
-# Agreement Navigator (AgNav)
+# Agreement Navigator
 
 AI chatbot built to empower BCGEU union stewards with instant, cited answers from a broad library
 of labour law and contract documents.
@@ -12,20 +12,9 @@ of labour law and contract documents.
 
 ## Knowledge Base
 
-Agreement Navigator is currently indexed with the following core documents:
+Agreement Navigator dynamically ingests collective agreements and statutory/procedural resource documents. By default, the retrieval pipeline is optimized to prioritize primary collective agreements, using statutes, statutory codes, and organizational manuals to provide secondary legal and operational context.
 
-- **BCGEU 19th Main Public Service Agreement (Priority 1)**: The core collective agreement. This is the **authoritative source** for union stewards; all other documents provide context.
-- **BC Employment Standards Act (Priority 2)**: Statutory minimums for wages, overtime, and notice.
-- **BC Labour Relations Code**: The framework for collective bargaining and union operations.
-- **BC Human Rights Code**: Protection against discrimination and harassment.
-- **BC Workers Compensation Act**: Occupational health and safety (OHS) and injury claims.
-- **BC Social Media Guidance for Public Service Employees**: Specific guidelines for personal and professional social media conduct.
-
-### Priority & Weighting Logic
-Agreement Navigator is programmed to prioritize the **Collective Agreement** above all else. When a query overlaps multiple sources:
-1. The **Agreement** is used for primary enforcement.
-2. **Statutes** (ESA, Labour Code, HRC) are cited as secondary legal context.
-3. If no contract language exists, the assistant identifies relevant statutory protections.
+For the active list of source texts and regulatory documents loaded into this instance, refer to the files organized under the `app/data/` directories.
 
 ### Adding or Updating Documents
 
@@ -47,9 +36,9 @@ Add or replace Markdown files in `app/data/` using the naming convention:
 Agreement Navigator is deployed as a Docker container. We maintain two environments for
 Docker deployments.
 
-🚀 **TEST:** https://huggingface.co/spaces/DerekRoberts/landru
+- **TEST**: https://derekroberts-landru.hf.space
 
-🚀 **PROD:** https://huggingface.co/spaces/MinionTech/vexilon
+- **PROD**: https://derekroberts-vexilon.hf.space
 
 ## Quick Start
 
@@ -58,15 +47,28 @@ Docker deployments.
 - **Podman Compose** (or Docker Compose)
 - **Python 3.12+** (for local script execution)
 
-### Run
+### Task Runner (Recommended)
 
-Agreement Navigator is "Secure by Default" but optimized for a zero-config developer experience via Podman Compose.
+Agreement Navigator includes an executable `./run` bash task runner that automatically detects if `podman compose` or `docker compose` is installed. 
+
+Exposed commands (run from the repository root):
+- **Boot Local Development**: `./run dev`
+- **Graceful Tear Down**: `./run down`
+- **Run Local Pytest Suite**: `./run test`
+- **Run Full Containerized Test Suite**: `./run test-all`
+- **Build Docker Images**: `./run build`
+
+---
+
+### Manual Execution (Without Make)
+
+If you do not have `make` installed, you can specify the compose file manually:
 
 **1. Local Development (Zero-Config)**
 This is the default mode. It starts a local **Ollama** instance, pulls the required model weights, and launches the app with hot-reload. No API keys or tokens are required.
 
 ```bash
-podman compose up --build dev
+podman compose -f app/compose.yml up --build dev
 ```
 
 > [!NOTE]
@@ -78,7 +80,7 @@ Uses the **Hugging Face Inference API** for high-speed "Flash" responses. Requir
 ```bash
 # Add your HF_TOKEN to .env or export it
 export HF_TOKEN=your_token_here
-podman compose up --build staging
+podman compose -f app/compose.yml up --build staging
 ```
 
 > [!TIP]
@@ -106,7 +108,7 @@ The app is ready immediately on page load — no dropdown, no Load button.
 
 ## Multi-Perspective Retrieval
 
-To ensure follow-up questions work reliably (e.g., "What about for part-time?"), AgNav uses a **Multi-Perspective Context** pattern:
+To ensure follow-up questions work reliably (e.g., "What about for part-time?"), Agreement Navigator uses a **Multi-Perspective Context** pattern:
 
 1. **Query Condensing**: A fast LLM pass reconstructs the user's intent into a standalone search query based on conversation history.
 2. **Perspective Generation**: For complex queries, the system generates 3 different search angles (legal, procedural, factual) to ensure maximum retrieval coverage.
@@ -129,36 +131,13 @@ python app/scripts/pdf_to_md.py path/to/document.pdf
 
 ## Security & Reliability
 
-### Rate Limiting
+### Rate Limiting & Abuse Prevention
 
-To prevent API abuse and ensure fair usage, Agreement Navigator implements a multi-tier rate limiter:
+To prevent API abuse and ensure high service availability, the application implements active IP-based rate limiting. Tiered request limits are applied per minute and per hour. When limits are exceeded, the API returns user-friendly rate-limit warning cards with retry-duration indicators.
 
-| Tier | Default Limit | Description |
-|---|---|---|
-| `RATE_LIMIT_PER_MINUTE` | `5` | Burst protection for chat messages |
-| `RATE_LIMIT_PER_HOUR` | `100` | Maximum requests per hour per client IP |
+### Input Sanitization & Jailbreak Protection
 
-When a rate limit is exceeded, users receive a clear error message indicating which limit was hit and when they can retry.
-
-### Input Sanitization
-
-Input sanitization prevents prompt injection attacks by detecting and blocking malicious inputs:
-
-| Setting | Value | Description |
-|---|---|---|
-| `MAX_INPUT_LENGTH` | `10000` | Maximum characters per message |
-| `LOG_SUSPICIOUS_INPUTS` | `true` | Log flagged inputs for security review |
-
-The sanitization checks for 16+ prompt injection patterns including:
-- `ignore all/previous/system instructions`
-- `forget your/the instructions`
-- `disregard your/the rules`
-- `you are now ... instead`
-- `new (system) prompt:`
-- `[[SYSTEM]]`
-- `jailbreak`, `developer mode`, `sudo mode`
-- `roleplay as`, `pretend you are/to be`
-- `override instructions`, `disable safety`
+Input sanitization safeguards the LLM context from prompt injection attacks and malicious overrides. The security engine dynamically checks and filters user inputs for maximum length constraints and known system instruction override patterns to prevent jailbreaking, adversarial roleplaying, or instruction leakage.
 
 ### Privacy & Data Retention
 
@@ -168,7 +147,7 @@ Agreement Navigator is a "content-blind" application designed for maximum privac
 - **Surgical Query Masking**: We log the occurrence of queries (including technical metadata like word/character counts) to monitor system health, but the **actual content** of user messages and bot responses is never logged.
 - **Anonymized Metrics**: We only track non-sensitive technical metadata to monitor system performance and rate-limiting compliance.
 
-For full technical disclosure and mapping to the 10 PIPA Fair Information Principles, see [PRIVACY.md](./PRIVACY.md).
+For full technical disclosure and mapping to the 10 PIPA Fair Information Principles, see [PRIVACY.md](./app/public/docs/PRIVACY.md).
 
 ---
 
@@ -197,16 +176,7 @@ the HF Space.
 
 ## Running Tests
 
-Agreement Navigator uses a **Quality Gate** pattern in `compose.yml` — the app will not start unless the test suite passes.
-
-### Test Tiers
-
-| Tier | Location | Model | When to run |
-|---|---|---|---|
-| **Unit** | `app/tests/test_*.py` | Mocked (no download) | Every commit — fast, zero RAM cost |
-| **Integration (Model)** | `app/tests/integration/` | Real `BAAI/bge-small-en-v1.5` (~800 MB) | In container — memory-capped at 2 GB |
-| **Integration (App)** | `app/tests/test_rag_stream.py` | Functional app logic (mocked LLM) | Verify RAG flow and token streaming |
-| **E2E (Live)** | `app/scripts/smoke_multi.py` | Real HF/Ollama API | Manually, to verify live API connectivity |
+Agreement Navigator features a strict **Quality Gate** deployment pattern—all automated unit and integration tests must pass to verify the application's integrity before local or staging environments boot.
 
 ### Commands
 
@@ -215,46 +185,26 @@ Agreement Navigator uses a **Quality Gate** pattern in `compose.yml` — the app
 uv run pytest app/tests/ --ignore=app/tests/integration --ignore=app/scripts/smoke_multi.py
 
 # Run containerized unit tests (Mocked, zero-AI)
-podman compose up --build test-unit
+podman compose -f app/compose.yml up --build test-unit
 
 # Run model integration tests (FAISS + Embedding Model)
-podman compose up --build test-integration-model
+podman compose -f app/compose.yml up --build test-integration-model
 
 # Run app integration tests (Functional RAG flow)
-podman compose up --build test-integration-app
+podman compose -f app/compose.yml up --build test-integration-app
 
 # Run full e2e suite (Live UI + Live LLM)
-podman compose up --build test-e2e
+podman compose -f app/compose.yml up --build test-e2e
 
-# Verify everything at once (The "Grand Slam")
-podman compose up --build test-everything && podman compose down
+# Verify everything at once (The "Grand Slam") and launch the dev app if successful
+podman compose -f app/compose.yml up --build test-everything && podman compose -f app/compose.yml up dev
 ```
 
 ---
 
-## Project Structure
-
-```
-.
-├── .agents/              # AI Agent specifications and SOPs
-├── .github/              # CI/CD workflows and scripts
-├── app/                  # Core application workspace
-│   ├── data/             # Knowledge base (markdown files)
-│   ├── docs/             # Technical and Privacy documentation
-│   ├── prompts/          # System prompts and instructions
-│   ├── scripts/          # Build, conversion, and audit utilities
-│   ├── tests/            # pytest test suite (Unit + Integration)
-│   ├── main.py           # Main entry point (Chainlit UI)
-│   └── indexing.py       # RAG pipeline and FAISS logic
-├── Containerfile         # High-integrity Docker build
-├── compose.yml           # Dev, staging, and test profiles
-├── pyproject.toml        # Dependency management (uv)
-└── README.md             # The document you are reading
-```
-
 ## Contributing
 
-We encourage contributions to AgNav via **pull requests**. 
+We encourage contributions to Agreement Navigator via **pull requests**. 
 
 - **Workflow**: Create a branch from `main`, commit your changes, and submit a PR.
 - **Merge**: PRs are evaluated by the maintainers and are typically squash-merged to `main`.
@@ -262,4 +212,4 @@ We encourage contributions to AgNav via **pull requests**.
 
 ---
 
-*Agreement Navigator (AgNav) — Empowering Stewards through Forensic RAG.*
+*Agreement Navigator — Empowering Stewards through Forensic RAG.*

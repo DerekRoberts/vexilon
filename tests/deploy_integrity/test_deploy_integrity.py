@@ -56,7 +56,7 @@ def test_app_py_build_safety():
 
 def test_containerfile_healthcheck_sync():
     """Ensures the Docker HEALTHCHECK port matches the app port."""
-    containerfile_path = REPO_ROOT / "Containerfile"
+    containerfile_path = REPO_ROOT / "app" / "Containerfile"
     if not containerfile_path.exists():
         return # Skip if no Containerfile
         
@@ -70,7 +70,7 @@ def test_containerfile_healthcheck_sync():
 
 def test_hf_cache_security_lock():
     """Ensures hf_cache ownership has not been loosened (must remain root for security)."""
-    containerfile_path = REPO_ROOT / "Containerfile"
+    containerfile_path = REPO_ROOT / "app" / "Containerfile"
     content = containerfile_path.read_text()
     
     # Ensure there is NO --chown=1001:1001 on the hf_cache line
@@ -78,3 +78,21 @@ def test_hf_cache_security_lock():
     # Safe version: COPY --from=builder /app/hf_cache /app/hf_cache
     assert "--chown=1001:1001 /app/hf_cache" not in content, \
         "Security Breach: hf_cache MUST NOT be owned by the app user. Revert the chown to root."
+
+
+def test_compose_llm_provider_valid():
+    """Ensures compose.yml uses only officially supported LLM providers."""
+    compose_path = REPO_ROOT / "app" / "compose.yml"
+    if not compose_path.exists():
+        return
+        
+    content = compose_path.read_text()
+    
+    # Extract all lines setting AGNAV_LLM_PROVIDER
+    # e.g., AGNAV_LLM_PROVIDER: ollama
+    providers = re.findall(r"AGNAV_LLM_PROVIDER:\s*([a-zA-Z0-9_-]+)", content)
+    
+    supported_providers = {"ollama", "huggingface", "mock"}
+    for p in providers:
+        assert p.lower() in supported_providers, \
+            f"Unsupported LLM provider '{p}' found in compose.yml. Supported: {supported_providers}"

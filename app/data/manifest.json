@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-05-18T06:07:13.813134+00:00",
+  "generated_at": "2026-05-19T05:57:41.781799+00:00",
   "version": "1.0",
   "sources": {
     "01_primary/BCGEU_19th_Main_Agreement.md": {
       "hash": "fa58d818e31e1541aacaab1bd164f6e53e4b938d95923106bf2ff4bb4ca12648",
       "size_bytes": 597844
     },
-    "01_primary/BC_Labour_Relations_Code.md": {
-      "hash": "dfd271ae4a4566c908e846525be987938dbedb816455f030b793f2e87c8de13f",
-      "size_bytes": 170143
+    "01_primary/Gov_BC_Standards_of_Conduct.md": {
+      "hash": "decf3e1688a4409e9b6c5792dbcda485776eeb3b78c120ab86b74e31a354fec1",
+      "size_bytes": 29886
     },
     "02_statutory/BC_Employment_Standards_Act.md": {
       "hash": "ae43f3f5c9b1ec40ab4fdf752d91be6c921b4fdb2c86d513b5b61baf9d59c09c",
@@ -17,6 +17,10 @@
     "02_statutory/BC_Human_Rights_Code.md": {
       "hash": "b422e829dc855b64d9814627de0e4eabb6bbec5aa6f4109116fcfe8239eae294",
       "size_bytes": 51234
+    },
+    "02_statutory/BC_Labour_Relations_Code.md": {
+      "hash": "dfd271ae4a4566c908e846525be987938dbedb816455f030b793f2e87c8de13f",
+      "size_bytes": 170143
     },
     "02_statutory/BC_OHS_Regulation_-_Introduction.md": {
       "hash": "5b5111b651d9c15dfe7f518172e53b889dee1b806299b18f1787e5da0b1a1d54",
@@ -202,10 +206,6 @@
       "hash": "f27116574c4e6eb56804176666af965b8ffe1b9e1641bce126bd543d5122fbfb",
       "size_bytes": 49392
     },
-    "03_resources/Gov_BC_Standards_of_Conduct.md": {
-      "hash": "decf3e1688a4409e9b6c5792dbcda485776eeb3b78c120ab86b74e31a354fec1",
-      "size_bytes": 29886
-    },
     "04_jurisprudence/Nexus_Test_and_Off-Duty_Conduct.md": {
       "hash": "046df1349b82779be1aff9c91ac72931754069813d56efa39ca28f1ae69b6565",
       "size_bytes": 2672
@@ -213,22 +213,6 @@
     "forms/BCGEU_Grievance_Form_Guide.md": {
       "hash": "a22c2f219a48346e9fe30f83cc857a6c9444455b592a798139130ee8784d059b",
       "size_bytes": 1787
-    },
-    "forms/Grievance_-_0_-_Instructions.pdf": {
-      "hash": "381eeaa4b18c152777b8edee20a040eb05d6ce4f4c2b1fc1de9f825e9dcacd22",
-      "size_bytes": 139818
-    },
-    "forms/Grievance_-_A_-_Grievor_Case.pdf": {
-      "hash": "21d8abf56d8b4ebbfab35033eb9d8e68a30624a2784ae2c7bdd4cb317660508a",
-      "size_bytes": 73309
-    },
-    "forms/Grievance_-_B_-_Notify_Designates.pdf": {
-      "hash": "d6beb10231aac7cdfb30a4e3d432585ea162b38221881bfa707e861e23cf89ff",
-      "size_bytes": 56645
-    },
-    "forms/Grievance_-_C_-_Steward_Case.pdf": {
-      "hash": "166757f7bdbe344312c6713f50e83ec06bfb237d679eb59d0718e9010396a588",
-      "size_bytes": 161792
     },
     "forms/Policy_Grievance_Form_Guide.md": {
       "hash": "ece8d8f92b9086fac04aa0859a07bc738e409d31fb01aecf538fcb5ccde582e3",

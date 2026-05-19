@@ -304,7 +304,7 @@ def get_document_tier_weight(source_name: str, path: str = "") -> float:
 
     # Tier 3 checks:
     # 1. Statutory regulations: '02_statutory/' folder or source names
-    # 2. Other general resources: '03_resources/' folder except Standards of Conduct
+    # 2. Other general resources: '03_resources/' folder
     is_statutory = (
         "02_statutory" in path_lower 
         or "statutory" in path_lower

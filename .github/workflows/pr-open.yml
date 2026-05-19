@@ -31,7 +31,7 @@ jobs:
       - id: diff
         uses: bcgov/actions/diff-triggers@main
         with:
-          triggers: '["app/**", "compose.yml", ".github/workflows/**"]'
+          triggers: '["app/**", ".github/workflows/**"]'
 
   prepare-tests:
     name: Prepare Test Cache
@@ -58,8 +58,9 @@ jobs:
       - name: Warm Cache (All Test Targets)
         uses: docker/bake-action@v7
         with:
+          source: app
           files: compose.yml
-          targets: dev,staging
+          targets: dev
           set: |
             *.cache-from=type=gha
             *.cache-from=type=registry,ref=ghcr.io/miniontech/vexilon/agnav:buildcache
@@ -72,33 +73,39 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build and Cache (Unit Tests)
-        uses: docker/bake-action@v7
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
         with:
-          load: true
-          files: compose.yml
-          targets: test-unit
-          set: |
-            *.cache-from=type=gha
-            *.cache-from=type=registry,ref=ghcr.io/miniontech/vexilon/agnav:buildcache
-            *.cache-to=type=gha,mode=max
+          enable-cache: true
+          cache-dependency-glob: "app/uv.lock"
 
-      - name: Run Containerized Unit Tests
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install Dependencies
+        run: |
+          cd app
+          uv sync --frozen
+
+      - name: Run Deployment Integrity Checks
+        run: ./run integrity
+
+      - name: Run Local Unit & Streaming Tests
+        env:
+          VERIFY_ENABLED: "true"
         run: |
           mkdir -p reports
-          docker compose up --abort-on-container-exit test-unit
-
-      - name: Dump Logs on Failure
-        if: failure()
-        run: docker compose logs test-unit
+          cd app
+          uv run python -m pytest tests/test_*.py -v \
+            --junitxml=../reports/junit.xml \
+            --cov=indexing --cov=main --cov-report=xml:../reports/coverage.xml
 
       - name: Upload Coverage
         uses: actions/upload-artifact@v7
@@ -125,15 +132,15 @@ jobs:
         uses: docker/bake-action@v7
         with:
           load: true
+          source: app
           files: compose.yml
           targets: dev
           set: |
             *.cache-from=type=gha
             *.cache-from=type=registry,ref=ghcr.io/miniontech/vexilon/agnav:buildcache
-            *.cache-to=type=gha,mode=max
 
       - name: Validate Cache Manifest
-        run: docker compose up test-cache
+        run: docker compose -f app/compose.yml up test-cache
 
   test-integration-model:
     name: Integration Tests (Model)
@@ -159,23 +166,23 @@ jobs:
         uses: docker/bake-action@v7
         with:
           load: true
+          source: app
           files: compose.yml
           targets: dev
           set: |
             *.cache-from=type=gha
             *.cache-from=type=registry,ref=ghcr.io/miniontech/vexilon/agnav:buildcache
-            *.cache-to=type=gha,mode=max
 
       - name: Run Integration Tests
-        run: docker compose up test-integration-model
+        run: docker compose -f app/compose.yml up test-integration-model
 
       - name: Dump Logs on Failure
         if: failure()
-        run: docker compose logs
+        run: docker compose -f app/compose.yml logs
 
       - name: Cleanup
         if: always()
-        run: docker compose down -v || true
+        run: docker compose -f app/compose.yml down -v || true
 
   test-integration-app:
     name: Integration Tests (App)
@@ -195,23 +202,23 @@ jobs:
         uses: docker/bake-action@v7
         with:
           load: true
+          source: app
           files: compose.yml
           targets: dev
           set: |
             *.cache-from=type=gha
             *.cache-from=type=registry,ref=ghcr.io/miniontech/vexilon/agnav:buildcache
-            *.cache-to=type=gha,mode=max
 
       - name: Run Integration Tests (App)
-        run: docker compose up test-integration-app
+        run: docker compose -f app/compose.yml up test-integration-app
 
       - name: Dump Logs on Failure
         if: failure()
-        run: docker compose logs
+        run: docker compose -f app/compose.yml logs
 
       - name: Cleanup
         if: always()
-        run: docker compose down -v || true
+        run: docker compose -f app/compose.yml down -v || true
 
   test-e2e:
     name: End-to-End Tests
@@ -237,23 +244,23 @@ jobs:
         uses: docker/bake-action@v7
         with:
           load: true
+          source: app
           files: compose.yml
-          targets: dev,staging
+          targets: dev
           set: |
             *.cache-from=type=gha
             *.cache-from=type=registry,ref=ghcr.io/miniontech/vexilon/agnav:buildcache
-            *.cache-to=type=gha,mode=max
 
       - name: Run E2E Tests
-        run: docker compose up test-everything
+        run: docker compose -f app/compose.yml up test-everything
 
       - name: Dump Logs on Failure
         if: failure()
-        run: docker compose logs
+        run: docker compose -f app/compose.yml logs
 
       - name: Cleanup
         if: always()
-        run: docker compose down -v || true
+        run: docker compose -f app/compose.yml down -v || true
 
   build:
     name: Build & Push to GHCR
@@ -273,8 +280,8 @@ jobs:
         uses: bcgov/action-builder-ghcr@main
         with:
           package: agnav
-          build_context: .
-          build_file: Containerfile
+          build_context: app
+          build_file: app/Containerfile
           build_args: |
             VERSION=sha-${{ github.event.pull_request.head.sha }}
             REPO_URL=https://github.com/${{ github.repository }}
