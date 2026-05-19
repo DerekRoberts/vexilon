@@ -94,13 +94,16 @@ jobs:
           cd app
           uv sync --frozen
 
-      - name: Run Unit & Deploy Integrity Tests
+      - name: Run Deployment Integrity Checks
+        run: ./run integrity
+
+      - name: Run Local Unit & Streaming Tests
         env:
           VERIFY_ENABLED: "true"
         run: |
           mkdir -p reports
           cd app
-          uv run python -m pytest tests/test_*.py ../tests/deploy_integrity/test_*.py -v \
+          uv run python -m pytest tests/test_*.py -v \
             --junitxml=../reports/junit.xml \
             --cov=indexing --cov=main --cov-report=xml:../reports/coverage.xml
 
