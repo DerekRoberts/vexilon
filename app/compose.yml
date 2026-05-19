@@ -35,11 +35,9 @@ x-service-defaults: &service-defaults
   memswap_limit: 6g
   volumes: []
 
-# Development volumes: Mount source files for hot-reload, preserve built venv
+# Development volumes: Mount source files for hot-reload
 x-dev-volumes: &dev-volumes
   - .:/app:z
-  - ../reports:/app/reports:z
-  - ../.pytest_cache:/app/.pytest_cache:z
 
 services:
 
@@ -96,13 +94,13 @@ services:
     environment:
       <<: *app-env
     entrypoint: /bin/sh
-
     command:
       - -c
       - |
         TARGET_MODEL=$${OLLAMA_MODEL_ID:-tinyllama}
         echo "Pulling model: $$TARGET_MODEL"
         ollama pull $$TARGET_MODEL
+
   ollama-init-test:
     <<: *ollama-init-service
     container_name: vexilon-ollama-init-test
@@ -128,7 +126,6 @@ services:
       sh -c "VERIFY_ENABLED=true uv run --no-sync python -m pytest tests/test_*.py -v 
       --junitxml=reports/junit.xml 
       --cov=indexing --cov=main --cov-report=xml:reports/coverage.xml"
-
 
   # Validates integration between app code and the local model services.
   # Hits live Ollama instance; requires pre-warmed model weights.
