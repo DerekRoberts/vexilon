@@ -3,8 +3,8 @@ x-var:
   - &PORT "7860"
   - &MEM_LIMIT 6g
 
-# Reusable environment for all services
-x-common-env: &common-env
+# Reusable environment for Python/App services
+x-app-env: &app-env
   HF_TOKEN: ${HF_TOKEN:-}
   HF_HUB_OFFLINE: "1"
   TRANSFORMERS_OFFLINE: "1"
@@ -14,9 +14,10 @@ x-common-env: &common-env
   CHAINLIT_FILES_DIR: /tmp/chainlit_files
 
 x-test-env: &test-env
-  <<: *common-env
+  <<: *app-env
   OLLAMA_MODEL_ID: tinyllama
   AGNAV_FORCE_PERSPECTIVES: "true"
+
 x-healthcheck: &app-healthcheck
   test: ["CMD", "curl", "-f", "http://localhost:7860/"]
   interval: 10s
@@ -61,7 +62,7 @@ services:
         condition: service_completed_successfully
     volumes: *dev-volumes
     environment:
-      <<: *common-env
+      <<: *app-env
       AGNAV_LLM_PROVIDER: ollama
       WATCHFILES_FORCE_POLLING: "true"
       PORT: *PORT
@@ -72,8 +73,6 @@ services:
     healthcheck: *app-healthcheck
     command: >
       sh -c "cd /app && uv run chainlit run main.py --host 0.0.0.0 --port 7860 --headless --watch"
-
-
 
   # ── Local LLM (Ollama)
   ollama:
@@ -103,7 +102,7 @@ services:
     volumes:
       - ./main.py:/app/main.py:ro
     environment:
-      <<: *common-env
+      <<: *app-env
     entrypoint: /bin/sh
 
     command:
@@ -184,7 +183,7 @@ services:
   test-cache:
     container_name: vexilon-test-cache
     <<: *service-defaults
-    environment: *common-env
+    environment: *app-env
     command: /venv/bin/python scripts/generate_cache_manifest.py validate
 
   # The final synchronization gate for the entire repository.
