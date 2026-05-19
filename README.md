@@ -1,4 +1,4 @@
-# Agreement Navigator (AgNav)
+# Agreement Navigator
 
 AI chatbot built to empower BCGEU union stewards with instant, cited answers from a broad library
 of labour law and contract documents.
@@ -47,9 +47,9 @@ Add or replace Markdown files in `app/data/` using the naming convention:
 Agreement Navigator is deployed as a Docker container. We maintain two environments for
 Docker deployments.
 
-🚀 **TEST:** https://huggingface.co/spaces/DerekRoberts/landru
+🚀 **TEST:** https://derekroberts-landru.hf.space
 
-🚀 **PROD:** https://huggingface.co/spaces/MinionTech/vexilon
+🚀 **PROD:** https://derekroberts-vexilon.hf.space
 
 ## Quick Start
 
@@ -106,7 +106,7 @@ The app is ready immediately on page load — no dropdown, no Load button.
 
 ## Multi-Perspective Retrieval
 
-To ensure follow-up questions work reliably (e.g., "What about for part-time?"), AgNav uses a **Multi-Perspective Context** pattern:
+To ensure follow-up questions work reliably (e.g., "What about for part-time?"), Agreement Navigator uses a **Multi-Perspective Context** pattern:
 
 1. **Query Condensing**: A fast LLM pass reconstructs the user's intent into a standalone search query based on conversation history.
 2. **Perspective Generation**: For complex queries, the system generates 3 different search angles (legal, procedural, factual) to ensure maximum retrieval coverage.
@@ -238,7 +238,10 @@ podman compose up --build test-everything && podman compose up dev
 .
 ├── .agents/              # AI Agent specifications and SOPs
 ├── .github/              # CI/CD workflows and scripts
+├── .dockerignore         # Symlink to app/.dockerignore
 ├── app/                  # Core application workspace
+│   ├── .dockerignore     # Excluded build paths and patterns
+│   ├── Containerfile     # High-integrity Docker build
 │   ├── data/             # Knowledge base (markdown files)
 │   ├── docs/             # Technical and Privacy documentation
 │   ├── prompts/          # System prompts and instructions
@@ -246,7 +249,6 @@ podman compose up --build test-everything && podman compose up dev
 │   ├── tests/            # pytest test suite (Unit + Integration)
 │   ├── main.py           # Main entry point (Chainlit UI)
 │   └── indexing.py       # RAG pipeline and FAISS logic
-├── Containerfile         # High-integrity Docker build
 ├── compose.yml           # Dev, staging, and test profiles
 ├── pyproject.toml        # Dependency management (uv)
 └── README.md             # The document you are reading
@@ -254,7 +256,7 @@ podman compose up --build test-everything && podman compose up dev
 
 ## Contributing
 
-We encourage contributions to AgNav via **pull requests**. 
+We encourage contributions to Agreement Navigator via **pull requests**. 
 
 - **Workflow**: Create a branch from `main`, commit your changes, and submit a PR.
 - **Merge**: PRs are evaluated by the maintainers and are typically squash-merged to `main`.
@@ -262,4 +264,4 @@ We encourage contributions to AgNav via **pull requests**.
 
 ---
 
-*Agreement Navigator (AgNav) — Empowering Stewards through Forensic RAG.*
+*Agreement Navigator — Empowering Stewards through Forensic RAG.*

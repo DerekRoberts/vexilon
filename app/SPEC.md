@@ -1,6 +1,6 @@
-# Product Specification: Agreement Navigator (AgNav)
+# Product Specification: Agreement Navigator
 
-Agreement Navigator (AgNav) is a high-integrity RAG (Retrieval-Augmented Generation) chatbot designed specifically for BCGEU union stewards. It provides instant, cited, and verbatim answers from collective agreements and labour law documents, optimized for high-speed mobile use on the shop floor.
+Agreement Navigator is a high-integrity RAG (Retrieval-Augmented Generation) chatbot designed specifically for BCGEU union stewards. It provides instant, cited, and verbatim answers from collective agreements and labour law documents, optimized for high-speed mobile use on the shop floor.
 
 ---
 
@@ -31,7 +31,7 @@ To reduce the "Information Gap" for union stewards by providing a mobile-first, 
 
 ## 4. Persona Modes (Direct Advice)
 
-AgNav features three operational personas that adapt the AI's "brain" to the steward's current situation:
+Agreement Navigator features three operational personas that adapt the AI's "brain" to the steward's current situation:
 
 1. **Lookup (Default):** The "Forensic Navigator." Focuses on literal interpretation, clause-finding, and cross-referencing.
 2. **Grieve:** The "Forensic Auditor." Acts as a Senior Staff Rep, building air-tight grievance cases by identifying contract violations and suggesting specific evidence to gather.
@@ -54,7 +54,7 @@ AgNav features three operational personas that adapt the AI's "brain" to the ste
 
 ## 6. The Forensic Markdown Pipeline
 
-AgNav moves beyond messy PDF-to-text extraction by using a specialized "Forensic" ingestion strategy:
+Agreement Navigator moves beyond messy PDF-to-text extraction by using a specialized "Forensic" ingestion strategy:
 1. **Geometric Reconstruction:** PyMuPDF extracts text based on physical page coordinates, ensuring correct word ordering for complex multi-column layouts.
 2. **Zero-Reasoning Transcription:** An LLM pass adds hierarchical Markdown headers (# Article, ## Section) under strict "PARANOID DETERMINISM" rules:
     - **VERBATIM ONLY:** Forbidden from changing, adding, or removing a single substantive word.
@@ -76,14 +76,14 @@ AgNav moves beyond messy PDF-to-text extraction by using a specialized "Forensic
 
 ## 8. Multi-Turn Context (Query Condensing)
 
-To ensure follow-up questions work reliably (e.g., "What about for part-time?"), AgNav uses a Query Condensing pass:
+To ensure follow-up questions work reliably (e.g., "What about for part-time?"), Agreement Navigator uses a Query Condensing pass:
 1. **Input:** User query + Conversation History.
 2. **Pass:** A fast LLM call reconstructs the user's intent into a standalone search query.
 3. **Search:** The FAISS index is searched using the condensed query, not the vague follow-up.
 
 ---
 
-AgNav includes an automated "Adversarial Reviewer" that double-checks its own answers:
+Agreement Navigator includes an automated "Adversarial Reviewer" that double-checks its own answers:
 1. **Trigger:** Runs as an asynchronous background task immediately after a response finishes streaming.
 2. **Verification:** A second LLM pass (configured via `VERIFY_MODEL`) compares the generated answer against the retrieved quotes.
 3. **Categories:**
