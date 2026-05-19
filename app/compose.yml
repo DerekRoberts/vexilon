@@ -13,16 +13,14 @@ x-test-env: &test-env
   <<: *app-env
   AGNAV_FORCE_PERSPECTIVES: "true"
 
-x-build-dev: &build-dev
-  context: .
-  dockerfile: Containerfile
-  args:
-    VERSION: ${AGNAV_VERSION:-dev}
-  target: builder
-
 # Standard service boilerplate: Resource limits and Persistence
 x-service-defaults: &service-defaults
-  build: *build-dev
+  build:
+    context: .
+    dockerfile: Containerfile
+    args:
+      VERSION: ${AGNAV_VERSION:-dev}
+    target: builder
   image: vexilon:dev
   mem_limit: 6g
   memswap_limit: 6g
