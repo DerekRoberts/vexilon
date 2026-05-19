@@ -118,4 +118,4 @@ cat .dockerignore
 ---
 
 **Last Updated**: 2026-05-16  
-**See Also**: `docs/DOCKER_CACHING_STRATEGY.md` for detailed architecture
+**See Also**: `DOCKER_CACHING_STRATEGY.md` for detailed architecture

@@ -232,28 +232,6 @@ podman compose up --build test-everything && podman compose up dev
 
 ---
 
-## Project Structure
-
-```
-.
-├── .agents/              # AI Agent specifications and SOPs
-├── .github/              # CI/CD workflows and scripts
-├── .dockerignore         # Symlink to app/.dockerignore
-├── app/                  # Core application workspace
-│   ├── .dockerignore     # Excluded build paths and patterns
-│   ├── Containerfile     # High-integrity Docker build
-│   ├── compose.yml       # Dev, staging, and test profiles
-│   ├── data/             # Knowledge base (markdown files)
-│   ├── docs/             # Technical and Privacy documentation
-│   ├── prompts/          # System prompts and instructions
-│   ├── scripts/          # Build, conversion, and audit utilities
-│   ├── tests/            # pytest test suite (Unit + Integration)
-│   ├── main.py           # Main entry point (Chainlit UI)
-│   └── indexing.py       # RAG pipeline and FAISS logic
-├── pyproject.toml        # Dependency management (uv)
-└── README.md             # The document you are reading
-```
-
 ## Contributing
 
 We encourage contributions to Agreement Navigator via **pull requests**. 

@@ -25,7 +25,7 @@ x-healthcheck: &app-healthcheck
   start_period: 120s
 
 x-common-build: &common-build
-  context: ..
+  context: .
   dockerfile: Containerfile
   args:
     VERSION: ${AGNAV_VERSION:-dev}
