@@ -26,7 +26,7 @@ x-healthcheck: &app-healthcheck
 
 x-common-build: &common-build
   context: .
-  dockerfile: Containerfile
+  dockerfile: app/Containerfile
   args:
     VERSION: ${AGNAV_VERSION:-dev}
 
@@ -180,7 +180,7 @@ services:
     build: *build-dev
     environment: *test-env
     volumes:
-      - ./Containerfile:/Containerfile:ro
+      - ./app/Containerfile:/Containerfile:ro
       - ./tests/deploy_integrity:/tests/deploy_integrity:ro
     command: >
       sh -c "uv run --no-sync python -m pytest /tests/deploy_integrity/test_*.py -p no:cacheprovider -v"
