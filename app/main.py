@@ -580,7 +580,7 @@ async def rag_stream(message: str, history: list[dict]) -> AsyncIterator[tuple[s
         yield "⚠️ Knowledge base not loaded.", ""
         return
     try:
-        queries, context, snippets = await get_multi_perspective_context(message, history)
+        queries, context, snippets = await get_rag_context(message, history)
         
         system = get_system_prompt().format(manifest="", verify_message="") + f"\n\nContext:\n{context}"
 
@@ -674,7 +674,7 @@ async def condense_query(message: str, history: list[dict]) -> str:
     except Exception:
         return message
 
-async def get_multi_perspective_context(message: str, history: list[dict]) -> tuple[list[str], str, list[dict]]:
+async def get_rag_context(message: str, history: list[dict]) -> tuple[list[str], str, list[dict]]:
     # Drop perspectives entirely: only use the user query.
     # Bypassing condensation in local DEV saves huge latency on local LLM runtimes (e.g. 10-30s on CPU/Ollama).
     if history and not IS_DEV:
@@ -712,7 +712,7 @@ async def get_multi_perspective_context(message: str, history: list[dict]) -> tu
 async def rag_review_stream(message: str, history: list[dict], persona_mode: str = "Lookup", context: str | None = None, queries: list[str] | None = None) -> AsyncIterator[str]:
     try:
         if not context or not queries:
-            q_new, c_new, s_new = await get_multi_perspective_context(message, history)
+            q_new, c_new, s_new = await get_rag_context(message, history)
             context = context or c_new
             queries = queries or q_new
 
@@ -1165,7 +1165,7 @@ async def on_message(message: cl.Message) -> None:
     char_count = len(sanitized)
     logger.info(f"[chat] Starting stream for {persona} mode (Words: {word_count}, Chars: {char_count})")
     try:
-        queries, context, snippets = await get_multi_perspective_context(sanitized, history)
+        queries, context, snippets = await get_rag_context(sanitized, history)
         
         # Attach sources as inline file chips (PDF preferred, MD fallback)
         # TODO: clickable links blocked by Chainlit only linkifying http/https — see issue #501
