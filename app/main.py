@@ -677,7 +677,7 @@ async def condense_query(message: str, history: list[dict]) -> str:
 async def get_rag_context(message: str, history: list[dict]) -> tuple[list[str], str, list[dict]]:
     # Drop perspectives entirely: only use the user query.
     # Bypassing condensation in local DEV saves huge latency on local LLM runtimes (e.g. 10-30s on CPU/Ollama).
-    if history and not IS_DEV:
+    if history and (not IS_DEV or os.getenv("AGNAV_FORCE_CONDENSE") == "true"):
         async with status_step("context synthesis...") as step:
             condensed = await condense_query(message, history)
             step.output = f"Condensed query: \"{condensed}\""
