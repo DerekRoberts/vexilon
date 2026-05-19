@@ -50,7 +50,7 @@ case "$CMD" in
     test)
         echo "Running local unit and streaming tests..."
         cd app
-        uv run pytest ../tests/deploy_integrity/ tests/test_rag_stream.py -v "$@"
+        uv run pytest ../tests/deploy_integrity/ tests/ --ignore=tests/integration/ -v "$@"
         ;;
     test-all)
         echo "Running all containerized integration and E2E suites..."
