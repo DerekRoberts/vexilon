@@ -60,7 +60,7 @@ jobs:
         with:
           source: app
           files: compose.yml
-          targets: dev,staging
+          targets: dev
           set: |
             *.cache-from=type=gha
             *.cache-from=type=registry,ref=ghcr.io/miniontech/vexilon/agnav:buildcache
@@ -243,7 +243,7 @@ jobs:
           load: true
           source: app
           files: compose.yml
-          targets: dev,staging
+          targets: dev
           set: |
             *.cache-from=type=gha
             *.cache-from=type=registry,ref=ghcr.io/miniontech/vexilon/agnav:buildcache
