@@ -25,14 +25,11 @@ x-healthcheck: &app-healthcheck
   retries: 10
   start_period: 120s
 
-x-common-build: &common-build
+x-build-dev: &build-dev
   context: .
   dockerfile: Containerfile
   args:
     VERSION: ${AGNAV_VERSION:-dev}
-
-x-build-dev: &build-dev
-  <<: *common-build
   target: builder
 
 # Standard service boilerplate: Resource limits and Persistence
