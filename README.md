@@ -12,20 +12,9 @@ of labour law and contract documents.
 
 ## Knowledge Base
 
-Agreement Navigator is currently indexed with the following core documents:
+Agreement Navigator dynamically ingests collective agreements and statutory/procedural resource documents. By default, the retrieval pipeline is optimized to prioritize primary collective agreements, using statutes, statutory codes, and organizational manuals to provide secondary legal and operational context.
 
-- **BCGEU 19th Main Public Service Agreement (Priority 1)**: The core collective agreement. This is the **authoritative source** for union stewards; all other documents provide context.
-- **BC Employment Standards Act (Priority 2)**: Statutory minimums for wages, overtime, and notice.
-- **BC Labour Relations Code**: The framework for collective bargaining and union operations.
-- **BC Human Rights Code**: Protection against discrimination and harassment.
-- **BC Workers Compensation Act**: Occupational health and safety (OHS) and injury claims.
-- **BC Social Media Guidance for Public Service Employees**: Specific guidelines for personal and professional social media conduct.
-
-### Priority & Weighting Logic
-Agreement Navigator is programmed to prioritize the **Collective Agreement** above all else. When a query overlaps multiple sources:
-1. The **Agreement** is used for primary enforcement.
-2. **Statutes** (ESA, Labour Code, HRC) are cited as secondary legal context.
-3. If no contract language exists, the assistant identifies relevant statutory protections.
+For the active list of source texts and regulatory documents loaded into this instance, refer to the files organized under the `app/data/` directories.
 
 ### Adding or Updating Documents
 
@@ -129,36 +118,13 @@ python app/scripts/pdf_to_md.py path/to/document.pdf
 
 ## Security & Reliability
 
-### Rate Limiting
+### Rate Limiting & Abuse Prevention
 
-To prevent API abuse and ensure fair usage, Agreement Navigator implements a multi-tier rate limiter:
+To prevent API abuse and ensure high service availability, the application implements active IP-based rate limiting. Tiered request limits are applied per minute and per hour. When limits are exceeded, the API returns user-friendly rate-limit warning cards with retry-duration indicators.
 
-| Tier | Default Limit | Description |
-|---|---|---|
-| `RATE_LIMIT_PER_MINUTE` | `5` | Burst protection for chat messages |
-| `RATE_LIMIT_PER_HOUR` | `100` | Maximum requests per hour per client IP |
+### Input Sanitization & Jailbreak Protection
 
-When a rate limit is exceeded, users receive a clear error message indicating which limit was hit and when they can retry.
-
-### Input Sanitization
-
-Input sanitization prevents prompt injection attacks by detecting and blocking malicious inputs:
-
-| Setting | Value | Description |
-|---|---|---|
-| `MAX_INPUT_LENGTH` | `10000` | Maximum characters per message |
-| `LOG_SUSPICIOUS_INPUTS` | `true` | Log flagged inputs for security review |
-
-The sanitization checks for 16+ prompt injection patterns including:
-- `ignore all/previous/system instructions`
-- `forget your/the instructions`
-- `disregard your/the rules`
-- `you are now ... instead`
-- `new (system) prompt:`
-- `[[SYSTEM]]`
-- `jailbreak`, `developer mode`, `sudo mode`
-- `roleplay as`, `pretend you are/to be`
-- `override instructions`, `disable safety`
+Input sanitization safeguards the LLM context from prompt injection attacks and malicious overrides. The security engine dynamically checks and filters user inputs for maximum length constraints and known system instruction override patterns to prevent jailbreaking, adversarial roleplaying, or instruction leakage.
 
 ### Privacy & Data Retention
 
@@ -197,16 +163,7 @@ the HF Space.
 
 ## Running Tests
 
-Agreement Navigator uses a **Quality Gate** pattern in `compose.yml` — the app will not start unless the test suite passes.
-
-### Test Tiers
-
-| Tier | Location | Model | When to run |
-|---|---|---|---|
-| **Unit** | `app/tests/test_*.py` | Mocked (no download) | Every commit — fast, zero RAM cost |
-| **Integration (Model)** | `app/tests/integration/` | Real `BAAI/bge-small-en-v1.5` (~800 MB) | In container — memory-capped at 2 GB |
-| **Integration (App)** | `app/tests/test_rag_stream.py` | Functional app logic (mocked LLM) | Verify RAG flow and token streaming |
-| **E2E (Live)** | `app/scripts/smoke_multi.py` | Real HF/Ollama API | Manually, to verify live API connectivity |
+Agreement Navigator features a strict **Quality Gate** deployment pattern—all automated unit and integration tests must pass to verify the application's integrity before local or staging environments boot.
 
 ### Commands
 
