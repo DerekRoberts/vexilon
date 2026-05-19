@@ -39,6 +39,8 @@ x-build-staging: &build-staging
 
 # Standard service boilerplate: Resource limits and Persistence
 x-service-defaults: &service-defaults
+  build: *build-dev
+  image: vexilon:dev
   mem_limit: *MEM_LIMIT
   memswap_limit: *MEM_LIMIT
   volumes: []
@@ -57,8 +59,6 @@ services:
     container_name: vexilon-dev
     <<: *service-defaults
     user: "${UID:-1000}:${GID:-1000}"
-    image: vexilon:dev
-    build: *build-dev
     depends_on:
       ollama-init:
         condition: service_completed_successfully
@@ -162,8 +162,6 @@ services:
   test-unit:
     container_name: vexilon-test-unit
     <<: *service-defaults
-    image: vexilon:dev
-    build: *build-dev
     environment: *test-env
     # Shared healthcheck not needed for one-off test runners
     command: >
@@ -175,8 +173,6 @@ services:
   test-deploy-integrity:
     container_name: vexilon-test-deploy-integrity
     <<: *service-defaults
-    image: vexilon:dev
-    build: *build-dev
     environment: *test-env
     volumes:
       - ./Containerfile:/Containerfile:ro
@@ -189,8 +185,6 @@ services:
   test-integration-model:
     container_name: vexilon-test-integration-model
     <<: *service-defaults
-    image: vexilon:dev
-    build: *build-dev
     depends_on:
       test-cache:
         condition: service_completed_successfully
@@ -205,8 +199,6 @@ services:
   test-integration-app:
     container_name: vexilon-test-integration-app
     <<: *service-defaults
-    image: vexilon:dev
-    build: *build-dev
     depends_on:
       test-cache:
         condition: service_completed_successfully
@@ -223,8 +215,6 @@ services:
   test-cache:
     container_name: vexilon-test-cache
     <<: *service-defaults
-    image: vexilon:dev
-    build: *build-dev
     environment: *common-env
     command: /venv/bin/python scripts/generate_cache_manifest.py validate
 
@@ -233,8 +223,6 @@ services:
   test-e2e:
     container_name: vexilon-test-e2e
     <<: *service-defaults
-    image: vexilon:dev
-    build: *build-dev
     depends_on:
       dev-test:
         condition: service_healthy
@@ -254,8 +242,6 @@ services:
   test-everything:
     container_name: vexilon-test-everything
     <<: *service-defaults
-    image: vexilon:dev
-    build: *build-dev
     depends_on:
       test-unit:
         condition: service_completed_successfully
