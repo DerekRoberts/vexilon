@@ -13,13 +13,6 @@ x-test-env: &test-env
   <<: *app-env
   AGNAV_FORCE_PERSPECTIVES: "true"
 
-x-healthcheck: &app-healthcheck
-  test: ["CMD", "curl", "-f", "http://localhost:7860/"]
-  interval: 10s
-  timeout: 5s
-  retries: 10
-  start_period: 120s
-
 x-build-dev: &build-dev
   context: .
   dockerfile: Containerfile
@@ -57,7 +50,12 @@ services:
     memswap_limit: 2g
     ports:
       - "7860:7860"
-    healthcheck: *app-healthcheck
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
     command: >
       sh -c "cd /app && uv run chainlit run main.py --host 0.0.0.0 --port 7860 --headless --watch"
 
