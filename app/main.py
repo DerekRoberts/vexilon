@@ -775,9 +775,7 @@ def startup(force_rebuild: bool = False):
     if get_llm_provider() == "huggingface":
         logger.info(f"[startup] HF Routing: {HF_PROVIDER}")
 
-    # Resolve dynamic build SHA (CI environment or version default)
-    build_sha = os.getenv("BUILD_SHA") or AGNAV_VERSION
-    logger.info(f"[startup] Build Integrity: {build_sha}")
+    logger.info(f"[startup] Build Integrity: {AGNAV_VERSION}")
 
     _test_registry.load(TESTS_DIR)
     # Ensure cache directory is writable
@@ -1247,7 +1245,7 @@ from fastapi.routing import APIRoute
 def get_version():
     return {
         "version": AGNAV_VERSION,
-        "sha": os.getenv("BUILD_SHA") or AGNAV_VERSION
+        "sha": AGNAV_VERSION
     }
 
 # Prepend the API route to bypass Chainlit's catch-all wildcard router
