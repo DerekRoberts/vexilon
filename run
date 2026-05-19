@@ -12,6 +12,7 @@ usage() {
     echo "  down      Tear down all active containers and prune volumes"
     echo "  build     Rebuild all Docker/Podman container images"
     echo "  test      Run local unit and streaming tests via pytest"
+    echo "  integrity Run build and deployment integrity checks"
     echo "  test-all  Run full containerized integration and e2e test suite"
     echo ""
     exit 1
@@ -51,6 +52,11 @@ case "$CMD" in
         echo "Running local unit and streaming tests..."
         cd app
         uv run pytest ../tests/deploy_integrity/ tests/ --ignore=tests/integration/ -v "$@"
+        ;;
+    integrity)
+        echo "Running build and deployment integrity checks..."
+        cd app
+        uv run pytest ../tests/deploy_integrity/ -v "$@"
         ;;
     test-all)
         echo "Running all containerized integration and E2E suites..."
