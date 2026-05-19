@@ -73,18 +73,6 @@ services:
     command: >
       sh -c "cd /app && uv run chainlit run main.py --host 0.0.0.0 --port 7860 --headless --watch"
 
-  dev-test:
-    <<: *dev-service
-    container_name: vexilon-dev-test
-    depends_on:
-      ollama-init-test:
-        condition: service_completed_successfully
-    environment:
-      <<: *test-env
-      WATCHFILES_FORCE_POLLING: "true"
-      PORT: *PORT
-    ports: [] # Prevent conflict with running dev instances
-    volumes: [] # Use baked-in cache, don't mount host directories
 
 
   # ── Local LLM (Ollama)
