@@ -105,9 +105,6 @@ async def test_rag_stream_yields_context(monkeypatch):
     mock_client.chat.completions.create = AsyncMock(side_effect=_mock_openai_stream)
     monkeypatch.setattr(app, "get_llm_client", lambda: mock_client)
 
-    # Mock generate_perspective_queries to avoid hitting the API in this test
-    monkeypatch.setattr(app, "generate_perspective_queries", AsyncMock(return_value=["Question"]))
-
     yielded_contexts = []
     async for chunk, ctx in app.rag_stream("Question", []):
         if ctx:

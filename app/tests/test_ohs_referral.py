@@ -42,9 +42,6 @@ async def test_rag_review_stream_triggers_ohs_logic(monkeypatch):
     mock_client.chat.completions.create = AsyncMock(side_effect=mock_create)
     monkeypatch.setattr("main.get_llm_client", lambda: mock_client)
     
-    # Mock generate_perspective_queries to avoid hitting the API in this test
-    monkeypatch.setattr("main.generate_perspective_queries", AsyncMock(return_value=["I need to refuse unsafe work"]))
-    
     # Run rag_review_stream with an OHS keyword
     # persona_mode must be 'Grieve' to trigger Audit Logic
     async for chunk in rag_review_stream("I need to refuse unsafe work", [], persona_mode="Grieve"):
