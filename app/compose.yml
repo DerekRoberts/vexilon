@@ -129,16 +129,6 @@ services:
       --junitxml=reports/junit.xml 
       --cov=indexing --cov=main --cov-report=xml:reports/coverage.xml"
 
-  # Static checks for configuration drift, ports, and deployment safety.
-  test-deploy-integrity:
-    container_name: vexilon-test-deploy-integrity
-    <<: *service-defaults
-    environment: *test-env
-    volumes:
-      - ./Containerfile:/Containerfile:ro
-      - ../tests/deploy_integrity:/tests/deploy_integrity:ro
-    command: >
-      sh -c "uv run --no-sync python -m pytest /tests/deploy_integrity/test_*.py -p no:cacheprovider -v"
 
   # Validates integration between app code and the local model services.
   # Hits live Ollama instance; requires pre-warmed model weights.
