@@ -58,7 +58,8 @@ jobs:
       - name: Warm Cache (All Test Targets)
         uses: docker/bake-action@v7
         with:
-          files: app/compose.yml
+          source: app
+          files: compose.yml
           targets: dev,staging
           set: |
             *.cache-from=type=gha
@@ -128,7 +129,8 @@ jobs:
         uses: docker/bake-action@v7
         with:
           load: true
-          files: app/compose.yml
+          source: app
+          files: compose.yml
           targets: dev
           set: |
             *.cache-from=type=gha
@@ -161,7 +163,8 @@ jobs:
         uses: docker/bake-action@v7
         with:
           load: true
-          files: app/compose.yml
+          source: app
+          files: compose.yml
           targets: dev
           set: |
             *.cache-from=type=gha
@@ -196,7 +199,8 @@ jobs:
         uses: docker/bake-action@v7
         with:
           load: true
-          files: app/compose.yml
+          source: app
+          files: compose.yml
           targets: dev
           set: |
             *.cache-from=type=gha
@@ -237,7 +241,8 @@ jobs:
         uses: docker/bake-action@v7
         with:
           load: true
-          files: app/compose.yml
+          source: app
+          files: compose.yml
           targets: dev,staging
           set: |
             *.cache-from=type=gha
