@@ -121,3 +121,24 @@ def test_chainlit_markdown_links_exist():
         
         assert target_file.exists(), \
             f"Broken Link in chainlit.md: The asset '{link}' was linked, but '{target_file}' does not exist on disk."
+
+
+def test_manifest_source_files_exist():
+    """Ensures all source files listed in data/manifest.json actually exist on disk."""
+    import json
+    manifest_path = REPO_ROOT / "app" / "data" / "manifest.json"
+    if not manifest_path.exists():
+        return
+        
+    try:
+        manifest = json.loads(manifest_path.read_text())
+    except Exception as e:
+        assert False, f"manifest.json is not valid JSON: {e}"
+        
+    sources = manifest.get("sources", {})
+    data_root = REPO_ROOT / "app" / "data"
+    
+    for relative_path_str in sources.keys():
+        target_file = data_root / relative_path_str
+        assert target_file.exists(), \
+            f"Missing indexed resource: Source file '{relative_path_str}' is listed in manifest.json, but '{target_file}' does not exist on disk."
