@@ -1244,8 +1244,7 @@ from fastapi.routing import APIRoute
 
 def get_version():
     return {
-        "version": AGNAV_VERSION,
-        "sha": AGNAV_VERSION
+        "version": AGNAV_VERSION
     }
 
 # Prepend the API route to bypass Chainlit's catch-all wildcard router
