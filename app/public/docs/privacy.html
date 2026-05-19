@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Agreement Navigator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --accent-color: #4f46e5;
+            --accent-hover: #4338ca;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #0f172a;
+                --card-bg: #1e293b;
+                --text-primary: #f8fafc;
+                --text-secondary: #94a3b8;
+                --accent-color: #818cf8;
+                --accent-hover: #a5b4fc;
+                --border-color: #334155;
+                --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+            }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 2rem 1rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 3rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+
+        .header-actions {
+            margin-bottom: 2rem;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background-color: var(--border-color);
+            color: var(--text-primary);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            opacity: 0.9;
+            text-decoration: none;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent-color);
+        }
+
+        p {
+            margin-bottom: 1.25rem;
+            color: var(--text-secondary);
+        }
+
+        ul {
+            margin-bottom: 1.25rem;
+            padding-left: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        a:hover {
+            color: var(--accent-hover);
+            text-decoration: underline;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: var(--border-color);
+            margin: 2rem 0;
+        }
+
+        .flow-step {
+            background: var(--bg-color);
+            padding: 1.25rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+            margin-bottom: 1rem;
+        }
+
+        .flow-step strong {
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-actions">
+            <a href="/" class="back-btn">← Back to Agreement Navigator</a>
+        </div>
+
+        <h1>Privacy Policy: PIPA Compliance Framework</h1>
+        
+        <p>This application is built with a "Privacy-by-Design" architecture, specifically aligned with the British Columbia <a href="https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/03063_01" target="_blank"><strong>Personal Information Protection Act (PIPA)</strong></a>. As a tool designed for union stewards, we recognize the high sensitivity of labour relations data and the legal requirements for protecting personal information.</p>
+
+        <h2>The 10 PIPA Principles in this Application</h2>
+
+        <h3>1. Accountability</h3>
+        <ul>
+            <li><strong>Designation:</strong> The project maintainer serves as the Privacy Officer.</li>
+            <li><strong>Policies:</strong> This document serves as our formal privacy policy.</li>
+            <li><strong>Third-Parties:</strong> This application uses Hugging Face Router for processing. All data sent to the LLM provider is subject to their standard data processing agreements.</li>
+        </ul>
+
+        <h3>2. Identifying Purposes</h3>
+        <ul>
+            <li><strong>Purpose:</strong> This application processes user queries for the sole purpose of providing context-aware answers in real-time.</li>
+            <li><strong>Tracking:</strong> We only track non-sensitive metadata (query counts and token consumption) for system health and API billing.</li>
+            <li><strong>No Secondary Use:</strong> Data is never used for marketing, profiling, or tracking individual users.</li>
+        </ul>
+
+        <h3>3. Consent</h3>
+        <ul>
+            <li><strong>Implied Consent:</strong> By using the chat interface and submitting queries, users provide implied consent for the processing of those queries.</li>
+            <li><strong>Notification:</strong> The UI footer explicitly states that chats are ephemeral and not saved.</li>
+        </ul>
+
+        <h3>4. Limiting Collection</h3>
+        <ul>
+            <li><strong>Minimal Metrics:</strong> Our collection is strictly limited to non-sensitive performance metrics: <strong>query count</strong> and <strong>token consumption</strong>.</li>
+            <li><strong>Content-Blind:</strong> The application does not collect user IP addresses (except for active session rate-limiting in memory), device fingerprints, or location data.</li>
+            <li><strong>No PII:</strong> We do not require registration or any Personally Identifiable Information (PII) to function.</li>
+        </ul>
+
+        <h3>5. Limiting Use, Disclosure, and Retention</h3>
+        <ul>
+            <li><strong>Ephemeral History:</strong> Chat history exists only in the user's browser session. Refreshing the page permanently deletes the conversation.</li>
+            <li><strong>No Persistence:</strong> This application does <em>not</em> write user queries or bot responses to a database.</li>
+            <li><strong>Surgical Log Masking:</strong> Technical logs for forensic health monitoring include non-PII metadata (word counts, character counts, and persona modes), but <strong>never</strong> the actual content of user queries or bot responses.</li>
+        </ul>
+
+        <h3>6. Accuracy</h3>
+        <ul>
+            <li><strong>Source Integrity:</strong> This application uses a "Forensic Markdown Pipeline" to ensure that the collective agreements used for grounding are accurate representations of the official source documents.</li>
+            <li><strong>Verification Bot:</strong> An optional reviewer bot checks responses against source text to prevent hallucinations.</li>
+        </ul>
+
+        <h3>7. Safeguards</h3>
+        <ul>
+            <li><strong>Input Sanitization:</strong> We use regex-based pattern matching to prevent prompt injection and unauthorized access to system instructions.</li>
+            <li><strong>Rate Limiting:</strong> Protects the service from abuse and potential data-scraping attempts.</li>
+            <li><strong>Hosting:</strong> Deployed on Hugging Face Spaces with standard TLS encryption for all data in transit.</li>
+        </ul>
+
+        <h3>8. Openness</h3>
+        <ul>
+            <li><strong>Transparency:</strong> Our technical implementation (including the retrieval logic and system prompts) is open-source and available for audit on GitHub.</li>
+            <li><strong>Policy Access:</strong> This privacy policy is linked directly from the application interface.</li>
+        </ul>
+
+        <h3>9. Individual Access</h3>
+        <ul>
+            <li><strong>Immediate Access:</strong> Users see all data processed (their query) and the resulting output immediately.</li>
+            <li><strong>No "Records":</strong> Because we do not retain data, there are no persistent records for a user to request or correct.</li>
+        </ul>
+
+        <h3>10. Challenging Compliance</h3>
+        <ul>
+            <li><strong>Reporting:</strong> Users can report privacy concerns or potential vulnerabilities through GitHub Issues or by contacting the project maintainer.</li>
+            <li><strong>Recourse:</strong> As a tool for union stewards, we encourage users to consult their BCGEU representative if they believe privacy standards are not being met.</li>
+        </ul>
+
+        <hr>
+
+        <h2>Data Flow Summary</h2>
+
+        <div class="flow-step">
+            <strong>1. User Input</strong> → Sanitized locally → Sent to LLM Provider via TLS.
+        </div>
+        <div class="flow-step">
+            <strong>2. Processing</strong> → LLM generates a response based <em>only</em> on the provided agreement excerpts.
+        </div>
+        <div class="flow-step">
+            <strong>3. Output</strong> → Streamed back to the user's browser.
+        </div>
+        <div class="flow-step">
+            <strong>4. Closure</strong> → Tab closes → RAM is cleared → No record remains on the servers.
+        </div>
+    </div>
+</body>
+</html>
