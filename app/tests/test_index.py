@@ -107,20 +107,20 @@ def test_get_document_tier_weight():
     """Verify that get_document_tier_weight returns correct weights for all tiers."""
     # Tier 1 documents
     assert indexing.get_document_tier_weight("BCGEU 19th Main Agreement", "01_primary/BCGEU_19th_Main_Agreement.md") == 1.2
-    assert indexing.get_document_tier_weight("Gov BC Standards of Conduct", "03_resources/Gov_BC_Standards_of_Conduct.md") == 1.2
+    assert indexing.get_document_tier_weight("Gov BC Standards of Conduct", "01_primary/Gov_BC_Standards_of_Conduct.md") == 1.2
     
     # Matching by source name only or path only (robustness checks)
     assert indexing.get_document_tier_weight("Gov BC Standards of Conduct", "") == 1.2
-    assert indexing.get_document_tier_weight("", "03_resources/Gov_BC_Standards_of_Conduct.md") == 1.2
+    assert indexing.get_document_tier_weight("", "01_primary/Gov_BC_Standards_of_Conduct.md") == 1.2
     assert indexing.get_document_tier_weight("BCGEU 19th Main Agreement", "") == 1.2
     assert indexing.get_document_tier_weight("", "01_primary/BCGEU_19th_Main_Agreement.md") == 1.2
     
     # Tier 2 documents (unmodified)
-    assert indexing.get_document_tier_weight("BC Labour Relations Code", "01_primary/BC_Labour_Relations_Code.md") == 1.0
     assert indexing.get_document_tier_weight("Nexus Test and Off-Duty Conduct", "04_jurisprudence/Nexus_Test_and_Off-Duty_Conduct.md") == 1.0
     assert indexing.get_document_tier_weight("BCGEU Grievance Form Guide", "forms/BCGEU_Grievance_Form_Guide.md") == 1.0
     
     # Tier 3 documents (de-boosted)
+    assert indexing.get_document_tier_weight("BC Labour Relations Code", "02_statutory/BC_Labour_Relations_Code.md") == 0.8
     assert indexing.get_document_tier_weight("BC Employment Standards Act", "02_statutory/BC_Employment_Standards_Act.md") == 0.8
     assert indexing.get_document_tier_weight("BC OHS Regulation - Part 07", "02_statutory/BC_OHS_Regulation_-_Part_07.md") == 0.8
     assert indexing.get_document_tier_weight("BCGEU Steward Resources", "03_resources/BCGEU_Steward_Resources.md") == 0.8
