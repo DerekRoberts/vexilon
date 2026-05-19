@@ -96,3 +96,28 @@ def test_compose_llm_provider_valid():
     for p in providers:
         assert p.lower() in supported_providers, \
             f"Unsupported LLM provider '{p}' found in compose.yml. Supported: {supported_providers}"
+
+
+def test_chainlit_markdown_links_exist():
+    """Ensures all local static file links inside chainlit.md actually exist on disk."""
+    chainlit_md_path = REPO_ROOT / "app" / "chainlit.md"
+    if not chainlit_md_path.exists():
+        return
+        
+    content = chainlit_md_path.read_text()
+    
+    # Match local links starting with /public/docs/
+    # e.g., [BCGEU 19th Main Agreement](/public/docs/BCGEU_19th_Main_Agreement.pdf)
+    local_links = re.findall(r"\]\((/public/docs/[^\)]+)\)", content)
+    
+    public_docs_root = REPO_ROOT / "app" / "public" / "docs"
+    
+    for link in local_links:
+        # Strip the /public/docs/ prefix to get the relative path inside app/public/docs
+        relative_path_str = link.replace("/public/docs/", "")
+        
+        # Resolve target physical file path
+        target_file = public_docs_root / relative_path_str
+        
+        assert target_file.exists(), \
+            f"Broken Link in chainlit.md: The asset '{link}' was linked, but '{target_file}' does not exist on disk."
