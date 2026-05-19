@@ -168,7 +168,7 @@ Agreement Navigator is a "content-blind" application designed for maximum privac
 - **Surgical Query Masking**: We log the occurrence of queries (including technical metadata like word/character counts) to monitor system health, but the **actual content** of user messages and bot responses is never logged.
 - **Anonymized Metrics**: We only track non-sensitive technical metadata to monitor system performance and rate-limiting compliance.
 
-For full technical disclosure and mapping to the 10 PIPA Fair Information Principles, see [PRIVACY.md](./PRIVACY.md).
+For full technical disclosure and mapping to the 10 PIPA Fair Information Principles, see [PRIVACY.md](./app/public/docs/PRIVACY.md).
 
 ---
 
@@ -242,6 +242,7 @@ podman compose up --build test-everything && podman compose up dev
 ├── app/                  # Core application workspace
 │   ├── .dockerignore     # Excluded build paths and patterns
 │   ├── Containerfile     # High-integrity Docker build
+│   ├── compose.yml       # Dev, staging, and test profiles
 │   ├── data/             # Knowledge base (markdown files)
 │   ├── docs/             # Technical and Privacy documentation
 │   ├── prompts/          # System prompts and instructions
@@ -249,7 +250,6 @@ podman compose up --build test-everything && podman compose up dev
 │   ├── tests/            # pytest test suite (Unit + Integration)
 │   ├── main.py           # Main entry point (Chainlit UI)
 │   └── indexing.py       # RAG pipeline and FAISS logic
-├── compose.yml           # Dev, staging, and test profiles
 ├── pyproject.toml        # Dependency management (uv)
 └── README.md             # The document you are reading
 ```

@@ -1,1 +1,0 @@
-app/public/docs/PRIVACY.md
