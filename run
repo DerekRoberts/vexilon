@@ -4,7 +4,7 @@ set -euo pipefail
 
 # Print help/usage instructions if an invalid command is passed
 usage() {
-    echo "📋 Agreement Navigator Task Runner"
+    echo "Agreement Navigator Task Runner"
     echo "Usage: ./run <command> [args...]"
     echo ""
     echo "Commands:"
@@ -23,7 +23,7 @@ if command -v podman-compose >/dev/null 2>&1; then
 elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
     COMPOSE="docker compose"
 else
-    echo "❌ Error: Neither podman-compose nor docker-compose was detected on your PATH." >&2
+    echo "Error: Neither podman-compose nor docker-compose was detected on your PATH." >&2
     exit 1
 fi
 
@@ -36,28 +36,28 @@ shift
 
 case "$CMD" in
     dev)
-        echo "🚀 Starting development environment using $COMPOSE..."
+        echo "Starting development environment using $COMPOSE..."
         $COMPOSE -f app/compose.yml up --build dev "$@"
         ;;
     down)
-        echo "🧹 Tearing down dev environment..."
+        echo "Tearing down dev environment..."
         $COMPOSE -f app/compose.yml down -v "$@"
         ;;
     build)
-        echo "📦 Building container images..."
+        echo "Building container images..."
         $COMPOSE -f app/compose.yml build "$@"
         ;;
     test)
-        echo "🧪 Running local unit and streaming tests..."
+        echo "Running local unit and streaming tests..."
         cd app
         uv run pytest ../tests/deploy_integrity/ tests/test_rag_stream.py -v "$@"
         ;;
     test-all)
-        echo "⚡ Running all containerized integration and E2E suites..."
+        echo "Running all containerized integration and E2E suites..."
         $COMPOSE -f app/compose.yml up --build test-everything "$@"
         ;;
     *)
-        echo "❌ Error: Unknown command '$CMD'" >&2
+        echo "Error: Unknown command '$CMD'" >&2
         usage
         ;;
 esac

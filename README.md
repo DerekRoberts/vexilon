@@ -36,9 +36,9 @@ Add or replace Markdown files in `app/data/` using the naming convention:
 Agreement Navigator is deployed as a Docker container. We maintain two environments for
 Docker deployments.
 
-🚀 **TEST:** https://derekroberts-landru.hf.space
+- **TEST**: https://derekroberts-landru.hf.space
 
-🚀 **PROD:** https://derekroberts-vexilon.hf.space
+- **PROD**: https://derekroberts-vexilon.hf.space
 
 ## Quick Start
 
