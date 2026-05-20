@@ -54,7 +54,7 @@ from indexing import (
 
 # ─── Global State & Config ──────────────────────────────────────────────────
 # Single Source of Truth for local development models.
-OLLAMA_MODEL_ID = "qwen3:14b"
+OLLAMA_MODEL_ID = "tinyllama"
 # Allow environment override for CI (e.g. tinyllama for smoke tests)
 CURRENT_MODEL_ID = os.getenv("OLLAMA_MODEL_ID", OLLAMA_MODEL_ID)
 
@@ -95,10 +95,10 @@ def _get_default_model():
     if provider == "ollama":
         val = os.getenv("OLLAMA_MODEL")
         return val if (val and val.strip()) else CURRENT_MODEL_ID
-    return "Qwen/Qwen3-14B"
+    return "Qwen/Qwen3-32B"
 
 DEFAULT_MODEL_LLM = os.getenv("AGNAV_DEFAULT_MODEL", _get_default_model())
-HF_PROVIDER = os.getenv("AGNAV_HF_PROVIDER", "").strip()
+HF_PROVIDER = os.getenv("AGNAV_HF_PROVIDER", "featherless-ai").strip()
 CLAUDE_MODEL = os.getenv("AGNAV_CLAUDE_MODEL", DEFAULT_MODEL_LLM)
 REVIEWER_MODEL = os.getenv("AGNAV_REVIEWER_MODEL", DEFAULT_MODEL_LLM)
 CONDENSE_MODEL = os.getenv("AGNAV_CONDENSE_MODEL", DEFAULT_MODEL_LLM)
