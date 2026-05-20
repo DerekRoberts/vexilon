@@ -36,9 +36,9 @@ Add or replace Markdown files in `app/data/` using the naming convention:
 Agreement Navigator is deployed as a Docker container. We maintain two environments for
 Docker deployments.
 
-- **TEST**: https://derekroberts-landru.hf.space
+- **TEST**: https://bcgeu-navigator-test.hf.space
 
-- **PROD**: https://derekroberts-vexilon.hf.space
+- **PROD**: https://bcgeu-navigator.hf.space
 
 ## Quick Start
 
@@ -163,8 +163,8 @@ so the Space starts instantly.
 The deployment process (`.github/workflows/deploy-*.yml`) pushes a stub `Dockerfile` to
 the HF Space.
 
-- **TEST:** Every push to `main` triggers [`.github/workflows/deploy-test.yml`](.github/workflows/deploy-test.yml), deploying to the `DerekRoberts/landru` Space.
-- **PROD:** Every published GitHub release triggers [`.github/workflows/deploy-prod.yml`](.github/workflows/deploy-prod.yml), deploying to the `DerekRoberts/vexilon` Space.
+- **TEST:** Every push to `main` triggers [`.github/workflows/deploy-test.yml`](.github/workflows/deploy-test.yml), deploying to the `bcgeu/navigator-test` Space.
+- **PROD:** Every published GitHub release triggers [`.github/workflows/deploy-prod.yml`](.github/workflows/deploy-prod.yml), deploying to the `bcgeu/navigator` Space.
 
 **Required GitHub secret:**
 
