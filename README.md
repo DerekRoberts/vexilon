@@ -208,7 +208,7 @@ We encourage contributions to Agreement Navigator via **pull requests**.
 
 - **Workflow**: Create a branch from `main`, commit your changes, and submit a PR.
 - **Merge**: PRs are evaluated by the maintainers and are typically squash-merged to `main`.
-- **Licensing**: By contributing, you grant a world-wide, royalty-free, perpetual, irrevocable, non-exclusive, transferable license to all users under the terms of the [MIT License](./LICENSE).
+- **Licensing**: By contributing, you grant all users the right to use, modify, and distribute your contributions under the terms of the [GNU GPLv3 License](./LICENSE).
 
 ---
 
