@@ -142,3 +142,42 @@ def test_manifest_source_files_exist():
         target_file = data_root / relative_path_str
         assert target_file.exists(), \
             f"Missing indexed resource: Source file '{relative_path_str}' is listed in manifest.json, but '{target_file}' does not exist on disk."
+
+
+def test_no_qwen_2_5_fallback_downgrade():
+    """Ensures that the LLM configuration remains strictly aligned to Qwen3 models."""
+    app_path = REPO_ROOT / "app" / "main.py"
+    content = app_path.read_text()
+    
+    # Assert that no default returns or fallbacks mention Qwen/Qwen2.5 or Qwen2.5
+    assert "Qwen/Qwen2.5" not in content, \
+        "Code Quality regression: Swapping default fallback models to Qwen 2.5 is prohibited. Keep flagship Qwen3."
+    
+    # Verify the fallback model returned in _get_default_model is Qwen3
+    assert re.search(r'return\s+["\']Qwen/Qwen3-\w+["\']', content), \
+        "Code Quality regression: fallback model return value in main.py must be a standardized Qwen3 model."
+
+
+def test_python_version_integrity():
+    """Ensures Python runtime version does not drop below Python 3.14 in Containerfile and CI workflows."""
+    # 1. Check Containerfile for base image version (must be >= 3.14)
+    containerfile_path = REPO_ROOT / "app" / "Containerfile"
+    if containerfile_path.exists():
+        content = containerfile_path.read_text()
+        match = re.search(r"FROM\s+python:([\d\.]+)", content)
+        if match:
+            version_str = match.group(1)
+            major, minor = map(int, version_str.split(".")[:2])
+            assert (major > 3) or (major == 3 and minor >= 14), \
+                f"Container base image is running Python {version_str}. Downgrading below Python 3.14 is prohibited."
+
+    # 2. Check CI workflows for python-version (must be >= 3.14)
+    workflows_dir = REPO_ROOT / ".github" / "workflows"
+    if workflows_dir.exists():
+        for f in workflows_dir.glob("*.yml"):
+            content = f.read_text()
+            matches = re.findall(r"python-version:\s*['\"]?([\d\.]+)['\"]?", content)
+            for ver in matches:
+                major, minor = map(int, ver.split(".")[:2])
+                assert (major > 3) or (major == 3 and minor >= 14), \
+                    f"CI Workflow '{f.name}' specifies python-version '{ver}'. Downgrading below Python 3.14 is prohibited."
