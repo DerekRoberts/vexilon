@@ -145,7 +145,7 @@ def test_manifest_source_files_exist():
 
 
 def test_no_qwen_2_5_fallback_downgrade():
-    """Ensures that the LLM configuration remains strictly aligned to Qwen3 models."""
+    """Ensures that the LLM configuration remains strictly aligned to Qwen3 flagship models."""
     app_path = REPO_ROOT / "app" / "main.py"
     content = app_path.read_text()
     
@@ -153,9 +153,9 @@ def test_no_qwen_2_5_fallback_downgrade():
     assert "Qwen/Qwen2.5" not in content, \
         "Code Quality regression: Swapping default fallback models to Qwen 2.5 is prohibited. Keep flagship Qwen3."
     
-    # Verify the fallback model returned in _get_default_model is Qwen3
-    assert re.search(r'return\s+["\']Qwen/Qwen3-\w+["\']', content), \
-        "Code Quality regression: fallback model return value in main.py must be a standardized Qwen3 model."
+    # Verify the fallback model returned in _get_default_model is exactly Qwen3-32B
+    assert re.search(r'return\s+["\']Qwen/Qwen3-32B["\']', content), \
+        "Code Quality regression: fallback model return value in main.py must be the flagship Qwen/Qwen3-32B model."
 
 
 def test_python_version_integrity():
