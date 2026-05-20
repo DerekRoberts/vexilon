@@ -95,7 +95,7 @@ def _get_default_model():
     if provider == "ollama":
         val = os.getenv("OLLAMA_MODEL")
         return val if (val and val.strip()) else CURRENT_MODEL_ID
-    return "Qwen/Qwen2.5-72B-Instruct"
+    return "Qwen/Qwen3-14B"
 
 DEFAULT_MODEL_LLM = os.getenv("AGNAV_DEFAULT_MODEL", _get_default_model())
 HF_PROVIDER = os.getenv("AGNAV_HF_PROVIDER", "").strip()
@@ -488,8 +488,11 @@ async def unified_chat_create(model: str, messages: list, system: str | list = N
     actual_model = f"{model}:{HF_PROVIDER}" if (get_llm_provider() == "huggingface" and HF_PROVIDER) else model
     kwargs = {"model": actual_model, "max_tokens": max_tokens, "messages": full_messages, "timeout": 60.0}
 
-    # timeout is handled by the client initialization or default
+    t0 = time.perf_counter()
+    logger.info(f"[llm-call] Creating completion for actual_model='{actual_model}'...")
     resp = await client.chat.completions.create(**kwargs)
+    elapsed = time.perf_counter() - t0
+    logger.info(f"[llm-call] Completion finished in {elapsed:.2f} seconds")
     return resp.choices[0].message.content
 
 async def unified_chat_stream(model: str, messages: list, system: str | list = None, max_tokens: int = 2048) -> AsyncIterator[str]:
@@ -500,6 +503,8 @@ async def unified_chat_stream(model: str, messages: list, system: str | list = N
     actual_model = f"{model}:{HF_PROVIDER}" if (get_llm_provider() == "huggingface" and HF_PROVIDER) else model
     kwargs = {"model": actual_model, "max_tokens": max_tokens, "messages": full_messages, "stream": True, "timeout": 300.0}
 
+    t0 = time.perf_counter()
+    logger.info(f"[llm-call] Opening stream for actual_model='{actual_model}'...")
     stream = await client.chat.completions.create(**kwargs)
     # Stateful buffer for filtering <think> blocks (handles split-token tags)
     in_think_block = False
@@ -507,7 +512,13 @@ async def unified_chat_stream(model: str, messages: list, system: str | list = N
     start_tag = "<think>"
     end_tag = "</think>"
     
+    first_chunk = True
     async for chunk in stream:
+        if first_chunk:
+            elapsed = time.perf_counter() - t0
+            logger.info(f"[llm-call] First stream chunk received in {elapsed:.2f} seconds")
+            first_chunk = False
+            
         if chunk.choices and chunk.choices[0].delta.content:
             buffer += chunk.choices[0].delta.content
             
