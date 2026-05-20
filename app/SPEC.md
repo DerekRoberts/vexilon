@@ -142,7 +142,7 @@ The Agreement Navigator is successful when:
 ## 14. Agent Rules & Operational Constraints
 
 All AI development assistants working on this repository MUST strictly adhere to these guardrails:
-1. **No Model Generation Downgrades:** The default model generation must strictly remain on **Qwen3** flagship models. Never downgrade defaults to Qwen2.5 or older versions without explicit discussion and approval first.
+1. **No Model or Dependency Changes Without Discussion:** Never change or downgrade the default LLM model or generation, or modify package dependencies, without explicit discussion and approval first.
 2. **No Python Version Downgrades:** The container and development runtime must strictly remain on **Python 3.14**. Never attempt to downgrade to Python 3.12 or older.
 3. **No Hype or Performance Overselling:** Never claim a fix "guarantees instant/sub-second performance" before it has been deployed, tested, and validated with empirical log data. Always state performance changes as hypotheses to be verified using container telemetry.
 4. **Adhere to the Ask-Before-Implementing Process:** Always ask clarifying questions to verify assumptions and outline your proposed changes in bullet points before making edits. Do not rush to implement speculative fixes without user alignment.
