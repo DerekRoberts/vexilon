@@ -54,7 +54,7 @@ from indexing import (
 
 # ─── Global State & Config ──────────────────────────────────────────────────
 # Single Source of Truth for local development models.
-OLLAMA_MODEL_ID = "qwen3:4b-instruct"
+OLLAMA_MODEL_ID = "tinyllama"
 # Allow environment override for CI (e.g. tinyllama for smoke tests)
 CURRENT_MODEL_ID = os.getenv("OLLAMA_MODEL_ID", OLLAMA_MODEL_ID)
 
