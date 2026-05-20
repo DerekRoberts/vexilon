@@ -95,10 +95,10 @@ def _get_default_model():
     if provider == "ollama":
         val = os.getenv("OLLAMA_MODEL")
         return val if (val and val.strip()) else CURRENT_MODEL_ID
-    return "Qwen/Qwen3-14B"
+    return "Qwen/Qwen2.5-72B-Instruct"
 
 DEFAULT_MODEL_LLM = os.getenv("AGNAV_DEFAULT_MODEL", _get_default_model())
-HF_PROVIDER = os.getenv("AGNAV_HF_PROVIDER", "featherless-ai")
+HF_PROVIDER = os.getenv("AGNAV_HF_PROVIDER", "").strip()
 CLAUDE_MODEL = os.getenv("AGNAV_CLAUDE_MODEL", DEFAULT_MODEL_LLM)
 REVIEWER_MODEL = os.getenv("AGNAV_REVIEWER_MODEL", DEFAULT_MODEL_LLM)
 CONDENSE_MODEL = os.getenv("AGNAV_CONDENSE_MODEL", DEFAULT_MODEL_LLM)
@@ -485,7 +485,7 @@ async def unified_chat_create(model: str, messages: list, system: str | list = N
     full_messages = _build_messages(messages, system)
     
     # Use the 'model:provider' syntax for the most robust routing on the HF Router
-    actual_model = f"{model}:{HF_PROVIDER}" if get_llm_provider() == "huggingface" else model
+    actual_model = f"{model}:{HF_PROVIDER}" if (get_llm_provider() == "huggingface" and HF_PROVIDER) else model
     kwargs = {"model": actual_model, "max_tokens": max_tokens, "messages": full_messages, "timeout": 60.0}
 
     # timeout is handled by the client initialization or default
@@ -497,7 +497,7 @@ async def unified_chat_stream(model: str, messages: list, system: str | list = N
     full_messages = _build_messages(messages, system)
     
     # Use the 'model:provider' syntax for the most robust routing on the HF Router
-    actual_model = f"{model}:{HF_PROVIDER}" if get_llm_provider() == "huggingface" else model
+    actual_model = f"{model}:{HF_PROVIDER}" if (get_llm_provider() == "huggingface" and HF_PROVIDER) else model
     kwargs = {"model": actual_model, "max_tokens": max_tokens, "messages": full_messages, "stream": True, "timeout": 300.0}
 
     stream = await client.chat.completions.create(**kwargs)
