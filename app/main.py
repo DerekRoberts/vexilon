@@ -490,9 +490,11 @@ async def unified_chat_create(model: str, messages: list, system: str | list = N
 
     t0 = time.perf_counter()
     logger.info(f"[llm-call] Creating completion for actual_model='{actual_model}'...")
-    resp = await client.chat.completions.create(**kwargs)
-    elapsed = time.perf_counter() - t0
-    logger.info(f"[llm-call] Completion finished in {elapsed:.2f} seconds")
+    try:
+        resp = await client.chat.completions.create(**kwargs)
+    finally:
+        elapsed = time.perf_counter() - t0
+        logger.info(f"[llm-call] Completion creation elapsed: {elapsed:.2f} seconds")
     return resp.choices[0].message.content
 
 async def unified_chat_stream(model: str, messages: list, system: str | list = None, max_tokens: int = 2048) -> AsyncIterator[str]:
@@ -505,7 +507,11 @@ async def unified_chat_stream(model: str, messages: list, system: str | list = N
 
     t0 = time.perf_counter()
     logger.info(f"[llm-call] Opening stream for actual_model='{actual_model}'...")
-    stream = await client.chat.completions.create(**kwargs)
+    try:
+        stream = await client.chat.completions.create(**kwargs)
+    finally:
+        elapsed = time.perf_counter() - t0
+        logger.info(f"[llm-call] Stream connection elapsed: {elapsed:.2f} seconds")
     # Stateful buffer for filtering <think> blocks (handles split-token tags)
     in_think_block = False
     buffer = ""
