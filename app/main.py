@@ -98,7 +98,7 @@ def _get_default_model():
     return "Qwen/Qwen2.5-72B-Instruct"
 
 DEFAULT_MODEL_LLM = os.getenv("AGNAV_DEFAULT_MODEL", _get_default_model())
-HF_PROVIDER = os.getenv("AGNAV_HF_PROVIDER", "")
+HF_PROVIDER = os.getenv("AGNAV_HF_PROVIDER", "").strip()
 CLAUDE_MODEL = os.getenv("AGNAV_CLAUDE_MODEL", DEFAULT_MODEL_LLM)
 REVIEWER_MODEL = os.getenv("AGNAV_REVIEWER_MODEL", DEFAULT_MODEL_LLM)
 CONDENSE_MODEL = os.getenv("AGNAV_CONDENSE_MODEL", DEFAULT_MODEL_LLM)
