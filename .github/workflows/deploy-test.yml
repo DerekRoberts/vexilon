@@ -41,7 +41,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           TEST: "true"
-        run: ./.github/scripts/deploy.sh "DerekRoberts/landru" "${{ steps.resolve.outputs.image }}"
+        run: ./.github/scripts/deploy.sh "bcgeu/navigator-test" "${{ steps.resolve.outputs.image }}"
 
       - name: Notify Owners on Failure
         if: failure()
