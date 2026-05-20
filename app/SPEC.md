@@ -20,7 +20,7 @@ To reduce the "Information Gap" for union stewards by providing a mobile-first, 
 | Layer | Technology | Rationale |
 |---|---|---|
 | **Interface** | Chainlit 2.11 | Rapid, high-performance web UI with native streaming support. |
-| **Logic** | Python 3.12 | Standard for LLM orchestration and RAG pipelines. |
+| **Logic** | Python 3.14 | Standard for LLM orchestration and RAG pipelines. |
 | **LLM (PROD)** | Hugging Face Router | Access to Qwen/Qwen3-4B-Instruct-2507 via high-speed "Flash" API. |
 | **LLM (DEV)** | Ollama | Local execution of qwen3:4b-instruct for zero-config, offline development. |
 | **Embeddings** | `BAAI/bge-small-en-v1.5` | State-of-the-art local CPU embeddings; avoids 3GB CUDA dependencies. |
@@ -136,3 +136,13 @@ The Agreement Navigator is successful when:
 - **PDF or Markdown?** Markdown is the source of truth for the AI; PDF is for human download.
 - **Provider?** Provider-agnostic via unified OpenAI-compatible client (HF/Ollama).
 - **Security?** Secure-by-default with rate limiting and input sanitization.
+
+---
+
+## 14. Agent Rules & Operational Constraints
+
+All AI development assistants working on this repository MUST strictly adhere to these guardrails:
+1. **No Model Generation Downgrades:** The default model generation must strictly remain on **Qwen3** flagship models. Never downgrade defaults to Qwen2.5 or older versions without explicit discussion and approval first.
+2. **No Python Version Downgrades:** The container and development runtime must strictly remain on **Python 3.14**. Never attempt to downgrade to Python 3.12 or older.
+3. **No Hype or Performance Overselling:** Never claim a fix "guarantees instant/sub-second performance" before it has been deployed, tested, and validated with empirical log data. Always state performance changes as hypotheses to be verified using container telemetry.
+4. **Adhere to the Ask-Before-Implementing Process:** Always ask clarifying questions to verify assumptions and outline your proposed changes in bullet points before making edits. Do not rush to implement speculative fixes without user alignment.
