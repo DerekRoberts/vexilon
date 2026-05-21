@@ -101,8 +101,8 @@ COPY --from=model_fetcher /model /model
 RUN mkdir -p /hf_cache && chown -R app:app /hf_cache
 USER 1000
 
-ARG VERSION="Dev mode"
-ARG REPO_URL="https://github.com/MinionTech/vexilon"
+ARG VERSION
+ARG REPO_URL
 ENV AGNAV_VERSION=$VERSION \
     AGNAV_REPO_URL=$REPO_URL
 
