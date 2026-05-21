@@ -33,7 +33,7 @@ jobs:
         uses: bcgov/actions/image-tracker@main
         with:
           package: agnav
-          token: ${{ github.token }}
+          github_token: ${{ github.token }}
           revision: ${{ github.event.pull_request.head.sha || github.sha }}
           max_depth: 20
 
