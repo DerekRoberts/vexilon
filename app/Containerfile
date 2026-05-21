@@ -30,6 +30,7 @@ HEALTHCHECK --interval=30s --timeout=15s --start-period=120s --retries=10 \
 # Downloads heavy embedding model weights separately to leverage build caches.
 # Inherits directly from python:3.14-slim to avoid dependency cache busts from base.
 FROM python:3.14-slim AS model_fetcher
+# renovate: datasource=pypi depName=huggingface-hub
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=cache,target=/root/.cache/huggingface \
     pip install huggingface_hub==1.15.0 && \
