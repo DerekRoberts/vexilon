@@ -23,21 +23,27 @@ def mock_embedding_model(request, monkeypatch):
     if "integration" in str(request.path):
         return
     import main as app
+    import indexing
     # Only mock if we are not explicitly doing an integration test that needs the real model
     # We can check the test name or path, but it's safer to just provide a lightweight mock
     # and let integration tests skip the mock if they want.
     
     mock_model = MagicMock()
-    
+
+    class MockEncoding(dict):
+        def __init__(self, input_ids, offset_mapping):
+            super().__init__()
+            self["input_ids"] = input_ids
+            self["offset_mapping"] = offset_mapping
+            self.input_ids = input_ids
+            self.offset_mapping = offset_mapping
+
     # Mock tokenizer behavior for chunk_text
     def mock_tokenize(text, **kwargs):
         # Return something that looks like encoding.input_ids and encoding.offset_mapping
         tokens = [1] * (len(text) // 4 + 1) # dummy tokens
         offsets = [(i*4, min((i+1)*4, len(text))) for i in range(len(tokens))]
-        encoding = MagicMock()
-        encoding.input_ids = tokens
-        encoding.offset_mapping = offsets
-        return encoding
+        return MockEncoding(tokens, offsets)
         
     mock_model.tokenizer = mock_tokenize
     mock_model.encode = MagicMock(return_value=[[0.1]*384])
@@ -45,6 +51,7 @@ def mock_embedding_model(request, monkeypatch):
     # We only patch if the test isn't an integration test that specifically wants the real deal
     # (By default we mock, integration tests can un-mock if needed)
     monkeypatch.setattr(app, "get_embed_model", lambda: mock_model)
+    monkeypatch.setattr(indexing, "get_embed_model", lambda: mock_model)
     return mock_model
 
 @pytest.fixture
