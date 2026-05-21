@@ -46,12 +46,6 @@ jobs:
         with:
           lfs: true
 
-      - name: Cache Ollama Models
-        uses: actions/cache@v5
-        with:
-          path: ./.ollama_data
-          key: ollama-models-${{ env.OLLAMA_MODEL_ID }}
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
